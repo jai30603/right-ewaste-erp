@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Add Party | Right Ewaste ERP</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="bg-light">
+
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-9">
+
+            <div class="card shadow">
+
+                <div class="card-header bg-primary text-white">
+
+                    <h3 class="mb-0">
+                        Add New Party
+                    </h3>
+
+                </div>
+
+                <div class="card-body">
+
+                    <form method="POST">
+
+                        <div class="row">
+
+                            <!-- Company Name -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Company Name
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="company_name"
+                                    class="form-control"
+                                    required>
+
+                            </div>
+
+                            <!-- Contact Person -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Contact Person
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="contact_person"
+                                    class="form-control">
+
+                            </div>
+
+                            <!-- Party Type -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Party Type
+                                </label>
+
+                                <select
+                                    name="party_type"
+                                    class="form-select"
+                                    required>
+
+                                    <option value="">Select</option>
+                                    <option value="CUSTOMER">Customer</option>
+                                    <option value="SUPPLIER">Supplier</option>
+                                    <option value="BOTH">Both</option>
+
+                                </select>
+
+                            </div>
+
+                            <!-- GSTIN -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    GSTIN
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="gstin"
+                                    maxlength="15"
+                                    class="form-control">
+
+                            </div>
+
+                            <!-- Phone -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Phone Number
+                                </label>
+
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    maxlength="10"
+                                    class="form-control"
+                                    required>
+
+                            </div>
+
+                            <!-- Email -->
+
+                            <div class="col-md-6 mb-3">
+
+                                <label class="form-label">
+                                    Email
+                                </label>
+
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control">
+
+                            </div>
+
+                            <!-- Billing Address -->
+
+                            <div class="col-12 mb-3">
+
+                                <label class="form-label">
+                                    Billing Address
+                                </label>
+
+                                <textarea
+                                    name="billing_address"
+                                    rows="3"
+                                    class="form-control"
+                                    required></textarea>
+
+                            </div>
+
+                            <!-- City -->
+
+                            <div class="col-md-4 mb-3">
+
+                                <label class="form-label">
+                                    City
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="city"
+                                    class="form-control"
+                                    required>
+
+                            </div>
+
+                            <!-- State -->
+
+                            <div class="col-md-4 mb-3">
+
+                                <label class="form-label">
+                                    State
+                                </label>
+
+                                <select
+                                    id="state"
+                                    name="state"
+                                    class="form-select"
+                                    onchange="updateStateCode()"
+                                    required>
+
+                                    <option value="">Select State</option>
+
+                                    {% for state in states %}
+
+                                    <option value="{{ state }}">
+                                        {{ state }}
+                                    </option>
+
+                                    {% endfor %}
+
+                                </select>
+
+                            </div>
+
+                            <!-- State Code -->
+
+                            <div class="col-md-4 mb-3">
+
+                                <label class="form-label">
+                                    State Code
+                                </label>
+
+                                <input
+                                    type="text"
+                                    id="state_code"
+                                    name="state_code"
+                                    class="form-control"
+                                    readonly>
+
+                            </div>
+
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+
+                            <a href="/party" class="btn btn-secondary">
+                                ← Back
+                            </a>
+
+                            <button
+                                type="submit"
+                                class="btn btn-success">
+
+                                Save Party
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const states = {{ states | tojson }};
+</script>
+
+<script src="{{ url_for('static', filename='js/state.js') }}"></script>
+
+</body>
+
+</html>
