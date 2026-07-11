@@ -1,0 +1,721 @@
+IMPORTANT
+
+----------------------------------------------------------
+
+Do NOT rewrite the application.
+
+Do NOT redesign the database.
+
+Do NOT create unnecessary improvements.
+
+Only verify whether everything is implemented correctly according to professional software engineering standards.
+
+If something is wrong,
+
+Explain
+
+Why
+
+How to fix it
+
+Where to fix it
+
+If everything is correct,
+
+Simply mention that it passes.
+
+----------------------------------------------------------
+
+MODULES TO REVIEW
+
+----------------------------------------------------------
+
+1.
+
+Project Structure
+
+----------------------------------------------------------
+
+Verify
+
+✔ Folder structure
+
+✔ Flask Blueprint organization
+
+✔ Repository Layer
+
+✔ Service Layer
+
+✔ Templates
+
+✔ Static files
+
+✔ Database folder
+
+✔ SQL schema organization
+
+✔ Separation of concerns
+
+Verify whether the project follows a clean architecture.
+
+----------------------------------------------------------
+
+2.
+
+Database Review
+
+----------------------------------------------------------
+
+Review
+
+Company Table
+
+Party Table
+
+Material Table
+
+Sales Invoice Table
+
+Sales Invoice Item Table
+
+Verify
+
+Primary Keys
+
+Foreign Keys
+
+Constraints
+
+Normalization
+
+Indexes (if required)
+
+Naming Convention
+
+Data Types
+
+Soft Delete
+
+Timestamp fields
+
+Relationship integrity
+
+Verify whether future modules like
+
+Purchase
+
+Inventory
+
+Reports
+
+can easily integrate.
+
+----------------------------------------------------------
+
+3.
+
+Party Module Review
+
+----------------------------------------------------------
+
+Verify
+
+Party List
+
+Add Party
+
+Edit Party
+
+Delete Party
+
+Soft Delete
+
+Search
+
+Validation
+
+Flash Messages
+
+Auto Party Code
+
+State Dropdown
+
+Automatic State Code
+
+Duplicate validation
+
+Required field validation
+
+Email validation
+
+GST validation
+
+Routing
+
+Repository
+
+Service
+
+Template
+
+Verify every route
+
+/party
+
+/party/add
+
+/party/edit/<id>
+
+/party/delete/<id>
+
+Verify database operations.
+
+Verify UI.
+
+Verify navigation.
+
+Verify complete flow.
+
+----------------------------------------------------------
+
+4.
+
+Material Module Review
+
+----------------------------------------------------------
+
+Verify
+
+Material List
+
+Add Material
+
+Edit Material
+
+Delete Material
+
+Soft Delete
+
+Search
+
+Validation
+
+Flash Messages
+
+Auto Material Code
+
+Repository
+
+Routes
+
+Templates
+
+Database
+
+Verify
+
+/material
+
+/material/add
+
+/material/edit/<id>
+
+/material/delete/<id>
+
+Verify future compatibility with Sales Invoice.
+
+----------------------------------------------------------
+
+5.
+
+Sales Invoice Review
+
+----------------------------------------------------------
+
+Review
+
+Invoice Header
+
+Invoice Number
+
+Invoice Date
+
+Customer Selection
+
+Payment Mode
+
+Transporter
+
+Vehicle Number
+
+Remarks
+
+Invoice Items
+
+Material Selection
+
+Quantity
+
+Weight
+
+Pieces
+
+Rate
+
+Amount
+
+Subtotal
+
+GST
+
+Grand Total
+
+Round Off
+
+Automatic Calculations
+
+Save
+
+Update
+
+Database Insert
+
+Repository
+
+Business Logic
+
+Service Layer
+
+Verify Invoice Number generation.
+
+Verify GST logic.
+
+Verify Grand Total.
+
+Verify all calculations.
+
+Verify database consistency.
+
+----------------------------------------------------------
+
+6.
+
+Routing Review
+
+----------------------------------------------------------
+
+Verify ALL routes.
+
+Ensure
+
+No broken links.
+
+No missing templates.
+
+No duplicate routes.
+
+No circular imports.
+
+No incorrect redirects.
+
+Verify every page opens successfully.
+
+Verify all navigation buttons.
+
+Verify dashboard links.
+
+Verify forms submit correctly.
+
+Verify redirects.
+
+----------------------------------------------------------
+
+7.
+
+Repository Review
+
+----------------------------------------------------------
+
+Verify
+
+Every SQL query.
+
+Naming.
+
+Transactions.
+
+Commit.
+
+Rollback.
+
+Connection closing.
+
+No duplicate SQL.
+
+No SQL inside routes.
+
+No business logic inside repositories.
+
+----------------------------------------------------------
+
+8.
+
+Service Layer Review
+
+----------------------------------------------------------
+
+Verify
+
+Business logic.
+
+Invoice Number Generation.
+
+GST Calculation.
+
+Totals Calculation.
+
+Validation.
+
+Ensure business logic is not inside Flask routes.
+
+----------------------------------------------------------
+
+9.
+
+Frontend Review
+
+----------------------------------------------------------
+
+Review
+
+Bootstrap
+
+Responsiveness
+
+Cards
+
+Forms
+
+Tables
+
+Buttons
+
+Navigation
+
+Alignment
+
+Spacing
+
+Typography
+
+Professional UI
+
+Consistency
+
+User Experience
+
+----------------------------------------------------------
+
+10.
+
+Validation Review
+
+----------------------------------------------------------
+
+Verify
+
+Required fields
+
+Duplicate records
+
+Phone
+
+Email
+
+GST
+
+State
+
+Party Type
+
+Material
+
+Invoice
+
+Error handling
+
+Flash messages
+
+----------------------------------------------------------
+
+11.
+
+Security Review
+
+----------------------------------------------------------
+
+Check
+
+SQL Injection
+
+Input validation
+
+Unsafe SQL
+
+Hardcoded values
+
+Missing validation
+
+CSRF protection (mention if missing)
+
+Potential security issues
+
+----------------------------------------------------------
+
+12.
+
+Performance Review
+
+----------------------------------------------------------
+
+Check
+
+Database Queries
+
+Repeated Queries
+
+Duplicate Code
+
+Function Reuse
+
+Repository Reuse
+
+Efficiency
+
+----------------------------------------------------------
+
+13.
+
+Code Quality Review
+
+----------------------------------------------------------
+
+Review
+
+Python Naming
+
+HTML Structure
+
+Flask Best Practices
+
+Bootstrap Best Practices
+
+Code Readability
+
+Maintainability
+
+Scalability
+
+Professional Standards
+
+----------------------------------------------------------
+
+14.
+
+Future Compatibility Review
+
+----------------------------------------------------------
+
+Verify whether the current implementation is ready for
+
+Purchase Module
+
+Inventory Module
+
+Reports
+
+Authentication
+
+Dashboard Analytics
+
+PDF Generation
+
+Hosting
+
+----------------------------------------------------------
+
+OUTPUT FORMAT
+
+----------------------------------------------------------
+
+Provide the report in the following format.
+
+1.
+
+Architecture Review
+
+PASS / FAIL
+
+Explanation
+
+----------------------------------------------------------
+
+2.
+
+Database Review
+
+PASS / FAIL
+
+Explanation
+
+----------------------------------------------------------
+
+3.
+
+Party Module
+
+PASS / FAIL
+
+Checklist
+
+Completed
+
+Missing
+
+Issues
+
+Recommendations
+
+----------------------------------------------------------
+
+4.
+
+Material Module
+
+PASS / FAIL
+
+Checklist
+
+Completed
+
+Missing
+
+Issues
+
+Recommendations
+
+----------------------------------------------------------
+
+5.
+
+Sales Invoice
+
+PASS / FAIL
+
+Checklist
+
+Completed
+
+Missing
+
+Issues
+
+Recommendations
+
+----------------------------------------------------------
+
+6.
+
+Routing
+
+PASS / FAIL
+
+Broken Routes
+
+Missing Routes
+
+Redirect Issues
+
+----------------------------------------------------------
+
+7.
+
+Repository Layer
+
+PASS / FAIL
+
+----------------------------------------------------------
+
+8.
+
+Service Layer
+
+PASS / FAIL
+
+----------------------------------------------------------
+
+9.
+
+Frontend
+
+PASS / FAIL
+
+----------------------------------------------------------
+
+10.
+
+Security
+
+PASS / FAIL
+
+----------------------------------------------------------
+
+11.
+
+Performance
+
+PASS / FAIL
+
+----------------------------------------------------------
+
+12.
+
+Overall Project Score
+
+Architecture
+
+Database
+
+Backend
+
+Frontend
+
+Flask
+
+Business Logic
+
+Code Quality
+
+Scalability
+
+Maintainability
+
+Professionalism
+
+Give a score out of 10 for each.
+
+----------------------------------------------------------
+
+Finally,
+
+List every improvement in order of priority.
+
+Priority 1 = Must Fix
+
+Priority 2 = Recommended
+
+Priority 3 = Future Enhancement
+
+Do NOT generate new features.
+
+Only review, validate, audit, and report.
