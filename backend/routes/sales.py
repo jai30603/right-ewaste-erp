@@ -1,5 +1,10 @@
+import io
 from datetime import date
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import (
+    Blueprint, render_template, request,
+    redirect, url_for, flash, Response, abort,
+)
+from xhtml2pdf import pisa
 
 from repositories.sales_repository import (
     get_all_invoices,
@@ -14,6 +19,29 @@ from repositories.company_repository import get_company
 sales_bp = Blueprint("sales", __name__)
 
 PAYMENT_MODES = ["Cash", "NEFT", "RTGS", "UPI", "Cheque", "Credit"]
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _invoice_context(invoice_id):
+    """Shared data bundle for view + PDF routes."""
+    invoice = get_invoice_by_id(invoice_id)
+    if not invoice:
+        abort(404)
+    items   = get_invoice_items(invoice_id)
+    party   = get_party_by_id(invoice["party_id"])
+    company = get_company()
+    is_intra = (
+        company and party and
+        str(company["state_code"]).strip() == str(party["state_code"]).strip()
+    )
+    return dict(
+        invoice  = invoice,
+        items    = items,
+        party    = party,
+        company  = company,
+        is_intra = is_intra,
+    )
 
 
 # ── List ──────────────────────────────────────────────────────────────────────
@@ -36,7 +64,6 @@ def add_sales_invoice():
     if request.method == "POST":
         errors = _validate_header(request.form)
 
-        # Parse items
         material_ids    = request.form.getlist("material_id[]")
         qtys            = request.form.getlist("qty[]")
         weights         = request.form.getlist("weight[]")
@@ -76,12 +103,11 @@ def add_sales_invoice():
                 today=date.today().isoformat(),
             )
 
-        # Get party state code for GST determination
-        party = get_party_by_id(int(request.form["party_id"]))
+        party            = get_party_by_id(int(request.form["party_id"]))
         party_state_code = party["state_code"] if party else ""
 
         try:
-            create_sales_invoice(
+            invoice_id = create_sales_invoice(
                 party_id           = request.form["party_id"],
                 invoice_date       = request.form["invoice_date"],
                 payment_mode       = request.form.get("payment_mode"),
@@ -106,7 +132,7 @@ def add_sales_invoice():
             )
 
         flash("Sales invoice created successfully.", "success")
-        return redirect(url_for("sales.sales"))
+        return redirect(url_for("sales.view_invoice", invoice_id=invoice_id))
 
     return render_template(
         "sales_form.html",
@@ -118,6 +144,44 @@ def add_sales_invoice():
         errors={},
         today=date.today().isoformat(),
     )
+
+
+# ── View / Preview ────────────────────────────────────────────────────────────
+
+@sales_bp.route("/sales/<int:invoice_id>/view")
+def view_invoice(invoice_id):
+    ctx = _invoice_context(invoice_id)
+    return render_template("sales_invoice.html", **ctx)
+
+
+# ── Download PDF ──────────────────────────────────────────────────────────────
+
+@sales_bp.route("/sales/<int:invoice_id>/pdf")
+def download_pdf(invoice_id):
+    ctx  = _invoice_context(invoice_id)
+    html = render_template("sales_invoice_pdf.html", **ctx)
+
+    buf = io.BytesIO()
+    pisa.CreatePDF(io.StringIO(html), dest=buf)
+    pdf_bytes = buf.getvalue()
+
+    filename = f"{ctx['invoice']['invoice_number']}.pdf"
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": len(pdf_bytes),
+        },
+    )
+
+
+# ── Email (mailto link handled in template) ───────────────────────────────────
+
+@sales_bp.route("/sales/<int:invoice_id>/email")
+def email_invoice(invoice_id):
+    ctx = _invoice_context(invoice_id)
+    return render_template("sales_invoice.html", open_email_modal=True, **ctx)
 
 
 # ── Validation ────────────────────────────────────────────────────────────────
