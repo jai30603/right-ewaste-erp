@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Material' if mode == 'edit' else 'Add Material' }} – Right Ewaste ERP{% endblock %}
+{% block page_title %}{{ 'Edit Material' if mode == 'edit' else 'Add New Material' }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/material" class="text-decoration-none text-muted">Material</a></li>
+<li class="breadcrumb-item active">{{ 'Edit Material' if mode == 'edit' else 'Add Material' }}</li>
+{% endblock %}
+
+{% block content %}
+
+{% macro val(field) %}{{ material[field] if material and material[field] else '' }}{% endmacro %}
+
+<div class="row justify-content-center">
+<div class="col-lg-8 col-xl-7">
+
+<div class="erp-card">
+
+    <div class="erp-card-header">
+        <i class="bi bi-{{ 'pencil-square' if mode == 'edit' else 'box-seam' }}" style="font-size:18px; color:#3cb371;"></i>
+        <h5>{{ 'Edit Material' if mode == 'edit' else 'New Material' }}</h5>
+        {% if mode == 'edit' and material %}
+        <span style="margin-left:8px; font-family:monospace; font-size:12px; background:#e8f5ee; color:#2d6a4f; padding:3px 10px; border-radius:20px;">
+            {{ material['material_code'] }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="erp-card-body">
+        <form method="POST"
+              action="{{ '/material/edit/' + material_id|string if mode == 'edit' else '/material/add' }}"
+              novalidate>
+
+            <!-- ── Identity ───────────────────────────────────────── -->
+            <h6 class="form-section-title">Material Details</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-12">
+                    <label class="form-label">Material Name <span class="text-danger">*</span></label>
+                    <input type="text" name="material_name"
+                           class="form-control {{ 'is-invalid' if errors.material_name }}"
+                           value="{{ val('material_name') }}"
+                           placeholder="e.g. Laptop Battery Pack" required>
+                    {% if errors.material_name %}
+                    <div class="invalid-feedback">{{ errors.material_name }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                    <select name="category"
+                            class="form-select {{ 'is-invalid' if errors.category }}" required>
+                        <option value="">Select category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {{ 'selected' if val('category') == cat }}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.category %}
+                    <div class="invalid-feedback">{{ errors.category }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">HSN Code</label>
+                    <input type="text" name="hsn_code" class="form-control"
+                           value="{{ val('hsn_code') }}"
+                           placeholder="e.g. 8471" style="font-family:monospace;">
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Pricing ────────────────────────────────────────── -->
+            <h6 class="form-section-title">Unit &amp; Tax</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-md-6">
+                    <label class="form-label">Unit <span class="text-danger">*</span></label>
+                    <select name="uom"
+                            class="form-select {{ 'is-invalid' if errors.uom }}" required>
+                        <option value="">Select unit</option>
+                        {% for unit in units %}
+                        <option value="{{ unit }}" {{ 'selected' if val('uom') == unit }}>{{ unit }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.uom %}
+                    <div class="invalid-feedback">{{ errors.uom }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">GST Percentage <span class="text-danger">*</span></label>
+                    <select name="gst_percentage"
+                            class="form-select {{ 'is-invalid' if errors.gst_percentage }}" required>
+                        <option value="">Select GST rate</option>
+                        {% for rate in gst_rates %}
+                        <option value="{{ rate }}" {{ 'selected' if val('gst_percentage')|string == rate }}>{{ rate }}%</option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.gst_percentage %}
+                    <div class="invalid-feedback">{{ errors.gst_percentage }}</div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Description ────────────────────────────────────── -->
+            <h6 class="form-section-title">Description</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <textarea name="description" rows="3" class="form-control"
+                              placeholder="Optional notes about this material…">{{ val('description') }}</textarea>
+                </div>
+            </div>
+
+            <!-- ── Actions ───────────────────────────────────────── -->
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/material" class="btn-erp-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn-erp-primary">
+                    <i class="bi bi-check-lg"></i>
+                    {{ 'Update Material' if mode == 'edit' else 'Save Material' }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+</div>
+</div>
+
+{% endblock %}
