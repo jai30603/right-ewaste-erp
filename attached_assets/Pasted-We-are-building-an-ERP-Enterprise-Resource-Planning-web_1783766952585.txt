@@ -1,0 +1,215 @@
+We are building an ERP (Enterprise Resource Planning) web application for a real company named Right Ewaste Recycle Pvt. Ltd.
+
+Current Technology Stack
+
+Backend
+- Python Flask
+
+Database
+- SQLite
+
+Frontend
+- HTML
+- Bootstrap 5
+- JavaScript
+
+Architecture
+- Flask Blueprints
+- Repository Pattern
+- Service Layer
+
+Already Completed Modules
+
+✔ Dashboard
+
+✔ Company
+
+✔ Party
+
+✔ Material
+
+The next module is Sales Invoice.
+
+This is the most important module in the ERP.
+
+Do NOT generate everything at once.
+
+Implement ONLY Phase 1.
+
+---------------------------------------------------------
+
+OBJECTIVE
+
+---------------------------------------------------------
+
+Create the Sales Invoice screen with only the Invoice Header.
+
+No PDF.
+
+No Reports.
+
+No Inventory.
+
+No Purchase Invoice.
+
+Only Invoice Header.
+
+---------------------------------------------------------
+
+Invoice Header
+
+---------------------------------------------------------
+
+Fields
+
+Invoice Number
+
+Automatically generated.
+
+Example
+
+INV-2026-00001
+
+User should never enter this.
+
+---------------------------------------------------------
+
+Invoice Date
+
+Automatically today's date.
+
+Editable if required.
+
+---------------------------------------------------------
+
+Customer
+
+Dropdown
+
+Load active parties from Party table.
+
+Show Company Name.
+
+Store Party ID.
+
+---------------------------------------------------------
+
+Payment Mode
+
+Dropdown
+
+Cash
+
+NEFT
+
+RTGS
+
+UPI
+
+Cheque
+
+Credit
+
+---------------------------------------------------------
+
+Transporter
+
+Text Box
+
+---------------------------------------------------------
+
+Vehicle Number
+
+Text Box
+
+---------------------------------------------------------
+
+Remarks
+
+Textarea
+
+---------------------------------------------------------
+
+Requirements
+
+Display all fields inside a professional Bootstrap Card.
+
+Responsive Layout.
+
+Save button.
+
+Cancel button.
+
+---------------------------------------------------------
+
+Business Rules
+
+Invoice Number should be generated automatically.
+
+Invoice Number format
+
+INV-YYYY-00001
+
+Invoice Date should default to today's date.
+
+Customer dropdown must load from Party table.
+
+---------------------------------------------------------
+
+Database
+
+Do not insert invoice items yet.
+
+Only create and save the Invoice Header.
+
+Use existing Sales Invoice table.
+
+---------------------------------------------------------
+
+Repository Layer
+
+Create
+
+generate_invoice_number()
+
+create_sales_invoice()
+
+get_invoice_by_id()
+
+---------------------------------------------------------
+
+Routes
+
+Implement
+
+/sales
+
+/sales/add
+
+---------------------------------------------------------
+
+User Experience
+
+Professional Bootstrap UI
+
+Responsive
+
+Flash Messages
+
+---------------------------------------------------------
+
+Expected Result
+
+The user can
+
+Open Sales Invoice
+
+Fill Header
+
+Select Customer
+
+Save Invoice Header
+
+Return to Invoice List
+
+WITHOUT invoice items.

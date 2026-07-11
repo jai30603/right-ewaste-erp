@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}New Sales Invoice – Right Ewaste ERP{% endblock %}
+{% block page_title %}New Sales Invoice{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/sales" class="text-decoration-none text-muted">Sales Invoice</a></li>
+<li class="breadcrumb-item active">New Invoice</li>
+{% endblock %}
+
+{% macro val(field) %}{{ form[field] if form and form[field] else '' }}{% endmacro %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+<div class="col-lg-9 col-xl-8">
+
+<div class="erp-card">
+
+    <div class="erp-card-header">
+        <i class="bi bi-receipt" style="font-size:18px; color:#3cb371;"></i>
+        <h5>Invoice Header</h5>
+        <span style="margin-left:8px; font-size:12px; background:#e8f5ee; color:#2d6a4f;
+                     padding:3px 10px; border-radius:20px; font-style:italic;">
+            Invoice No. will be auto-generated
+        </span>
+    </div>
+
+    <div class="erp-card-body">
+        <form method="POST" action="/sales/add" novalidate>
+
+            <!-- ── Invoice Info ───────────────────────────────────── -->
+            <h6 class="form-section-title">Invoice Details</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-md-6">
+                    <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
+                    <input type="date" name="invoice_date"
+                           class="form-control {{ 'is-invalid' if errors.invoice_date }}"
+                           value="{{ val('invoice_date') or today }}" required>
+                    {% if errors.invoice_date %}
+                    <div class="invalid-feedback">{{ errors.invoice_date }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Customer <span class="text-danger">*</span></label>
+                    <select name="party_id"
+                            class="form-select {{ 'is-invalid' if errors.party_id }}" required>
+                        <option value="">Select customer</option>
+                        {% for party in parties %}
+                        <option value="{{ party.id }}"
+                            {{ 'selected' if val('party_id') == party.id|string }}>
+                            {{ party.company_name }}
+                            {% if party.party_code %}({{ party.party_code }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.party_id %}
+                    <div class="invalid-feedback">{{ errors.party_id }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Payment Mode</label>
+                    <select name="payment_mode" class="form-select">
+                        <option value="">Select mode</option>
+                        {% for mode in payment_modes %}
+                        <option value="{{ mode }}" {{ 'selected' if val('payment_mode') == mode }}>
+                            {{ mode }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Transport ──────────────────────────────────────── -->
+            <h6 class="form-section-title">Transport Details</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-md-6">
+                    <label class="form-label">Transporter</label>
+                    <input type="text" name="transporter" class="form-control"
+                           value="{{ val('transporter') }}"
+                           placeholder="e.g. Self, Blue Dart">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Vehicle Number</label>
+                    <input type="text" name="vehicle_number" class="form-control"
+                           value="{{ val('vehicle_number') }}"
+                           placeholder="e.g. MH01AB1234"
+                           style="text-transform:uppercase;">
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Remarks ────────────────────────────────────────── -->
+            <h6 class="form-section-title">Remarks</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <textarea name="remarks" rows="2" class="form-control"
+                              placeholder="Any notes about this invoice…">{{ val('remarks') }}</textarea>
+                </div>
+            </div>
+
+            <!-- ── Actions ───────────────────────────────────────── -->
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/sales" class="btn-erp-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn-erp-primary">
+                    <i class="bi bi-check-lg"></i> Save Invoice
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+</div>
+</div>
+
+{% endblock %}

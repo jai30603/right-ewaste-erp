@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Invoice – Right Ewaste ERP{% endblock %}
+{% block page_title %}Sales Invoice{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Sales Invoice</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="erp-card">
+
+    <div class="erp-card-header">
+        <i class="bi bi-receipt" style="font-size:18px; color:#3cb371;"></i>
+        <h5>Sales Invoices</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            ({{ invoices|length }} record{{ 's' if invoices|length != 1 }})
+        </span>
+        <div class="ms-auto">
+            <a href="/sales/add" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i> New Invoice
+            </a>
+        </div>
+    </div>
+
+    <div class="erp-card-body p-0">
+
+        {% if invoices %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Invoice No.</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Payment Mode</th>
+                    <th>Transporter</th>
+                    <th>Vehicle No.</th>
+                    <th>Status</th>
+                    <th>Grand Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>
+                        <code style="font-size:12px; color:#2d6a4f;">{{ inv.invoice_number }}</code>
+                    </td>
+                    <td style="white-space:nowrap;">{{ inv.invoice_date }}</td>
+                    <td style="font-weight:500;">{{ inv.company_name or '—' }}</td>
+                    <td>{{ inv.payment_mode or '—' }}</td>
+                    <td>{{ inv.transporter or '—' }}</td>
+                    <td><span style="font-family:monospace; font-size:12px;">{{ inv.vehicle_number or '—' }}</span></td>
+                    <td>
+                        {% if inv.status == 'CONFIRMED' %}
+                            <span class="badge-type badge-customer">Confirmed</span>
+                        {% elif inv.status == 'DRAFT' %}
+                            <span class="badge-type" style="background:#fef9c3; color:#854d0e;">Draft</span>
+                        {% else %}
+                            <span class="badge-type badge-both">{{ inv.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-weight:600; font-family:monospace;">
+                        ₹ {{ "%.2f"|format(inv.grand_total) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <p>No invoices yet. <a href="/sales/add" class="text-decoration-none" style="color:#3cb371;">Create the first one →</a></p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}
