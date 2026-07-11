@@ -1,73 +1,70 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
+{% block title %}Party Management – Right Ewaste ERP{% endblock %}
 
-    <title>Party Management</title>
+{% block page_title %}Party Management{% endblock %}
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Party</li>
+{% endblock %}
 
-</head>
+{% block content %}
 
-<body>
+<div class="erp-card">
 
-<div class="container mt-4">
+    <div class="erp-card-header">
+        <i class="bi bi-people" style="font-size:18px; color:#3cb371;"></i>
+        <h5>Parties</h5>
+        <div class="ms-auto">
+            <a href="/party/add" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i> Add Party
+            </a>
+        </div>
+    </div>
 
-    <h2>Party Management</h2>
+    <div class="erp-card-body p-0">
 
-    <a href="/" class="btn btn-secondary mb-3">
-        Dashboard
-    </a>
-    <a href="/party/add" class="btn btn-primary mb-3">
-    + Add Party
-    </a>
+        {% if parties %}
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Company</th>
+                    <th>Type</th>
+                    <th>Phone</th>
+                    <th>GST</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for party in parties %}
+                <tr>
+                    <td><code style="font-size:12px; color:#2d6a4f;">{{ party.party_code }}</code></td>
+                    <td style="font-weight:500;">{{ party.company_name }}</td>
+                    <td>
+                        {% if party.party_type == 'CUSTOMER' %}
+                            <span class="badge-type badge-customer">Customer</span>
+                        {% elif party.party_type == 'SUPPLIER' %}
+                            <span class="badge-type badge-supplier">Supplier</span>
+                        {% else %}
+                            <span class="badge-type badge-both">Both</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ party.phone }}</td>
+                    <td><span style="font-family:monospace; font-size:12px;">{{ party.gstin or '—' }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <p>No parties yet. <a href="/party/add" class="text-decoration-none" style="color:#3cb371;">Add the first one →</a></p>
+        </div>
+        {% endif %}
 
-    <table class="table table-bordered table-striped">
-
-        <thead>
-
-        <tr>
-
-            <th>Code</th>
-
-            <th>Company</th>
-
-            <th>Type</th>
-
-            <th>Phone</th>
-
-            <th>GST</th>
-
-        </tr>
-
-        </thead>
-
-        <tbody>
-
-        {% for party in parties %}
-
-        <tr>
-
-            <td>{{ party.party_code }}</td>
-
-            <td>{{ party.company_name }}</td>
-
-            <td>{{ party.party_type }}</td>
-
-            <td>{{ party.phone }}</td>
-
-            <td>{{ party.gstin }}</td>
-
-        </tr>
-
-        {% endfor %}
-
-        </tbody>
-
-    </table>
+    </div>
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}

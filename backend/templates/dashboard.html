@@ -1,56 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Right Ewaste ERP</title>
+{% block title %}Dashboard – Right Ewaste ERP{% endblock %}
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+{% block page_title %}Dashboard{% endblock %}
 
-<body>
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Home</li>
+{% endblock %}
 
-<nav class="navbar navbar-dark bg-dark">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1">Right Ewaste ERP</span>
-    </div>
-</nav>
+{% block content %}
 
-<div class="container mt-4">
+<div class="row mb-4 g-3">
 
-    <h3>Dashboard</h3>
-
-    <div class="row mt-4">
-
-        <div class="col-md-4 mb-3">
-            <a href="/party" class="btn btn-primary w-100 p-4">
-                👥 Party
-            </a>
+    <div class="col-12">
+        <div class="erp-card p-0" style="background: linear-gradient(135deg, #0f2318 0%, #2d6a4f 100%); border:none;">
+            <div class="erp-card-body d-flex align-items-center gap-4">
+                <div style="font-size:40px;">♻️</div>
+                <div>
+                    <h5 class="mb-1" style="color:#fff; font-weight:700;">Welcome to Right Ewaste ERP</h5>
+                    <p class="mb-0" style="color:rgba(255,255,255,0.65); font-size:13px;">
+                        Manage parties, materials, and invoices from one place.
+                    </p>
+                </div>
+                <div class="ms-auto">
+                    <span class="status-dev">🚧 Under Development</span>
+                </div>
+            </div>
         </div>
-
-        <div class="col-md-4 mb-3">
-            <a href="/material" class="btn btn-success w-100 p-4">
-                📦 Material
-            </a>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <a href="/sales" class="btn btn-warning w-100 p-4">
-                🧾 Sales Invoice
-            </a>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <a href="/purchase" class="btn btn-info w-100 p-4">
-                📥 Purchase Invoice
-            </a>
-        </div>
-
     </div>
 
 </div>
 
-</body>
+<h6 class="text-muted mb-3" style="font-size:11px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;">Modules</h6>
 
-</html>
+<div class="module-grid">
+
+    <a href="/party" class="module-card">
+        <div class="module-icon" style="background:#d1fae5;">👥</div>
+        <div>
+            <h6>Party</h6>
+            <p>Customers &amp; suppliers</p>
+        </div>
+    </a>
+
+    <a href="/material" class="module-card">
+        <div class="module-icon" style="background:#dbeafe;">📦</div>
+        <div>
+            <h6>Material</h6>
+            <p>Item &amp; material master</p>
+        </div>
+    </a>
+
+    <a href="/sales" class="module-card">
+        <div class="module-icon" style="background:#fef9c3;">🧾</div>
+        <div>
+            <h6>Sales Invoice</h6>
+            <p>Outgoing invoices</p>
+        </div>
+    </a>
+
+    <a href="/purchase" class="module-card">
+        <div class="module-icon" style="background:#ede9fe;">📥</div>
+        <div>
+            <h6>Purchase Invoice</h6>
+            <p>Incoming invoices</p>
+        </div>
+    </a>
+
+</div>
+
+{% endblock %}
