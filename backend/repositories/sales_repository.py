@@ -16,6 +16,33 @@ def generate_invoice_number():
     return f"INV-{year}-{(max_num + 1):05d}"
 
 
+def calculate_gst(subtotal, items_gst, company_state_code, party_state_code):
+    """
+    items_gst: list of {"amount": float, "gst_percentage": float}
+    Returns dict with cgst, sgst, igst, round_off, grand_total.
+    """
+    total_gst = sum(
+        i["amount"] * i["gst_percentage"] / 100
+        for i in items_gst
+    )
+    intra = str(company_state_code).strip() == str(party_state_code).strip()
+    cgst  = round(total_gst / 2, 2) if intra else 0.0
+    sgst  = round(total_gst / 2, 2) if intra else 0.0
+    igst  = 0.0 if intra else round(total_gst, 2)
+
+    grand_raw   = subtotal + cgst + sgst + igst
+    grand_round = round(grand_raw)
+    round_off   = round(grand_round - grand_raw, 2)
+
+    return {
+        "cgst": cgst,
+        "sgst": sgst,
+        "igst": igst,
+        "round_off": round_off,
+        "grand_total": float(grand_round),
+    }
+
+
 def get_all_invoices():
     conn = get_connection()
     cursor = conn.cursor()
@@ -51,7 +78,7 @@ def get_invoice_items(invoice_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT sii.*, m.material_name, m.uom
+        SELECT sii.*, m.material_name, m.uom, m.gst_percentage
         FROM sales_invoice_item sii
         LEFT JOIN material m ON sii.material_id = m.id
         WHERE sii.sales_invoice_id = ?
@@ -65,12 +92,14 @@ def get_invoice_items(invoice_id):
 def create_sales_invoice(
     party_id, invoice_date, payment_mode,
     transporter, vehicle_number, remarks,
-    items                               # list of dicts
+    items,                  # list of dicts with material_id, qty, weight, pieces, rate, amount, gst_percentage
+    company_state_code,
+    party_state_code,
 ):
     invoice_number = generate_invoice_number()
+    subtotal = round(sum(i["amount"] for i in items), 2)
 
-    subtotal = sum(i["amount"] for i in items)
-    grand_total = subtotal              # GST will be added in Phase 3
+    gst = calculate_gst(subtotal, items, company_state_code, party_state_code)
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -81,12 +110,15 @@ def create_sales_invoice(
             payment_mode, transporter, vehicle_number,
             subtotal, cgst, sgst, igst, round_off, grand_total,
             remarks, status
-        ) VALUES (?,?,?,?,?,?,?,0,0,0,0,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         invoice_number, invoice_date, party_id,
         payment_mode or None, transporter or None, vehicle_number or None,
-        subtotal, grand_total, remarks or None,
-        "DRAFT"
+        subtotal,
+        gst["cgst"], gst["sgst"], gst["igst"],
+        gst["round_off"], gst["grand_total"],
+        remarks or None,
+        "CONFIRMED",
     ))
 
     invoice_id = cursor.lastrowid

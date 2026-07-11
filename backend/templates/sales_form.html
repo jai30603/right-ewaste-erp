@@ -15,9 +15,8 @@
 
 <form method="POST" action="/sales/add" novalidate id="invoice-form">
 
-<!-- ── Row 1: Header card ─────────────────────────────────────────────── -->
+<!-- ── Invoice Header ─────────────────────────────────────────────────── -->
 <div class="erp-card mb-3">
-
     <div class="erp-card-header">
         <i class="bi bi-receipt" style="font-size:18px; color:#3cb371;"></i>
         <h5>Invoice Header</h5>
@@ -26,7 +25,6 @@
             No. auto-generated
         </span>
     </div>
-
     <div class="erp-card-body">
         <div class="row g-3">
 
@@ -42,12 +40,14 @@
 
             <div class="col-md-4">
                 <label class="form-label">Customer <span class="text-danger">*</span></label>
-                <select name="party_id"
-                        class="form-select {{ 'is-invalid' if errors.party_id }}" required>
+                <select name="party_id" id="party-select"
+                        class="form-select {{ 'is-invalid' if errors.party_id }}"
+                        onchange="onPartyChange()" required>
                     <option value="">Select customer</option>
                     {% for party in parties %}
                     <option value="{{ party.id }}"
-                        {{ 'selected' if val('party_id') == party.id|string }}>
+                            data-state-code="{{ party.state_code or '' }}"
+                            {{ 'selected' if val('party_id') == party.id|string }}>
                         {{ party.company_name }} ({{ party.party_code }})
                     </option>
                     {% endfor %}
@@ -62,9 +62,7 @@
                 <select name="payment_mode" class="form-select">
                     <option value="">Select mode</option>
                     {% for mode in payment_modes %}
-                    <option value="{{ mode }}" {{ 'selected' if val('payment_mode') == mode }}>
-                        {{ mode }}
-                    </option>
+                    <option value="{{ mode }}" {{ 'selected' if val('payment_mode') == mode }}>{{ mode }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -78,8 +76,7 @@
             <div class="col-md-3">
                 <label class="form-label">Vehicle Number</label>
                 <input type="text" name="vehicle_number" class="form-control"
-                       value="{{ val('vehicle_number') }}"
-                       placeholder="MH01AB1234"
+                       value="{{ val('vehicle_number') }}" placeholder="MH01AB1234"
                        style="text-transform:uppercase;">
             </div>
 
@@ -93,9 +90,8 @@
     </div>
 </div>
 
-<!-- ── Row 2: Items card ──────────────────────────────────────────────── -->
+<!-- ── Invoice Items ──────────────────────────────────────────────────── -->
 <div class="erp-card mb-3">
-
     <div class="erp-card-header">
         <i class="bi bi-list-ul" style="font-size:18px; color:#3cb371;"></i>
         <h5>Invoice Items</h5>
@@ -105,74 +101,125 @@
         </span>
         {% endif %}
         <div class="ms-auto">
-            <button type="button" class="btn-erp-primary" id="add-row-btn" onclick="addRow()">
+            <button type="button" class="btn-erp-primary" onclick="addRow()">
                 <i class="bi bi-plus-lg"></i> Add Row
             </button>
         </div>
     </div>
-
     <div class="erp-card-body p-0">
         <div style="overflow-x:auto;">
         <table class="erp-table" id="items-table">
             <thead>
                 <tr>
                     <th style="width:36px;">#</th>
-                    <th style="min-width:220px;">Material</th>
+                    <th style="min-width:210px;">Material</th>
+                    <th style="width:80px; text-align:center;">GST %</th>
                     <th style="width:90px; text-align:right;">Qty</th>
                     <th style="width:100px; text-align:right;">Weight (kg)</th>
-                    <th style="width:90px; text-align:right;">Pieces</th>
+                    <th style="width:85px; text-align:right;">Pieces</th>
                     <th style="width:110px; text-align:right;">Rate (₹)</th>
                     <th style="width:120px; text-align:right;">Amount (₹)</th>
-                    <th style="width:48px;"></th>
+                    <th style="width:44px;"></th>
                 </tr>
             </thead>
-            <tbody id="items-body">
-                <!-- rows injected by JS -->
-            </tbody>
-            <tfoot>
-                <tr id="totals-row" style="background:#f4f7f5;">
-                    <td colspan="6" style="padding:12px 16px; font-weight:700; text-align:right; font-size:13px; color:#3a5244;">
-                        SUBTOTAL
-                    </td>
-                    <td style="padding:12px 16px; font-weight:700; text-align:right; font-family:monospace; font-size:14px; color:#0f2318;">
-                        ₹ <span id="subtotal-display">0.00</span>
-                    </td>
-                    <td></td>
-                </tr>
-            </tfoot>
+            <tbody id="items-body"></tbody>
         </table>
         </div>
     </div>
 </div>
+
+<!-- ── Totals ─────────────────────────────────────────────────────────── -->
+<div class="row justify-content-end mb-3">
+<div class="col-lg-5 col-md-7">
+<div class="erp-card">
+    <div class="erp-card-header" style="padding:14px 20px 12px;">
+        <i class="bi bi-calculator" style="font-size:16px; color:#3cb371;"></i>
+        <h5 style="font-size:14px;">Invoice Summary</h5>
+        <span id="gst-type-badge"
+              style="margin-left:auto; font-size:11px; font-weight:700; padding:3px 10px;
+                     border-radius:20px; background:#f4f7f5; color:#6c7a75;">
+            Select customer for GST
+        </span>
+    </div>
+    <div class="erp-card-body" style="padding:0;">
+        <table style="width:100%; border-collapse:collapse; font-size:13.5px;">
+            <tr class="summary-row">
+                <td class="summary-label">Subtotal</td>
+                <td class="summary-value">₹ <span id="subtotal-display">0.00</span></td>
+            </tr>
+            <tr class="summary-row" id="cgst-row" style="display:none;">
+                <td class="summary-label">CGST</td>
+                <td class="summary-value">₹ <span id="cgst-display">0.00</span></td>
+            </tr>
+            <tr class="summary-row" id="sgst-row" style="display:none;">
+                <td class="summary-label">SGST</td>
+                <td class="summary-value">₹ <span id="sgst-display">0.00</span></td>
+            </tr>
+            <tr class="summary-row" id="igst-row" style="display:none;">
+                <td class="summary-label">IGST</td>
+                <td class="summary-value">₹ <span id="igst-display">0.00</span></td>
+            </tr>
+            <tr class="summary-row" id="round-off-row">
+                <td class="summary-label">Round Off</td>
+                <td class="summary-value" id="round-off-display" style="color:#6c7a75;">—</td>
+            </tr>
+            <tr class="summary-row grand-total-row">
+                <td class="summary-label" style="font-weight:700; color:#0f2318; font-size:14px;">
+                    Grand Total
+                </td>
+                <td class="summary-value" style="font-weight:700; color:#0f2318; font-size:16px;
+                                                  font-family:monospace;">
+                    ₹ <span id="grand-total-display">0.00</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+</div>
+</div>
+
+<!-- Hidden totals submitted to backend -->
+<input type="hidden" name="hidden_subtotal"   id="hidden-subtotal"   value="0">
+<input type="hidden" name="hidden_cgst"       id="hidden-cgst"       value="0">
+<input type="hidden" name="hidden_sgst"       id="hidden-sgst"       value="0">
+<input type="hidden" name="hidden_igst"       id="hidden-igst"       value="0">
+<input type="hidden" name="hidden_round_off"  id="hidden-round-off"  value="0">
+<input type="hidden" name="hidden_grand_total" id="hidden-grand-total" value="0">
 
 <!-- ── Actions ───────────────────────────────────────────────────────── -->
 <div class="d-flex justify-content-between align-items-center">
     <a href="/sales" class="btn-erp-secondary">
         <i class="bi bi-arrow-left"></i> Cancel
     </a>
-    <button type="submit" class="btn-erp-primary" style="padding:10px 28px; font-size:14px;">
+    <button type="submit" class="btn-erp-primary" style="padding:10px 32px; font-size:14px;">
         <i class="bi bi-check-lg"></i> Save Invoice
     </button>
 </div>
 
 </form>
 
-<!-- ── Row template (hidden) ─────────────────────────────────────────── -->
+<!-- ── Row template ───────────────────────────────────────────────────── -->
 <template id="row-template">
-    <tr data-row-index="">
+    <tr>
         <td style="color:#aaa; font-size:12px; padding-top:14px;" class="row-num"></td>
         <td>
-            <select name="material_id[]" class="form-select form-select-sm material-select" required
-                    style="font-size:13px;" onchange="onMaterialChange(this)">
+            <select name="material_id[]" class="form-select form-select-sm material-select"
+                    style="font-size:13px;" onchange="onMaterialChange(this)" required>
                 <option value="">Select material</option>
                 {% for m in materials %}
                 <option value="{{ m.id }}"
-                        data-uom="{{ m.uom }}"
-                        data-name="{{ m.material_name }}">
+                        data-gst="{{ m.gst_percentage }}"
+                        data-uom="{{ m.uom }}">
                     {{ m.material_name }} ({{ m.uom }})
                 </option>
                 {% endfor %}
             </select>
+        </td>
+        <td style="text-align:center;">
+            <input type="number" name="gst_percentage[]" class="form-control form-control-sm gst-pct"
+                   readonly value="0"
+                   style="text-align:center; font-size:13px; background:#f4f7f5;
+                          font-weight:600; color:#2d6a4f; width:70px; margin:0 auto;">
         </td>
         <td>
             <input type="number" name="qty[]" class="form-control form-control-sm qty-input"
@@ -197,7 +244,8 @@
         <td>
             <input type="number" name="amount[]" class="form-control form-control-sm amount-input"
                    readonly value="0.00"
-                   style="text-align:right; font-size:13px; background:#f8faf9; font-weight:600; color:#0f2318;">
+                   style="text-align:right; font-size:13px; background:#f8faf9;
+                          font-weight:600; color:#0f2318;">
         </td>
         <td style="text-align:center;">
             <button type="button" class="btn btn-sm btn-outline-danger"
@@ -211,27 +259,34 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+.summary-row td { padding: 10px 20px; border-bottom: 1px solid #eef2ef; }
+.summary-row:last-child td { border-bottom: none; }
+.summary-label { color: #6c7a75; font-size: 13px; }
+.summary-value { text-align: right; font-family: monospace; font-size: 13.5px; color: #1a2b22; }
+.grand-total-row { background: #f4f7f5; }
+</style>
+
 <script>
+const COMPANY_STATE_CODE = "{{ company_state_code }}";
 let rowCount = 0;
 
+// ── Row management ─────────────────────────────────────────────────────
 function addRow() {
-    const tmpl   = document.getElementById('row-template');
-    const clone  = tmpl.content.cloneNode(true);
-    const tr     = clone.querySelector('tr');
+    const tmpl  = document.getElementById('row-template');
+    const clone = tmpl.content.cloneNode(true);
     rowCount++;
-    tr.dataset.rowIndex = rowCount;
+    const tr = clone.querySelector('tr');
     tr.querySelector('.row-num').textContent = rowCount;
     document.getElementById('items-body').appendChild(clone);
-    // focus the material dropdown in the new row
-    const body = document.getElementById('items-body');
-    body.lastElementChild.querySelector('.material-select').focus();
+    document.getElementById('items-body').lastElementChild
+             .querySelector('.material-select').focus();
 }
 
 function deleteRow(btn) {
-    const tr = btn.closest('tr');
-    tr.remove();
+    btn.closest('tr').remove();
     renumberRows();
-    updateSubtotal();
+    recalcAll();
 }
 
 function renumberRows() {
@@ -240,49 +295,119 @@ function renumberRows() {
     });
 }
 
+// ── Material selected ──────────────────────────────────────────────────
 function onMaterialChange(select) {
-    // Auto-focus qty field after selecting material
-    const tr = select.closest('tr');
+    const tr  = select.closest('tr');
+    const opt = select.options[select.selectedIndex];
+    const gst = opt ? (parseFloat(opt.dataset.gst) || 0) : 0;
+    tr.querySelector('.gst-pct').value = gst;
     tr.querySelector('.qty-input').focus();
+    recalcAll();
 }
 
+// ── Per-row amount ─────────────────────────────────────────────────────
 function calcRow(input) {
     const tr     = input.closest('tr');
-    const qty    = parseFloat(tr.querySelector('.qty-input').value)    || 0;
-    const rate   = parseFloat(tr.querySelector('.rate-input').value)   || 0;
-    const amount = (qty * rate).toFixed(2);
-    tr.querySelector('.amount-input').value = amount;
-    updateSubtotal();
+    const qty    = parseFloat(tr.querySelector('.qty-input').value)  || 0;
+    const rate   = parseFloat(tr.querySelector('.rate-input').value) || 0;
+    tr.querySelector('.amount-input').value = (qty * rate).toFixed(2);
+    recalcAll();
 }
 
-function updateSubtotal() {
-    let total = 0;
-    document.querySelectorAll('#items-body .amount-input').forEach(inp => {
-        total += parseFloat(inp.value) || 0;
+// ── Customer change → re-run GST ───────────────────────────────────────
+function onPartyChange() {
+    recalcAll();
+}
+
+// ── Master recalculation ───────────────────────────────────────────────
+function recalcAll() {
+    // 1. Subtotal
+    let subtotal = 0;
+    let totalGst = 0;
+
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+        const amount = parseFloat(tr.querySelector('.amount-input').value) || 0;
+        const gstPct = parseFloat(tr.querySelector('.gst-pct').value)      || 0;
+        subtotal += amount;
+        totalGst += amount * gstPct / 100;
     });
-    document.getElementById('subtotal-display').textContent = total.toFixed(2);
+
+    // 2. Determine intra / inter state
+    const sel            = document.getElementById('party-select');
+    const selectedOpt    = sel.options[sel.selectedIndex];
+    const partyStateCode = selectedOpt ? (selectedOpt.dataset.stateCode || '') : '';
+    const isIntra        = partyStateCode !== '' && partyStateCode === COMPANY_STATE_CODE;
+    const partySelected  = partyStateCode !== '';
+
+    const cgst = isIntra ? round2(totalGst / 2) : 0;
+    const sgst = isIntra ? round2(totalGst / 2) : 0;
+    const igst = (!isIntra && partySelected)     ? round2(totalGst) : 0;
+
+    const grandRaw     = subtotal + cgst + sgst + igst;
+    const grandRounded = Math.round(grandRaw);
+    const roundOff     = round2(grandRounded - grandRaw);
+
+    // 3. Update summary display
+    setText('subtotal-display',    subtotal.toFixed(2));
+    setText('cgst-display',        cgst.toFixed(2));
+    setText('sgst-display',        sgst.toFixed(2));
+    setText('igst-display',        igst.toFixed(2));
+    setText('grand-total-display', grandRounded.toFixed(2));
+
+    const roundOffEl = document.getElementById('round-off-display');
+    if (partySelected) {
+        roundOffEl.textContent = (roundOff >= 0 ? '+ ' : '- ') + '₹ ' + Math.abs(roundOff).toFixed(2);
+        roundOffEl.style.color = roundOff < 0 ? '#dc3545' : '#198754';
+    } else {
+        roundOffEl.textContent = '—';
+        roundOffEl.style.color = '#6c7a75';
+    }
+
+    // 4. Show / hide GST rows
+    show('cgst-row', isIntra);
+    show('sgst-row', isIntra);
+    show('igst-row', !isIntra && partySelected);
+
+    // 5. Badge
+    const badge = document.getElementById('gst-type-badge');
+    if (!partySelected) {
+        badge.textContent = 'Select customer for GST';
+        badge.style.background = '#f4f7f5'; badge.style.color = '#6c7a75';
+    } else if (isIntra) {
+        badge.textContent = '✓ Intra-state (CGST + SGST)';
+        badge.style.background = '#d1fae5'; badge.style.color = '#065f46';
+    } else {
+        badge.textContent = '✓ Inter-state (IGST)';
+        badge.style.background = '#dbeafe'; badge.style.color = '#1e40af';
+    }
+
+    // 6. Update hidden inputs for backend
+    setValue('hidden-subtotal',    subtotal.toFixed(2));
+    setValue('hidden-cgst',        cgst.toFixed(2));
+    setValue('hidden-sgst',        sgst.toFixed(2));
+    setValue('hidden-igst',        igst.toFixed(2));
+    setValue('hidden-round-off',   roundOff.toFixed(4));
+    setValue('hidden-grand-total', grandRounded.toFixed(2));
 }
 
-// Validation before submit
+// ── Helpers ────────────────────────────────────────────────────────────
+function round2(n)       { return Math.round(n * 100) / 100; }
+function setText(id, v)  { document.getElementById(id).textContent = v; }
+function setValue(id, v) { document.getElementById(id).value = v; }
+function show(id, vis)   { document.getElementById(id).style.display = vis ? '' : 'none'; }
+
+// ── Submit guard ───────────────────────────────────────────────────────
 document.getElementById('invoice-form').addEventListener('submit', function(e) {
     const rows = document.querySelectorAll('#items-body tr');
     if (rows.length === 0) {
-        e.preventDefault();
-        alert('Please add at least one item before saving.');
-        return;
+        e.preventDefault(); alert('Please add at least one item before saving.'); return;
     }
-    let allValid = true;
-    rows.forEach(tr => {
-        const mat = tr.querySelector('.material-select').value;
-        if (!mat) allValid = false;
-    });
-    if (!allValid) {
-        e.preventDefault();
-        alert('Please select a material for every row.');
-    }
+    let ok = true;
+    rows.forEach(tr => { if (!tr.querySelector('.material-select').value) ok = false; });
+    if (!ok) { e.preventDefault(); alert('Please select a material for every row.'); }
 });
 
-// Start with one empty row
+// Start with one row
 addRow();
 </script>
 {% endblock %}
