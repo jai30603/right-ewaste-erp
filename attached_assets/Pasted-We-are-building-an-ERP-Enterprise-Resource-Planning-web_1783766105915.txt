@@ -1,0 +1,359 @@
+We are building an ERP (Enterprise Resource Planning) web application for a real company named "Right Ewaste Recycle Pvt. Ltd."
+
+Technology Stack:
+- Backend: Python Flask
+- Database: SQLite
+- Frontend: HTML, Bootstrap 5
+- Architecture:
+    - Routes (Blueprints)
+    - Services
+    - Repositories
+    - SQLite Database
+
+The Party module should be production-ready because it will be used by the company.
+
+------------------------------------
+OBJECTIVE
+------------------------------------
+
+Complete the Party Management module with full CRUD functionality and professional UI.
+
+The Party module will maintain all Customers, Suppliers and Both.
+
+The application should follow clean code principles.
+
+------------------------------------
+DATABASE TABLE
+------------------------------------
+
+party
+
+Fields:
+
+id
+party_code
+company_name
+contact_person
+party_type
+gstin
+pan
+phone
+alternate_phone
+email
+billing_address
+shipping_address
+city
+state
+state_code
+pincode
+remarks
+is_active
+created_at
+updated_at
+
+party_code is automatically generated.
+
+Example:
+
+PTY-00001
+PTY-00002
+PTY-00003
+
+The user must NOT enter party_code manually.
+
+------------------------------------
+MODULES TO IMPLEMENT
+------------------------------------
+
+1. Party List
+
+Display all active parties.
+
+Columns:
+
+Party Code
+Company Name
+Contact Person
+Party Type
+Phone
+GSTIN
+City
+State
+Actions
+
+Actions:
+
+Edit
+Delete
+
+Include:
+
+Search Box
+
++ Add Party button
+
+Pagination is optional.
+
+------------------------------------
+2. Add Party
+------------------------------------
+
+Create a professional Bootstrap form.
+
+Fields:
+
+Company Name (Required)
+
+Contact Person
+
+Party Type
+
+Dropdown:
+
+Customer
+Supplier
+Both
+
+GSTIN
+
+PAN
+
+Phone
+
+Alternate Phone
+
+Email
+
+Billing Address
+
+Shipping Address
+
+City
+
+State
+
+State Code
+
+Pincode
+
+Remarks
+
+Requirements:
+
+Company Name is mandatory.
+
+Phone should accept numbers only.
+
+GSTIN maximum length 15.
+
+Email should use email validation.
+
+State should be a dropdown.
+
+State Code should automatically update after selecting State.
+
+The Save button inserts data into SQLite.
+
+After successful save:
+
+Redirect back to Party List.
+
+Display success message.
+
+------------------------------------
+3. Edit Party
+------------------------------------
+
+Reuse the same Add Party form.
+
+All existing values must be pre-filled.
+
+The page title should become:
+
+Edit Party
+
+The button text should become:
+
+Update Party
+
+After updating:
+
+Save changes.
+
+Redirect back to Party List.
+
+Display success message.
+
+------------------------------------
+4. Delete Party
+------------------------------------
+
+DO NOT permanently delete records.
+
+Implement Soft Delete.
+
+When Delete is clicked:
+
+Show confirmation dialog.
+
+Example:
+
+"Are you sure you want to delete this party?"
+
+If confirmed:
+
+Update:
+
+is_active = 0
+
+Do not remove data from database.
+
+Deleted parties should no longer appear in Party List.
+
+------------------------------------
+5. Search
+------------------------------------
+
+Provide search functionality.
+
+Search by:
+
+Party Code
+
+Company Name
+
+Contact Person
+
+Phone
+
+GSTIN
+
+Search should be case insensitive.
+
+------------------------------------
+6. Validation
+------------------------------------
+
+Validate:
+
+Company Name required.
+
+Phone required.
+
+Party Type required.
+
+State required.
+
+City required.
+
+Prevent duplicate Party Code.
+
+Validate Email format.
+
+GSTIN maximum length 15.
+
+Show validation messages below fields.
+
+------------------------------------
+7. User Experience
+------------------------------------
+
+Use Bootstrap 5.
+
+Responsive Design.
+
+Professional Card Layout.
+
+Buttons:
+
+Primary
+
+Success
+
+Warning
+
+Danger
+
+Hover Effects.
+
+Use Icons if available.
+
+------------------------------------
+8. Flash Messages
+------------------------------------
+
+Display Bootstrap alerts.
+
+Examples:
+
+Party Added Successfully
+
+Party Updated Successfully
+
+Party Deleted Successfully
+
+Validation Failed
+
+------------------------------------
+9. Code Quality
+------------------------------------
+
+Keep routes clean.
+
+Business logic should not be inside HTML.
+
+Database queries should remain inside Repository.
+
+Follow Flask Blueprint structure.
+
+Do not duplicate HTML.
+
+Reuse the same Add/Edit form.
+
+------------------------------------
+10. Future Compatibility
+------------------------------------
+
+The Party module should be designed so that:
+
+Sales Invoice
+
+Purchase Invoice
+
+Reports
+
+can later use Party records as Foreign Keys.
+
+Do not redesign the database.
+
+Use existing structure.
+
+------------------------------------
+Expected Result
+------------------------------------
+
+A complete Party Management module similar to professional ERP software.
+
+The module should include:
+
+✔ Party List
+
+✔ Add Party
+
+✔ Edit Party
+
+✔ Soft Delete
+
+✔ Search
+
+✔ Validation
+
+✔ Flash Messages
+
+✔ Bootstrap UI
+
+✔ Responsive Design
+
+✔ Clean Architecture
+
+✔ Ready for integration with Sales Invoice module.
