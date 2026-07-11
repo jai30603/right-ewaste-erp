@@ -22,7 +22,8 @@ def get_all_invoices():
     cursor.execute("""
         SELECT
             si.*,
-            p.company_name
+            p.company_name,
+            (SELECT COUNT(*) FROM sales_invoice_item WHERE sales_invoice_id = si.id) AS item_count
         FROM sales_invoice si
         LEFT JOIN party p ON si.party_id = p.id
         ORDER BY si.created_at DESC
@@ -36,9 +37,7 @@ def get_invoice_by_id(invoice_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT
-            si.*,
-            p.company_name
+        SELECT si.*, p.company_name
         FROM sales_invoice si
         LEFT JOIN party p ON si.party_id = p.id
         WHERE si.id = ?
@@ -48,27 +47,65 @@ def get_invoice_by_id(invoice_id):
     return invoice
 
 
-def create_sales_invoice(
-    party_id, invoice_date, payment_mode,
-    transporter, vehicle_number, remarks
-):
-    invoice_number = generate_invoice_number()
+def get_invoice_items(invoice_id):
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("""
+        SELECT sii.*, m.material_name, m.uom
+        FROM sales_invoice_item sii
+        LEFT JOIN material m ON sii.material_id = m.id
+        WHERE sii.sales_invoice_id = ?
+        ORDER BY sii.id
+    """, (invoice_id,))
+    items = cursor.fetchall()
+    conn.close()
+    return items
+
+
+def create_sales_invoice(
+    party_id, invoice_date, payment_mode,
+    transporter, vehicle_number, remarks,
+    items                               # list of dicts
+):
+    invoice_number = generate_invoice_number()
+
+    subtotal = sum(i["amount"] for i in items)
+    grand_total = subtotal              # GST will be added in Phase 3
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
     cursor.execute("""
         INSERT INTO sales_invoice (
             invoice_number, invoice_date, party_id,
             payment_mode, transporter, vehicle_number,
             subtotal, cgst, sgst, igst, round_off, grand_total,
             remarks, status
-        ) VALUES (?,?,?,?,?,?,0,0,0,0,0,0,?,?)
+        ) VALUES (?,?,?,?,?,?,?,0,0,0,0,?,?,?)
     """, (
         invoice_number, invoice_date, party_id,
-        payment_mode or None, transporter or None,
-        vehicle_number or None, remarks or None,
+        payment_mode or None, transporter or None, vehicle_number or None,
+        subtotal, grand_total, remarks or None,
         "DRAFT"
     ))
-    conn.commit()
+
     invoice_id = cursor.lastrowid
+
+    for item in items:
+        cursor.execute("""
+            INSERT INTO sales_invoice_item
+                (sales_invoice_id, material_id, quantity, weight, pieces, rate, amount)
+            VALUES (?,?,?,?,?,?,?)
+        """, (
+            invoice_id,
+            item["material_id"],
+            item["qty"],
+            item["weight"],
+            item["pieces"],
+            item["rate"],
+            item["amount"],
+        ))
+
+    conn.commit()
     conn.close()
     return invoice_id
