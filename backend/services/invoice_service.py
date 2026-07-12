@@ -1,5 +1,25 @@
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 from database import get_connection
+
+
+def round2(n):
+    if n is None:
+        return 0.0
+    try:
+        return float(Decimal(f"{n:.6f}").quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+    except Exception:
+        return float(round(n, 2))
+
+
+def round_int(n):
+    if n is None:
+        return 0
+    try:
+        return int(Decimal(f"{n:.6f}").quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    except Exception:
+        return int(round(n))
+
 
 
 def generate_invoice_number():
@@ -169,7 +189,7 @@ def calculate_gst(*args):
 
     if len(args) == 4:
         first, second, third, fourth = args
-        if isinstance(second, (list, tuple)) or (isinstance(second, dict) and "gst_percentage" in second):
+        if isinstance(second, (list, tuple)) or (isinstance(second, dict) and ("gst_percentage" in second or "gst" in second)):
             subtotal = first
             items = second
             company_state_code = third
@@ -194,52 +214,65 @@ def calculate_gst(*args):
     if isinstance(subtotal, str):
         subtotal = float(subtotal or 0)
 
-    if gst_percentage is None:
-        gst_percentage = 18
-        if items:
-            first_item = items[0]
-            if isinstance(first_item, dict) and "gst_percentage" in first_item:
-                gst_percentage = float(first_item.get("gst_percentage", 18) or 18)
+    # 1. Calculate the total gst_amount
+    if items and isinstance(items, (list, tuple)):
+        gst_amount = 0.0
+        for item in items:
+            if isinstance(item, dict):
+                # Retrieve amount
+                amt = float(item.get("amount") or 0.0)
+                if amt == 0.0 and "quantity" in item and "rate" in item:
+                    amt = float(item.get("quantity") or 0.0) * float(item.get("rate") or 0.0)
+                elif amt == 0.0 and "qty" in item and "rate" in item:
+                    amt = float(item.get("qty") or 0.0) * float(item.get("rate") or 0.0)
+                
+                # Retrieve gst_percentage
+                pct = float(item.get("gst_percentage") if item.get("gst_percentage") is not None else item.get("gst", 18))
+                gst_amount += amt * pct / 100.0
+            else:
+                pct = float(gst_percentage if gst_percentage is not None else 18)
+                gst_amount += subtotal * pct / 100.0
     else:
-        gst_percentage = float(gst_percentage)
+        if gst_percentage is None:
+            gst_percentage = 18
+        else:
+            gst_percentage = float(gst_percentage)
+        gst_amount = subtotal * gst_percentage / 100
 
-    gst_amount = subtotal * gst_percentage / 100
-    if company_state_code and party_state_code and str(company_state_code) == str(party_state_code):
-        return {
-            "cgst": round(gst_amount / 2, 2),
-            "sgst": round(gst_amount / 2, 2),
-            "igst": 0.0,
-            "round_off": 0.0,
-            "grand_total": round(subtotal + gst_amount, 2),
-        }
+    # 2. Determine intra / inter state tax splitting
+    intra = True
+    if company_state_code is not None and party_state_code is not None:
+        intra = str(company_state_code).strip() == str(party_state_code).strip()
+    
+    cgst = round2(gst_amount / 2) if intra else 0.0
+    sgst = round2(gst_amount / 2) if intra else 0.0
+    igst = 0.0 if intra else round2(gst_amount)
+
+    # 3. Calculate round-off and grand_total matching sales invoice logic
+    grand_raw = subtotal + cgst + sgst + igst
+    grand_round = round_int(grand_raw)
+    round_off = round2(grand_round - grand_raw)
 
     return {
-        "cgst": 0.0,
-        "sgst": 0.0,
-        "igst": round(gst_amount, 2),
-        "round_off": 0.0,
-        "grand_total": round(subtotal + gst_amount, 2),
+        "cgst": cgst,
+        "sgst": sgst,
+        "igst": igst,
+        "round_off": round_off,
+        "grand_total": float(grand_round),
     }
 
 
 def calculate_totals(items, company_state_code, party_state_code):
-
     subtotal = 0
 
     for item in items:
-        subtotal += item["quantity"] * item["rate"]
+        subtotal += item.get("quantity", item.get("qty", 0)) * item["rate"]
 
     gst = calculate_gst(
+        subtotal,
+        items,
         company_state_code,
-        party_state_code,
-        subtotal
-    )
-
-    grand_total = (
-        subtotal
-        + gst["cgst"]
-        + gst["sgst"]
-        + gst["igst"]
+        party_state_code
     )
 
     return {
@@ -247,5 +280,6 @@ def calculate_totals(items, company_state_code, party_state_code):
         "cgst": gst["cgst"],
         "sgst": gst["sgst"],
         "igst": gst["igst"],
-        "grand_total": grand_total
+        "round_off": gst["round_off"],
+        "grand_total": gst["grand_total"]
     }

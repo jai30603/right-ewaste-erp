@@ -12,46 +12,24 @@ def initialize_database():
     conn = sqlite3.connect(DATABASE)
     try:
         cursor = conn.cursor()
-        cursor.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS purchase_invoice (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                purchase_invoice_number TEXT NOT NULL UNIQUE,
-                invoice_date DATE NOT NULL,
-                supplier_id INTEGER NOT NULL,
-                supplier_invoice_number TEXT,
-                payment_mode TEXT,
-                vehicle_number TEXT,
-                transporter TEXT,
-                remarks TEXT,
-                subtotal REAL NOT NULL,
-                cgst REAL DEFAULT 0,
-                sgst REAL DEFAULT 0,
-                igst REAL DEFAULT 0,
-                gst_amount REAL DEFAULT 0,
-                round_off REAL DEFAULT 0,
-                grand_total REAL NOT NULL,
-                status TEXT DEFAULT 'CONFIRMED',
-                is_active INTEGER DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (supplier_id) REFERENCES party(id)
-            );
-
-            CREATE TABLE IF NOT EXISTS purchase_invoice_item (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                purchase_invoice_id INTEGER NOT NULL,
-                material_id INTEGER NOT NULL,
-                quantity REAL NOT NULL,
-                weight REAL DEFAULT 0,
-                pieces INTEGER DEFAULT 0,
-                rate REAL NOT NULL,
-                amount REAL NOT NULL,
-                FOREIGN KEY (purchase_invoice_id) REFERENCES purchase_invoice(id),
-                FOREIGN KEY (material_id) REFERENCES material(id)
-            );
-            """
-        )
+        
+        # 1. Run all schema SQL scripts dynamically from database/schema
+        schema_dir = BASE_DIR / "database" / "schema"
+        if schema_dir.is_dir():
+            sql_files = sorted(schema_dir.glob("*.sql"))
+            for sql_file in sql_files:
+                with open(sql_file, "r", encoding="utf-8") as f:
+                    sql_script = f.read()
+                cursor.executescript(sql_script)
+        
+        # 2. Run idempotent migration to add is_active to sales_invoice if it exists but is missing is_active
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sales_invoice'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(sales_invoice)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if "is_active" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN is_active INTEGER DEFAULT 1")
+        
         conn.commit()
     finally:
         conn.close()

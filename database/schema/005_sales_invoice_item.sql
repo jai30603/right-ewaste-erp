@@ -1,4 +1,4 @@
-CREATE TABLE sales_invoice_item (
+CREATE TABLE IF NOT EXISTS sales_invoice_item (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -7,6 +7,10 @@ CREATE TABLE sales_invoice_item (
     material_id INTEGER NOT NULL,
 
     quantity REAL NOT NULL,
+
+    weight REAL DEFAULT 0,
+
+    pieces INTEGER DEFAULT 0,
 
     rate REAL NOT NULL,
 

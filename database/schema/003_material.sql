@@ -1,10 +1,12 @@
-CREATE TABLE material (
+CREATE TABLE IF NOT EXISTS material (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
     material_code TEXT NOT NULL UNIQUE,
 
     material_name TEXT NOT NULL,
+
+    category TEXT,
 
     hsn_code TEXT NOT NULL,
 

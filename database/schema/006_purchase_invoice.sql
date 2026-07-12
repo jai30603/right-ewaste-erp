@@ -1,4 +1,4 @@
-CREATE TABLE purchase_invoice (
+CREATE TABLE IF NOT EXISTS purchase_invoice (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     purchase_invoice_number TEXT NOT NULL UNIQUE,
     invoice_date DATE NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE purchase_invoice (
     FOREIGN KEY (supplier_id) REFERENCES party(id)
 );
 
-CREATE TABLE purchase_invoice_item (
+CREATE TABLE IF NOT EXISTS purchase_invoice_item (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     purchase_invoice_id INTEGER NOT NULL,
     material_id INTEGER NOT NULL,

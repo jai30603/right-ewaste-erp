@@ -1,4 +1,4 @@
-CREATE TABLE sales_invoice (
+CREATE TABLE IF NOT EXISTS sales_invoice (
 
     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -29,6 +29,8 @@ CREATE TABLE sales_invoice (
     remarks TEXT,
 
     status TEXT DEFAULT 'CONFIRMED',
+
+    is_active INTEGER DEFAULT 1,
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 

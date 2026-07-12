@@ -23,35 +23,10 @@ def _generate_invoice_number(cursor):
     return f"INV-{year}-{(max_num + 1):05d}"
 
 
-# ── GST calculation ───────────────────────────────────────────────────────────
+from services.invoice_service import calculate_gst as _calculate_gst
 
 def calculate_gst(subtotal, items_gst, company_state_code, party_state_code):
-    """
-    items_gst: list of {"amount": float, "gst_percentage": float}
-    Returns dict: cgst, sgst, igst, round_off, grand_total.
-    Intra-state  → CGST + SGST (equal halves).
-    Inter-state  → IGST (full GST amount).
-    """
-    total_gst = sum(
-        i["amount"] * i["gst_percentage"] / 100
-        for i in items_gst
-    )
-    intra = str(company_state_code).strip() == str(party_state_code).strip()
-    cgst  = round(total_gst / 2, 2) if intra else 0.0
-    sgst  = round(total_gst / 2, 2) if intra else 0.0
-    igst  = 0.0 if intra else round(total_gst, 2)
-
-    grand_raw   = subtotal + cgst + sgst + igst
-    grand_round = round(grand_raw)
-    round_off   = round(grand_round - grand_raw, 2)
-
-    return {
-        "cgst":        cgst,
-        "sgst":        sgst,
-        "igst":        igst,
-        "round_off":   round_off,
-        "grand_total": float(grand_round),
-    }
+    return _calculate_gst(subtotal, items_gst, company_state_code, party_state_code)
 
 
 # ── Read queries ──────────────────────────────────────────────────────────────
