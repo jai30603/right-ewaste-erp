@@ -1,56 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Right Ewaste ERP</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-
-<body>
-
-<nav class="navbar navbar-dark bg-dark">
-    <div class="container-fluid">
-        <span class="navbar-brand mb-0 h1">Right Ewaste ERP</span>
+{% extends "base.html" %}
+{% block content %}
+<section class="mb-4 mb-md-5">
+    <div class="page-eyebrow">Operations centre</div>
+    <h1 class="page-title">Welcome to your workspace</h1>
+    <p class="page-subtitle">Manage partners, materials, and recycling transactions from one place.</p>
+</section>
+<section class="row g-3 g-lg-4">
+    <div class="col-sm-6 col-xl-3">
+        <a href="{{ url_for('party.party') }}" class="module-card">
+            <span class="module-icon"><i class="bi bi-buildings"></i></span><h2>Parties</h2><p>Customers, suppliers, contacts, and GST details.</p><i class="bi bi-arrow-up-right module-arrow"></i>
+        </a>
     </div>
-</nav>
-
-<div class="container mt-4">
-
-    <h3>Dashboard</h3>
-
-    <div class="row mt-4">
-
-        <div class="col-md-4 mb-3">
-            <a href="/party" class="btn btn-primary w-100 p-4">
-                👥 Party
-            </a>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <a href="/material" class="btn btn-success w-100 p-4">
-                📦 Material
-            </a>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <a href="/sales" class="btn btn-warning w-100 p-4">
-                🧾 Sales Invoice
-            </a>
-        </div>
-
-        <div class="col-md-4 mb-3">
-            <a href="/purchase" class="btn btn-info w-100 p-4">
-                📥 Purchase Invoice
-            </a>
-        </div>
-
+    <div class="col-sm-6 col-xl-3">
+        <a href="{{ url_for('material.material') }}" class="module-card is-pending">
+            <span class="module-icon"><i class="bi bi-box-seam"></i></span><span class="status-pill float-end">Coming soon</span><h2>Materials</h2><p>Manage e-waste material types, HSN, units, and GST.</p>
+        </a>
     </div>
-
-</div>
-
-</body>
-
-</html>
+    <div class="col-sm-6 col-xl-3">
+        <a href="{{ url_for('sales.sales') }}" class="module-card is-pending">
+            <span class="module-icon"><i class="bi bi-receipt"></i></span><span class="status-pill float-end">Coming soon</span><h2>Sales invoices</h2><p>Create invoices with accurate interstate and local GST.</p>
+        </a>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <a href="{{ url_for('purchase.purchase') }}" class="module-card is-pending">
+            <span class="module-icon"><i class="bi bi-cart-plus"></i></span><span class="status-pill float-end">Coming soon</span><h2>Purchases</h2><p>Record incoming material and supplier transactions.</p>
+        </a>
+    </div>
+</section>
+{% endblock %}

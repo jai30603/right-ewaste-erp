@@ -24,7 +24,7 @@ def get_party_by_id(party_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT * FROM party WHERE id = ?",
+        "SELECT * FROM party WHERE id = ? AND is_active = 1",
         (party_id,)
     )
 
@@ -39,9 +39,9 @@ def generate_party_code():
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM party")
+    cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM party")
 
-    count = cursor.fetchone()[0] + 1
+    count = cursor.fetchone()[0]
 
     conn.close()
 
@@ -65,12 +65,16 @@ def add_party(
     remarks
 ):
 
-    party_code = generate_party_code()
-
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
+    # Keep number allocation and insertion in one write transaction.
+    try:
+        cursor.execute("BEGIN IMMEDIATE")
+        cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM party")
+        party_code = f"PTY-{cursor.fetchone()[0]:05d}"
+
+        cursor.execute("""
         INSERT INTO party(
             party_code,
             company_name,
@@ -91,7 +95,7 @@ def add_party(
         )
 
         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    """,(
+        """,(
         party_code,
         company_name,
         contact_person,
@@ -108,10 +112,13 @@ def add_party(
         state_code,
         pincode,
         remarks
-    ))
-
-    conn.commit()
-    conn.close()
+        ))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 def update_party_phone(party_id, phone):
 
@@ -153,18 +160,89 @@ def search_party(keyword):
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT *
         FROM party
-        WHERE company_name LIKE ?
-          AND is_active = 1
-        """,
-        (f"%{keyword}%",)
-    )
+        WHERE is_active = 1
+        AND company_name LIKE ?
+        ORDER BY company_name
+    """, (f"%{keyword}%",))
 
-    result = cursor.fetchall()
+    parties = cursor.fetchall()
 
     conn.close()
 
-    return result
+    return parties
+
+def update_party(
+    party_id,
+    company_name,
+    contact_person,
+    party_type,
+    gstin,
+    pan,
+    phone,
+    alternate_phone,
+    email,
+    billing_address,
+    shipping_address,
+    city,
+    state,
+    state_code,
+    pincode,
+    remarks
+):
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE party
+        SET
+            company_name = ?,
+            contact_person = ?,
+            party_type = ?,
+            gstin = ?,
+            pan = ?,
+            phone = ?,
+            alternate_phone = ?,
+            email = ?,
+            billing_address = ?,
+            shipping_address = ?,
+            city = ?,
+            state = ?,
+            state_code = ?,
+            pincode = ?,
+            remarks = ?,
+            updated_at = CURRENT_TIMESTAMP
+
+        WHERE id = ? AND is_active = 1
+    """, (
+
+        company_name,
+        contact_person,
+        party_type,
+        gstin,
+        pan,
+        phone,
+        alternate_phone,
+        email,
+        billing_address,
+        shipping_address,
+        city,
+        state,
+        state_code,
+        pincode,
+        remarks,
+        party_id
+
+    ))
+
+    try:
+        conn.commit()
+        return cursor.rowcount
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()

@@ -1,73 +1,35 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-
-    <title>Party Management</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-
-</head>
-
-<body>
-
-<div class="container mt-4">
-
-    <h2>Party Management</h2>
-
-    <a href="/" class="btn btn-secondary mb-3">
-        Dashboard
-    </a>
-    <a href="/party/add" class="btn btn-primary mb-3">
-    + Add Party
-    </a>
-
-    <table class="table table-bordered table-striped">
-
-        <thead>
-
-        <tr>
-
-            <th>Code</th>
-
-            <th>Company</th>
-
-            <th>Type</th>
-
-            <th>Phone</th>
-
-            <th>GST</th>
-
-        </tr>
-
-        </thead>
-
-        <tbody>
-
-        {% for party in parties %}
-
-        <tr>
-
-            <td>{{ party.party_code }}</td>
-
-            <td>{{ party.company_name }}</td>
-
-            <td>{{ party.party_type }}</td>
-
-            <td>{{ party.phone }}</td>
-
-            <td>{{ party.gstin }}</td>
-
-        </tr>
-
-        {% endfor %}
-
-        </tbody>
-
-    </table>
-
+{% extends "base.html" %}
+{% block title %}Parties | Right Ewaste ERP{% endblock %}
+{% block topbar_title %}Party Management{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a></li><li class="breadcrumb-item active">Party</li>{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-end gap-3 mb-4">
+    <div><div class="page-eyebrow">Master data</div><h1 class="page-title">Parties</h1><p class="page-subtitle">Manage your customers and suppliers in one clean directory.</p></div>
+    <a href="{{ url_for('party.add_party_page') }}" class="btn btn-primary"><i class="bi bi-plus-lg"></i>Add party</a>
 </div>
-
-</body>
-
-</html>
+<div class="toolbar-card card shadow-sm mb-3">
+    <form method="get" class="row g-2 align-items-center">
+        <div class="col-md-6 col-lg-5"><div class="input-group"><span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span><input type="search" name="search" value="{{ keyword }}" class="form-control border-start-0 ps-0" placeholder="Search by company name" aria-label="Search parties"></div></div>
+        <div class="col-auto"><button class="btn btn-outline-primary"><i class="bi bi-search"></i>Search</button></div>
+        {% if keyword %}<div class="col-auto"><a class="btn btn-link text-secondary text-decoration-none" href="{{ url_for('party.party') }}">Clear search</a></div>{% endif %}
+    </form>
+</div>
+<div class="card shadow-sm overflow-hidden"><div class="table-responsive">
+<table class="table table-hover mb-0">
+    <thead><tr><th>Code</th><th>Company</th><th>Type</th><th>Phone</th><th>GSTIN</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+    {% for party in parties %}
+        <tr>
+            <td><span class="code-label">{{ party.party_code }}</span></td>
+            <td><div class="party-name">{{ party.company_name }}</div>{% if party.contact_person %}<small class="text-muted">{{ party.contact_person }}</small>{% endif %}</td>
+            <td><span class="party-type type-{{ party.party_type|lower }}">{{ party.party_type|title }}</span></td>
+            <td>{{ party.phone }}</td><td>{{ party.gstin or '—' }}</td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('party.edit_party', party_id=party.id) }}"><i class="bi bi-pencil-square"></i><span class="d-none d-sm-inline">Edit</span></a></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6"><div class="empty-state"><i class="bi bi-buildings"></i><h2>No parties found</h2><p>{% if keyword %}Try a different search, or clear the filter.{% else %}Add your first customer or supplier to start using the ERP.{% endif %}</p>{% if not keyword %}<a class="btn btn-primary" href="{{ url_for('party.add_party_page') }}"><i class="bi bi-plus-lg"></i>Add party</a>{% endif %}</div></td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div></div>
+{% endblock %}

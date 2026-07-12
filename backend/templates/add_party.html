@@ -1,258 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Add Party | Right Ewaste ERP</title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
-
-</head>
-
-<body class="bg-light">
-
-<div class="container py-5">
-
-    <div class="row justify-content-center">
-
-        <div class="col-lg-9">
-
-            <div class="card shadow">
-
-                <div class="card-header bg-primary text-white">
-
-                    <h3 class="mb-0">
-                        Add New Party
-                    </h3>
-
-                </div>
-
-                <div class="card-body">
-
-                    <form method="POST">
-
-                        <div class="row">
-
-                            <!-- Company Name -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-                                    Company Name
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="company_name"
-                                    class="form-control"
-                                    required>
-
-                            </div>
-
-                            <!-- Contact Person -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-                                    Contact Person
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="contact_person"
-                                    class="form-control">
-
-                            </div>
-
-                            <!-- Party Type -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-                                    Party Type
-                                </label>
-
-                                <select
-                                    name="party_type"
-                                    class="form-select"
-                                    required>
-
-                                    <option value="">Select</option>
-                                    <option value="CUSTOMER">Customer</option>
-                                    <option value="SUPPLIER">Supplier</option>
-                                    <option value="BOTH">Both</option>
-
-                                </select>
-
-                            </div>
-
-                            <!-- GSTIN -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-                                    GSTIN
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="gstin"
-                                    maxlength="15"
-                                    class="form-control">
-
-                            </div>
-
-                            <!-- Phone -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-                                    Phone Number
-                                </label>
-
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    maxlength="10"
-                                    class="form-control"
-                                    required>
-
-                            </div>
-
-                            <!-- Email -->
-
-                            <div class="col-md-6 mb-3">
-
-                                <label class="form-label">
-                                    Email
-                                </label>
-
-                                <input
-                                    type="email"
-                                    name="email"
-                                    class="form-control">
-
-                            </div>
-
-                            <!-- Billing Address -->
-
-                            <div class="col-12 mb-3">
-
-                                <label class="form-label">
-                                    Billing Address
-                                </label>
-
-                                <textarea
-                                    name="billing_address"
-                                    rows="3"
-                                    class="form-control"
-                                    required></textarea>
-
-                            </div>
-
-                            <!-- City -->
-
-                            <div class="col-md-4 mb-3">
-
-                                <label class="form-label">
-                                    City
-                                </label>
-
-                                <input
-                                    type="text"
-                                    name="city"
-                                    class="form-control"
-                                    required>
-
-                            </div>
-
-                            <!-- State -->
-
-                            <div class="col-md-4 mb-3">
-
-                                <label class="form-label">
-                                    State
-                                </label>
-
-                                <select
-                                    id="state"
-                                    name="state"
-                                    class="form-select"
-                                    onchange="updateStateCode()"
-                                    required>
-
-                                    <option value="">Select State</option>
-
-                                    {% for state in states %}
-
-                                    <option value="{{ state }}">
-                                        {{ state }}
-                                    </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                            </div>
-
-                            <!-- State Code -->
-
-                            <div class="col-md-4 mb-3">
-
-                                <label class="form-label">
-                                    State Code
-                                </label>
-
-                                <input
-                                    type="text"
-                                    id="state_code"
-                                    name="state_code"
-                                    class="form-control"
-                                    readonly>
-
-                            </div>
-
-                        </div>
-
-                        <hr>
-
-                        <div class="d-flex justify-content-between">
-
-                            <a href="/party" class="btn btn-secondary">
-                                ← Back
-                            </a>
-
-                            <button
-                                type="submit"
-                                class="btn btn-success">
-
-                                Save Party
-
-                            </button>
-
-                        </div>
-
-                    </form>
-
-                </div>
-
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if is_edit else 'Add' }} party | Right Ewaste ERP{% endblock %}
+{% block topbar_title %}{{ 'Edit Party' if is_edit else 'Add Party' }}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a></li><li class="breadcrumb-item"><a href="{{ url_for('party.party') }}">Party</a></li><li class="breadcrumb-item active">{{ 'Edit' if is_edit else 'Add' }}</li>{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-xl-10">
+    <div class="mb-4"><a href="{{ url_for('party.party') }}" class="text-decoration-none text-secondary small fw-semibold"><i class="bi bi-arrow-left me-1"></i>Back to parties</a><div class="page-eyebrow mt-3">Master data</div><h1 class="page-title">{{ 'Edit party' if is_edit else 'Add a new party' }}</h1><p class="page-subtitle">{{ 'Update the contact and GST details below.' if is_edit else 'Add a customer, supplier, or both to your directory.' }}</p></div>
+    <div class="card shadow-sm form-card"><div class="card-header"><div class="form-section-title"><i class="bi bi-buildings me-1"></i>Party information</div></div><div class="card-body p-4 p-md-5">
+        <form method="post" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="row g-4">
+                <div class="col-md-6"><label class="form-label" for="company_name">Company name <span class="required-dot">*</span></label><input id="company_name" name="company_name" class="form-control" value="{{ party.company_name if party else '' }}" required maxlength="150" placeholder="e.g. Green Cycle Traders"></div>
+                <div class="col-md-6"><label class="form-label" for="contact_person">Contact person</label><input id="contact_person" name="contact_person" class="form-control" value="{{ party.contact_person if party else '' }}" maxlength="100" placeholder="Full name"></div>
+                <div class="col-md-6"><label class="form-label" for="party_type">Party type <span class="required-dot">*</span></label><select id="party_type" name="party_type" class="form-select" required><option value="">Select party type</option>{% for type in ['CUSTOMER', 'SUPPLIER', 'BOTH'] %}<option value="{{ type }}" {% if party and party.party_type == type %}selected{% endif %}>{{ type|title }}</option>{% endfor %}</select></div>
+                <div class="col-md-6"><label class="form-label" for="gstin">GSTIN <span class="text-muted fw-normal">(optional)</span></label><input id="gstin" name="gstin" class="form-control text-uppercase" value="{{ party.gstin if party else '' }}" maxlength="15" pattern="[0-9A-Z]{15}" placeholder="15-character GSTIN"></div>
+                <div class="col-md-6"><label class="form-label" for="phone">Phone number <span class="required-dot">*</span></label><input id="phone" name="phone" class="form-control" value="{{ party.phone if party else '' }}" required inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10-digit mobile number"></div>
+                <div class="col-md-6"><label class="form-label" for="email">Email <span class="text-muted fw-normal">(optional)</span></label><input id="email" type="email" name="email" class="form-control" value="{{ party.email if party else '' }}" maxlength="254" placeholder="name@company.com"></div>
+                <div class="col-12"><hr class="my-1"><div class="form-section-title mt-3">Address details</div></div>
+                <div class="col-12"><label class="form-label" for="billing_address">Billing address <span class="required-dot">*</span></label><textarea id="billing_address" name="billing_address" rows="3" class="form-control" required maxlength="500" placeholder="Building, street, locality">{{ party.billing_address if party else '' }}</textarea></div>
+                <div class="col-md-4"><label class="form-label" for="city">City <span class="required-dot">*</span></label><input id="city" name="city" class="form-control" value="{{ party.city if party else '' }}" required maxlength="100" placeholder="City"></div>
+                <div class="col-md-4"><label class="form-label" for="state">State <span class="required-dot">*</span></label><select id="state" name="state" class="form-select" required><option value="">Select state</option>{% for state in states %}<option value="{{ state }}" {% if party and party.state == state %}selected{% endif %}>{{ state }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label class="form-label" for="state_code">GST state code</label><input id="state_code" name="state_code" class="form-control bg-light" value="{{ party.state_code if party else '' }}" readonly></div>
             </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<script>
-    const states = {{ states | tojson }};
-</script>
-
-<script src="{{ url_for('static', filename='js/state.js') }}"></script>
-
-</body>
-
-</html>
+            <div class="d-flex flex-column-reverse flex-sm-row justify-content-between gap-2 mt-5 pt-2"><a href="{{ url_for('party.party') }}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i>Cancel</a><button class="btn btn-success"><i class="bi bi-check-lg"></i>{{ 'Save changes' if is_edit else 'Save party' }}</button></div>
+        </form>
+    </div></div>
+</div></div>
+{% endblock %}
+{% block scripts %}<script>window.STATE_CODES = {{ states | tojson }};</script><script src="{{ url_for('static', filename='js/state.js') }}"></script>{% endblock %}

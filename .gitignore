@@ -19,6 +19,8 @@ env/
 
 # SQLite temporary files
 *.db-journal
+database/*.db
+!database/.gitkeep
 
 # OS files
 Thumbs.db
