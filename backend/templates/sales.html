@@ -87,6 +87,14 @@
                            style="color:#1e40af; margin:0 4px; font-size:15px; text-decoration:none;">
                             <i class="bi bi-file-earmark-pdf"></i>
                         </a>
+                        <a href="/sales/{{ inv.id }}/edit"
+                           title="Edit"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="/sales/{{ inv.id }}/delete" style="display:inline;" onsubmit="return confirm('Delete this sales invoice?');">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

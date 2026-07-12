@@ -40,18 +40,23 @@
 
             <div class="col-md-4">
                 <label class="form-label">Customer <span class="text-danger">*</span></label>
-                <select name="party_id" id="party-select"
-                        class="form-select {{ 'is-invalid' if errors.party_id }}"
-                        onchange="onPartyChange()" required>
-                    <option value="">Select customer</option>
-                    {% for party in parties %}
-                    <option value="{{ party.id }}"
-                            data-state-code="{{ party.state_code or '' }}"
-                            {{ 'selected' if val('party_id') == party.id|string }}>
-                        {{ party.company_name }} ({{ party.party_code }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="d-flex gap-2">
+                    <select name="party_id" id="party-select"
+                            class="form-select {{ 'is-invalid' if errors.party_id }}"
+                            onchange="onPartyChange()" required>
+                        <option value="">Select customer</option>
+                        {% for party in parties %}
+                        <option value="{{ party.id }}"
+                                data-state-code="{{ party.state_code or '' }}"
+                                {{ 'selected' if val('party_id') == party.id|string }}>
+                            {{ party.company_name }} ({{ party.party_code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <a href="/party/add" class="btn btn-outline-success btn-sm" title="Add Customer">
+                        <i class="bi bi-person-plus"></i>
+                    </a>
+                </div>
                 {% if errors.party_id %}
                 <div class="invalid-feedback">{{ errors.party_id }}</div>
                 {% endif %}
@@ -408,6 +413,22 @@ document.getElementById('invoice-form').addEventListener('submit', function(e) {
 });
 
 // Start with one row
-addRow();
+window.addEventListener('DOMContentLoaded', function(){
+    {% if existing_items %}
+    {% for item in existing_items %}
+    addRow();
+    const rows = document.querySelectorAll('#items-body tr');
+    const last = rows[rows.length - 1];
+    last.querySelector('.material-select').value = '{{ item.material_id }}';
+    last.querySelector('.gst-pct').value = '{{ item.gst_percentage or 0 }}';
+    last.querySelector('.qty-input').value = '{{ item.quantity or 0 }}';
+    last.querySelector('.amount-input').value = '{{ item.amount or 0 }}';
+    last.querySelector('input[name="weight[]"]').value = '{{ item.weight or 0 }}';
+    last.querySelector('input[name="pieces[]"]').value = '{{ item.pieces or 0 }}';
+    last.querySelector('input[name="rate[]"]').value = '{{ item.rate or 0 }}';
+    {% endfor %}
+    {% endif %}
+    if (document.getElementById('party-select').value) recalcAll();
+});
 </script>
 {% endblock %}

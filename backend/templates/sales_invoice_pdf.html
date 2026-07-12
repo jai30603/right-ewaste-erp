@@ -4,9 +4,13 @@
 <meta charset="UTF-8">
 <title>{{ invoice.invoice_number }}</title>
 <style>
+  @font-face {
+    font-family: 'Segoe UI';
+    src: url('file:///C:/Users/jaili/OneDrive/Documents/Right Ewaste Web App/backend/static/fonts/SegoeUI.ttf') format('truetype');
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 12px;
     color: #1a1a1a;
     background: #fff;
@@ -236,9 +240,9 @@
       <th style="text-align:right;">Qty</th>
       <th style="text-align:right;">Weight (kg)</th>
       <th style="text-align:right;">Pieces</th>
-      <th style="text-align:right;">Rate (₹)</th>
+      <th style="text-align:right;">Rate (Rs.)</th>
       <th style="text-align:center;">GST %</th>
-      <th style="text-align:right;">Amount (₹)</th>
+      <th style="text-align:right;">Amount (Rs.)</th>
     </tr>
   </thead>
   <tbody>
@@ -268,15 +272,15 @@
 <div class="totals-wrap">
   <table class="totals">
     <tr class="sep"><td class="label">Subtotal</td>
-        <td class="value">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
+      <td class="value">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
     {% if is_intra %}
     <tr class="sep"><td class="label">CGST</td>
-        <td class="value">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
+      <td class="value">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
     <tr class="sep"><td class="label">SGST</td>
-        <td class="value">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td></tr>
+      <td class="value">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td></tr>
     {% else %}
     <tr class="sep"><td class="label">IGST</td>
-        <td class="value">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td></tr>
+      <td class="value">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td></tr>
     {% endif %}
     {% if invoice.round_off %}
     <tr class="sep"><td class="label">Round Off</td>

@@ -190,3 +190,73 @@ def create_sales_invoice(
 
     finally:
         conn.close()
+
+
+def update_sales_invoice(
+    invoice_id, party_id, invoice_date, payment_mode,
+    transporter, vehicle_number, remarks, items,
+    company_state_code, party_state_code,
+):
+    subtotal = round(sum(i["amount"] for i in items), 2)
+    gst = calculate_gst(subtotal, items, company_state_code, party_state_code)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        conn.execute("BEGIN")
+        cursor.execute("""
+            UPDATE sales_invoice SET
+                party_id = ?, invoice_date = ?, payment_mode = ?,
+                transporter = ?, vehicle_number = ?, subtotal = ?,
+                cgst = ?, sgst = ?, igst = ?, round_off = ?,
+                grand_total = ?, remarks = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (
+            party_id,
+            invoice_date,
+            payment_mode or None,
+            transporter or None,
+            vehicle_number or None,
+            subtotal,
+            gst["cgst"],
+            gst["sgst"],
+            gst["igst"],
+            gst["round_off"],
+            gst["grand_total"],
+            remarks or None,
+            invoice_id,
+        ))
+        cursor.execute("DELETE FROM sales_invoice_item WHERE sales_invoice_id = ?", (invoice_id,))
+        for item in items:
+            cursor.execute("""
+                INSERT INTO sales_invoice_item (
+                    sales_invoice_id, material_id, quantity, weight, pieces, rate, amount
+                ) VALUES (?,?,?,?,?,?,?)
+            """, (
+                invoice_id,
+                item["material_id"],
+                item["qty"],
+                item["weight"],
+                item["pieces"],
+                item["rate"],
+                item["amount"],
+            ))
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    finally:
+        conn.close()
+
+
+def delete_sales_invoice(invoice_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE sales_invoice
+        SET is_active = 0,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (invoice_id,))
+    conn.commit()
+    conn.close()

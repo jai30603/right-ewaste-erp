@@ -1,5 +1,15 @@
 import os
+import sys
+from pathlib import Path
+
 from flask import Flask
+
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from routes.dashboard import dashboard_bp
 from routes.company import company_bp
@@ -7,9 +17,11 @@ from routes.party import party_bp
 from routes.material import material_bp
 from routes.sales import sales_bp
 from routes.purchase import purchase_bp
+from database import initialize_database
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-change-me")
+initialize_database()
 
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(company_bp)
@@ -19,4 +31,6 @@ app.register_blueprint(sales_bp)
 app.register_blueprint(purchase_bp)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Keep the reloader off by default so the application can run reliably
+    # in a normal/background process. Set FLASK_DEBUG=1 for local debugging.
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")

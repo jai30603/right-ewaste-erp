@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Invoice – Right Ewaste ERP{% endblock %}
+{% block page_title %}Purchase Invoice{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Purchase Invoice</li>
+{% endblock %}
+
+{% block content %}
+<div class="erp-card">
+    <div class="erp-card-header">
+        <i class="bi bi-cart" style="font-size:18px; color:#2563eb;"></i>
+        <h5>Purchase Invoices</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            ({{ invoices|length }} record{{ 's' if invoices|length != 1 }})
+        </span>
+        <div class="ms-auto">
+            <a href="/purchase/add" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i> New Invoice
+            </a>
+        </div>
+    </div>
+    <div class="erp-card-body p-0">
+        {% if invoices %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Invoice No.</th>
+                    <th>Date</th>
+                    <th>Supplier</th>
+                    <th style="text-align:center;">Items</th>
+                    <th style="text-align:right;">Grand Total</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>
+                        <a href="/purchase/{{ inv.id }}/view" style="color:#2563eb; font-family:monospace; font-size:12px; font-weight:600; text-decoration:none;">
+                            {{ inv.purchase_invoice_number }}
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">{{ inv.invoice_date }}</td>
+                    <td style="font-weight:500;">{{ inv.company_name or '—' }}</td>
+                    <td style="text-align:center;">
+                        <span class="badge-type" style="background:#eff6ff; color:#1e40af;">{{ inv.item_count }}</span>
+                    </td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace; white-space:nowrap;">₹ {{ "%.2f"|format(inv.grand_total) }}</td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <a href="/purchase/{{ inv.id }}/view" title="Preview" style="color:#2563eb; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-eye"></i></a>
+                        <a href="/purchase/{{ inv.id }}/pdf" title="Download PDF" style="color:#1e40af; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-file-earmark-pdf"></i></a>
+                        <a href="/purchase/{{ inv.id }}/edit" title="Edit" style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-pencil"></i></a>
+                        <form method="POST" action="/purchase/{{ inv.id }}/delete" style="display:inline;" onsubmit="return confirm('Delete this purchase invoice?');">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <p>No purchase invoices yet. <a href="/purchase/add" class="text-decoration-none" style="color:#2563eb;">Create the first one →</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
