@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Purchase Invoices Report</title>
+<style>
+  @page {
+    size: A4 landscape;
+    margin: 15mm 10mm 15mm 10mm;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 8.5px;
+    color: #333;
+    line-height: 1.4;
+  }
+  .header {
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  .company-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #1e3a8a;
+  }
+  .report-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #4f5b66;
+    margin-top: 5px;
+  }
+  .filter-info {
+    font-size: 8px;
+    color: #666;
+    margin-top: 4px;
+  }
+  table.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  table.report-table th {
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 5px 6px;
+    border: 1px solid #2563eb;
+  }
+  table.report-table td {
+    padding: 5px 6px;
+    border: 1px solid #dddddd;
+    vertical-align: middle;
+  }
+  table.report-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  .text-right {
+    text-align: right;
+  }
+  .text-center {
+    text-align: center;
+  }
+  .font-mono {
+    font-family: monospace;
+  }
+  .summary-box {
+    margin-top: 15px;
+    text-align: right;
+    font-size: 10.5px;
+    font-weight: bold;
+    color: #1e3a8a;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="company-title">Right Ewaste Recycle Pvt. Ltd.</div>
+  <div class="report-title">Purchase Invoices Report</div>
+  <div class="filter-info">
+    Generated on: {{ today_str }} | 
+    Search Query: {{ q or 'All' }} | 
+    Date Filter: {{ date_filter|title }} 
+    {% if year != 'all' %}| Year: {{ year }}{% endif %}
+    {% if month != 'all' %}| Month: {{ month }}{% endif %}
+    {% if start_date or end_date %}| Range: {{ start_date or 'Start' }} to {{ end_date or 'End' }}{% endif %}
+  </div>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th>Invoice No.</th>
+      <th>Date</th>
+      <th>Supplier</th>
+      <th>GSTIN</th>
+      <th>State</th>
+      <th class="text-center">Items</th>
+      <th class="text-right">Taxable Value</th>
+      <th class="text-right">CGST</th>
+      <th class="text-right">SGST</th>
+      <th class="text-right">IGST</th>
+      <th class="text-right">Round Off</th>
+      <th class="text-right">Grand Total</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in invoices %}
+    <tr>
+      <td class="font-mono">{{ inv.purchase_invoice_number }}</td>
+      <td>{{ inv.invoice_date }}</td>
+      <td><strong>{{ inv.company_name or '—' }}</strong></td>
+      <td class="font-mono">{{ inv.gstin or '—' }}</td>
+      <td>{{ inv.state or '—' }}</td>
+      <td class="text-center">{{ inv.item_count }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(inv.subtotal) }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(inv.cgst) }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(inv.sgst) }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(inv.igst) }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(inv.round_off) }}</td>
+      <td class="text-right font-mono">₹ {{ "%.2f"|format(inv.grand_total) }}</td>
+      <td>{{ inv.status }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="13" class="text-center" style="padding: 20px; color: #777;">No purchase invoices match the selected filter criteria.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if invoices %}
+<div class="summary-box">
+  Total Invoices: {{ invoices|length }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+  Total Purchase Amount: ₹ {{ "%.2f"|format(total_amount) }}
+</div>
+{% endif %}
+
+</body>
+</html>

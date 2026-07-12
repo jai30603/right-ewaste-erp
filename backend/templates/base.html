@@ -72,6 +72,36 @@
             </ul>
         </div>
 
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Inventory</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/inventory" class="{{ 'active' if request.path.startswith('/inventory') else '' }}">
+                        <i class="bi bi-box nav-icon"></i>
+                        Stock Summary
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Reports</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/sales/register" class="{{ 'active' if request.path == '/sales/register' else '' }}">
+                        <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
+                        Sales Register
+                    </a>
+                </li>
+                <li>
+                    <a href="/purchase/register" class="{{ 'active' if request.path == '/purchase/register' else '' }}">
+                        <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
+                        Purchase Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+
         <div class="sidebar-footer">
             &copy; 2025 Right Ewaste Recycle
         </div>

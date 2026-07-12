@@ -11,15 +11,15 @@
 
 {% block content %}
 <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-    <a href="/purchase" class="btn-erp-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    <a href="/purchase" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back</a>
     <div class="ms-auto d-flex gap-2 flex-wrap">
-        <button onclick="window.print()" class="btn-erp-secondary"><i class="bi bi-printer"></i> Print</button>
-        <a href="/purchase/{{ invoice.id }}/pdf" class="btn-erp-primary"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
+        <button onclick="window.print()" class="btn btn-outline-primary btn-sm"><i class="bi bi-printer"></i> Print</button>
+        <a href="/purchase/{{ invoice.id }}/pdf" class="btn btn-primary btn-sm text-white" style="background-color:#2563eb;"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
     </div>
 </div>
 <div class="erp-card" id="invoice-printable">
 <div class="erp-card-body" style="padding:40px 48px;">
-    <div class="d-flex justify-content-between align-items-start mb-4 pb-3" style="border-bottom:2px solid #1a3a28;">
+    <div class="d-flex justify-content-between align-items-start mb-4 pb-3" style="border-bottom:2px solid #2563eb;">
         <div>
             <div style="font-size:22px; font-weight:800; color:#0f2318; letter-spacing:-0.3px; line-height:1.1;">{{ company.company_name if company else 'RIGHT EWASTE RECYCLE PVT LTD' }}</div>
             {% if company %}
@@ -32,6 +32,13 @@
                 <div><strong>Invoice No.</strong></div>
                 <div style="font-size:15px; font-weight:700; color:#0f2318; font-family:monospace;">{{ invoice.purchase_invoice_number }}</div>
                 <div style="margin-top:4px;"><strong>Date:</strong> {{ invoice.invoice_date }}</div>
+                {% if invoice.status %}
+                <div style="margin-top:6px;">
+                    <span style="background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.5px;">
+                        ✓ {{ invoice.status }}
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -44,15 +51,32 @@
             {% endif %}
         </div>
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Transport Details</div>
-            <div style="font-size:12px; color:#5a6a62; line-height:1.8;"><div><strong>Mode:</strong> {{ invoice.payment_mode or '—' }}</div><div><strong>Transporter:</strong> {{ invoice.transporter or '—' }}</div><div><strong>Vehicle No.:</strong> <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span></div></div>
+            <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Invoice Details &amp; Transport</div>
+            <div style="font-size:12px; color:#5a6a62; line-height:1.8;">
+                <div><strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}</div>
+                <div><strong>Transporter:</strong> {{ invoice.transporter or '—' }}</div>
+                <div><strong>Vehicle No.:</strong> <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span></div>
+                {% if invoice.eway_bill_number %}
+                <div><strong>E-Way Bill:</strong> <span style="font-family:monospace;">{{ invoice.eway_bill_number }}</span></div>
+                {% endif %}
+                {% if invoice.reference_number %}
+                <div><strong>Reference/PO No:</strong> {{ invoice.reference_number }}</div>
+                {% endif %}
+                <div class="mt-2 text-muted" style="font-size:11px;">
+                    <span>Printed: {{ invoice.print_count or 0 }} times</span> &nbsp;|&nbsp;
+                    <span>Downloaded: {{ invoice.pdf_download_count or 0 }} times</span>
+                </div>
+            </div>
         </div>
     </div>
+    
     <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:0;">
         <thead>
-            <tr style="background:#1a3a28; color:#fff;">
+            <tr style="background:#1e3a8a; color:#fff;">
                 <th style="padding:10px 12px; text-align:left; font-weight:600;">#</th>
                 <th style="padding:10px 12px; text-align:left; font-weight:600;">Material / Description</th>
+                <th style="padding:10px 12px; text-align:center; font-weight:600;">HSN</th>
+                <th style="padding:10px 12px; text-align:center; font-weight:600;">Category</th>
                 <th style="padding:10px 12px; text-align:right; font-weight:600;">Qty</th>
                 <th style="padding:10px 12px; text-align:right; font-weight:600;">Weight (kg)</th>
                 <th style="padding:10px 12px; text-align:right; font-weight:600;">Pieces</th>
@@ -65,7 +89,12 @@
             {% for item in items %}
             <tr style="border-bottom:1px solid #eef2ef; {{ 'background:#f9fafb;' if loop.index is even }}">
                 <td style="padding:10px 12px; color:#999;">{{ loop.index }}</td>
-                <td style="padding:10px 12px; font-weight:500; color:#0f2318;">{{ item.material_name or '—' }} <span style="font-size:11px; color:#888;">({{ item.uom or '' }})</span></td>
+                <td style="padding:10px 12px; font-weight:500; color:#0f2318;">
+                    {{ item.material_name or '—' }} 
+                    <span style="font-size:11px; color:#888;">({{ item.uom or '' }})</span>
+                </td>
+                <td style="padding:10px 12px; text-align:center; font-family:monospace;">{{ item.hsn_code or '—' }}</td>
+                <td style="padding:10px 12px; text-align:center; color:#555;">{{ item.category or '—' }}</td>
                 <td style="padding:10px 12px; text-align:right; font-family:monospace;">{{ "%.2f"|format(item.quantity or 0) }}</td>
                 <td style="padding:10px 12px; text-align:right; font-family:monospace;">{{ "%.3f"|format(item.weight or 0) }}</td>
                 <td style="padding:10px 12px; text-align:right; font-family:monospace;">{{ item.pieces or 0 }}</td>
@@ -76,8 +105,9 @@
             {% endfor %}
         </tbody>
     </table>
+    
     <div class="d-flex justify-content-end mt-0">
-        <table style="width:320px; font-size:13px; border-top:2px solid #1a3a28;">
+        <table style="width:320px; font-size:13px; border-top:2px solid #2563eb;">
             <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">Subtotal</td><td style="padding:8px 12px; text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
             {% if is_intra %}
             <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">CGST</td><td style="padding:8px 12px; text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
@@ -88,7 +118,7 @@
             {% if invoice.round_off %}
             <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">Round Off</td><td style="padding:8px 12px; text-align:right; font-family:monospace; color:{{ '#dc3545' if invoice.round_off < 0 else '#198754' }};">{{ '+' if invoice.round_off >= 0 else '' }}{{ "%.2f"|format(invoice.round_off) }}</td></tr>
             {% endif %}
-            <tr style="background:#f4f7f5; border-top:2px solid #1a3a28;"><td style="padding:12px 12px; font-weight:700; font-size:14px; color:#0f2318;">Grand Total</td><td style="padding:12px 12px; text-align:right; font-weight:700; font-size:17px; font-family:monospace; color:#0f2318;">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td></tr>
+            <tr style="background:#f4f7f5; border-top:2px solid #2563eb;"><td style="padding:12px 12px; font-weight:700; font-size:14px; color:#0f2318;">Grand Total</td><td style="padding:12px 12px; text-align:right; font-weight:700; font-size:17px; font-family:monospace; color:#1e40af;">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td></tr>
         </table>
     </div>
     {% if invoice.remarks %}<div style="margin-top:28px; padding:12px 16px; background:#f9fafb; border-left:3px solid #2563eb; border-radius:4px;"><div style="font-size:11px; font-weight:700; color:#2563eb; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase;">Remarks</div><div style="font-size:13px; color:#3a5244;">{{ invoice.remarks }}</div></div>{% endif %}

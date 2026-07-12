@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sales Invoices Report</title>
+<style>
+  @page {
+    size: A4 landscape;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    color: #333;
+    line-height: 1.4;
+  }
+  .header {
+    border-bottom: 2px solid #2e7d32;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  .company-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1b5e20;
+  }
+  .report-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4f5b66;
+    margin-top: 5px;
+  }
+  .filter-info {
+    font-size: 9px;
+    color: #666;
+    margin-top: 4px;
+  }
+  table.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  table.report-table th {
+    background-color: #2e7d32;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 6px 8px;
+    border: 1px solid #2e7d32;
+  }
+  table.report-table td {
+    padding: 6px 8px;
+    border: 1px solid #dddddd;
+    vertical-align: middle;
+  }
+  table.report-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  .text-right {
+    text-align: right;
+  }
+  .text-center {
+    text-align: center;
+  }
+  .font-mono {
+    font-family: monospace;
+  }
+  .summary-box {
+    margin-top: 15px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: bold;
+    color: #1b5e20;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="company-title">Right Ewaste Recycle Pvt. Ltd.</div>
+  <div class="report-title">Sales Invoices Report</div>
+  <div class="filter-info">
+    Generated on: {{ today_str }} | 
+    Date Filter: {{ date_filter|title }} 
+    {% if year != 'all' %}| Year: {{ year }}{% endif %}
+    {% if month != 'all' %}| Month: {{ month }}{% endif %}
+    {% if start_date or end_date %}| Range: {{ start_date or 'Start' }} to {{ end_date or 'End' }}{% endif %}
+  </div>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th width="12%">Invoice No.</th>
+      <th width="10%">Date</th>
+      <th>Customer</th>
+      <th width="12%">Payment Mode</th>
+      <th width="12%">Transporter</th>
+      <th width="12%">Vehicle No.</th>
+      <th width="6%" class="text-center">Items</th>
+      <th width="10%">Status</th>
+      <th width="12%" class="text-right">Grand Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in invoices %}
+    <tr>
+      <td class="font-mono">{{ inv.invoice_number }}</td>
+      <td>{{ inv.invoice_date }}</td>
+      <td><strong>{{ inv.company_name or '—' }}</strong></td>
+      <td>{{ inv.payment_mode or '—' }}</td>
+      <td>{{ inv.transporter or '—' }}</td>
+      <td class="font-mono">{{ inv.vehicle_number or '—' }}</td>
+      <td class="text-center">{{ inv.item_count }}</td>
+      <td>{{ inv.status }}</td>
+      <td class="text-right font-mono">₹ {{ "%.2f"|format(inv.grand_total) }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="9" class="text-center" style="padding: 20px; color: #777;">No invoices match the selected filter criteria.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if invoices %}
+<div class="summary-box">
+  Total Invoices: {{ invoices|length }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+  Total Sales Amount: ₹ {{ "%.2f"|format(total_amount) }}
+</div>
+{% endif %}
+
+</body>
+</html>

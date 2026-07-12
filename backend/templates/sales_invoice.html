@@ -95,13 +95,21 @@
             {% endif %}
         </div>
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#3cb371; letter-spacing:1.5px;
-                        text-transform:uppercase; margin-bottom:8px;">Transport Details</div>
+            <div style="font-size:10px; font-weight:700; color:#2e7d32; letter-spacing:1.5px;
+                        text-transform:uppercase; margin-bottom:8px;">Invoice Details & Transport</div>
             <div style="font-size:12px; color:#5a6a62; line-height:1.8;">
-                <div><strong>Mode:</strong> {{ invoice.payment_mode or '—' }}</div>
+                <div><strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}</div>
                 <div><strong>Transporter:</strong> {{ invoice.transporter or '—' }}</div>
-                <div><strong>Vehicle No.:</strong>
-                    <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span>
+                <div><strong>Vehicle No.:</strong> <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span></div>
+                {% if invoice.eway_bill_number %}
+                <div><strong>E-Way Bill:</strong> <span style="font-family:monospace;">{{ invoice.eway_bill_number }}</span></div>
+                {% endif %}
+                {% if invoice.reference_number %}
+                <div><strong>Reference/PO No:</strong> {{ invoice.reference_number }}</div>
+                {% endif %}
+                <div class="mt-2 text-muted" style="font-size:11px;">
+                    <span>Printed: {{ invoice.print_count or 0 }} times</span> &nbsp;|&nbsp;
+                    <span>Downloaded: {{ invoice.pdf_download_count or 0 }} times</span>
                 </div>
             </div>
         </div>

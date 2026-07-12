@@ -221,12 +221,20 @@
     {% endif %}
   </div>
   <div class="party-col">
-    <div class="section-label">Transport Details</div>
+    <div class="section-label">Invoice Details & Transport</div>
     <div class="party-detail">
       <strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}<br>
       <strong>Transporter:</strong> {{ invoice.transporter or '—' }}<br>
-      <strong>Vehicle No.:</strong>
-      <span class="mono">{{ invoice.vehicle_number or '—' }}</span>
+      <strong>Vehicle No.:</strong> <span class="mono">{{ invoice.vehicle_number or '—' }}</span><br>
+      {% if invoice.eway_bill_number %}
+      <strong>E-Way Bill:</strong> <span class="mono">{{ invoice.eway_bill_number }}</span><br>
+      {% endif %}
+      {% if invoice.reference_number %}
+      <strong>Reference/PO No:</strong> {{ invoice.reference_number }}<br>
+      {% endif %}
+      <div style="margin-top:6px; color:#888; font-size:9.5px;">
+        Printed: {{ invoice.print_count or 0 }} | PDF: {{ invoice.pdf_download_count or 0 }}
+      </div>
     </div>
   </div>
 </div>

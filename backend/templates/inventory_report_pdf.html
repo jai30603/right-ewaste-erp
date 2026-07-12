@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Stock Summary Report</title>
+<style>
+  @page {
+    size: A4 landscape;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    color: #333;
+    line-height: 1.4;
+  }
+  .header {
+    border-bottom: 2px solid #00796b;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+  }
+  .company-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #004d40;
+  }
+  .report-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #4f5b66;
+    margin-top: 5px;
+  }
+  .filter-info {
+    font-size: 9px;
+    color: #666;
+    margin-top: 4px;
+  }
+  table.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  table.report-table th {
+    background-color: #00796b;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: left;
+    padding: 6px 8px;
+    border: 1px solid #00796b;
+  }
+  table.report-table td {
+    padding: 6px 8px;
+    border: 1px solid #dddddd;
+    vertical-align: middle;
+  }
+  table.report-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  .text-right {
+    text-align: right;
+  }
+  .text-center {
+    text-align: center;
+  }
+  .font-mono {
+    font-family: monospace;
+  }
+  .summary-box {
+    margin-top: 15px;
+    text-align: right;
+    font-size: 11px;
+    font-weight: bold;
+    color: #004d40;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="company-title">Right Ewaste Recycle Pvt. Ltd.</div>
+  <div class="report-title">Inventory Stock Summary Report</div>
+  <div class="filter-info">
+    Generated on: {{ today_str }} | 
+    Category Filter: {{ category|title }} |
+    Date Filter: {{ date_filter|title }} 
+    {% if year != 'all' %}| Year: {{ year }}{% endif %}
+    {% if month != 'all' %}| Month: {{ month }}{% endif %}
+    {% if start_date or end_date %}| Range: {{ start_date or 'Start' }} to {{ end_date or 'End' }}{% endif %}
+  </div>
+</div>
+
+<table class="report-table">
+  <thead>
+    <tr>
+      <th width="15%">Material Code</th>
+      <th>Material Name</th>
+      <th width="15%">Category</th>
+      <th width="12%" class="text-right">Purchased Qty</th>
+      <th width="12%" class="text-right">Sold Qty</th>
+      <th width="12%" class="text-right">Current Stock</th>
+      <th width="10%" class="text-center">Unit</th>
+      <th width="15%" class="text-right">Stock Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in summary %}
+    <tr>
+      <td class="font-mono">{{ item.code }}</td>
+      <td><strong>{{ item.name }}</strong></td>
+      <td>{{ item.category or '—' }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(item.purchased_qty) }}</td>
+      <td class="text-right font-mono">{{ "%.2f"|format(item.sold_qty) }}</td>
+      <td class="text-right font-mono"><strong>{{ "%.2f"|format(item.current_stock) }}</strong></td>
+      <td class="text-center">{{ item.unit }}</td>
+      <td class="text-right font-mono">₹ {{ "%.2f"|format(item.current_stock * item.rate) }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="8" class="text-center" style="padding: 20px; color: #777;">No materials match the selected filter criteria.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if summary %}
+<div class="summary-box">
+  Total Materials: {{ summary|length }} &nbsp;&nbsp;|&nbsp;&nbsp; 
+  Total Inventory Valuation: ₹ {{ "%.2f"|format(total_stock_value) }}
+</div>
+{% endif %}
+
+</body>
+</html>

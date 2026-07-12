@@ -19,7 +19,22 @@ party_bp = Blueprint("party", __name__)
 def party():
     q = request.args.get("q", "").strip()
     parties = search_parties(q) if q else get_all_parties()
-    return render_template("party.html", parties=parties, q=q)
+    
+    page = int(request.args.get("page", 1))
+    per_page = 15
+    total_items = len(parties)
+    total_pages = (total_items + per_page - 1) // per_page
+    offset = (page - 1) * per_page
+    paginated_parties = parties[offset : offset + per_page]
+    
+    return render_template(
+        "party.html",
+        parties=paginated_parties,
+        q=q,
+        page=page,
+        total_pages=total_pages,
+        total_items=total_items
+    )
 
 
 # ── Add ──────────────────────────────────────────────────────────────────────

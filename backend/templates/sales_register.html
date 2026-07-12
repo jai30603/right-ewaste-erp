@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Register – Right Ewaste ERP{% endblock %}
+{% block page_title %}Sales Register{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/sales" class="text-decoration-none text-muted">Sales Management</a></li>
+<li class="breadcrumb-item active">Sales Register</li>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Summary Cards Grid ──────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6 col-sm-12">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #2e7d32 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-0" style="font-size:12px; font-weight:600;">Total Invoices / Customers</p>
+                        <h4 class="mb-0 font-monospace fw-bold mt-1" style="color:#1b5e20;">
+                            {{ total_invoices }} / {{ total_customers }}
+                        </h4>
+                    </div>
+                    <div class="bg-light p-2 rounded-circle" style="color:#2e7d32; font-size:20px;"><i class="bi bi-people"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-sm-12">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #1565c0 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-0" style="font-size:12px; font-weight:600;">Total Taxable Amount</p>
+                        <h4 class="mb-0 font-monospace fw-bold mt-1" style="color:#0d47a1;">
+                            ₹ {{ "%.2f"|format(total_taxable) }}
+                        </h4>
+                    </div>
+                    <div class="bg-light p-2 rounded-circle" style="color:#1565c0; font-size:20px;"><i class="bi bi-cash-stack"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-sm-12">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #c2185b !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-0" style="font-size:12px; font-weight:600;">Total GST Amount</p>
+                        <h4 class="mb-0 font-monospace fw-bold mt-1" style="color:#880e4f;">
+                            ₹ {{ "%.2f"|format(total_gst) }}
+                        </h4>
+                    </div>
+                    <div class="bg-light p-2 rounded-circle" style="color:#c2185b; font-size:20px;"><i class="bi bi-percent"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 col-sm-12">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #2e7d32 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-0" style="font-size:12px; font-weight:600;">Total Sales Value</p>
+                        <h4 class="mb-0 font-monospace fw-bold mt-1" style="color:#1b5e20;">
+                            ₹ {{ "%.2f"|format(total_invoice_value) }}
+                        </h4>
+                    </div>
+                    <div class="bg-light p-2 rounded-circle" style="color:#2e7d32; font-size:20px;"><i class="bi bi-currency-rupee"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Mini Analytics Stats Grid ───────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3" style="border-radius:10px;">
+            <small class="text-muted fw-bold">AVG INVOICE VALUE</small>
+            <h5 class="mb-0 mt-1 font-monospace fw-bold text-dark">₹ {{ "%.2f"|format(avg_invoice_value) }}</h5>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3" style="border-radius:10px;">
+            <small class="text-muted fw-bold">HIGHEST INVOICE VALUE</small>
+            <h5 class="mb-0 mt-1 font-monospace fw-bold text-success">₹ {{ "%.2f"|format(highest_invoice) }}</h5>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm p-3" style="border-radius:10px;">
+            <small class="text-muted fw-bold">LOWEST INVOICE VALUE</small>
+            <h5 class="mb-0 mt-1 font-monospace fw-bold text-danger">₹ {{ "%.2f"|format(lowest_invoice) }}</h5>
+        </div>
+    </div>
+</div>
+
+<!-- ── Charts and Top Data Cards ───────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-line text-success me-2"></i> Monthly Sales Trends</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlySalesChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-person-badge text-success me-2"></i> Top Customers</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for c in top_customers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2.5 border-0 border-bottom">
+                        <div style="font-size:13px; font-weight:500; max-width:65%; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                            {{ c.company_name }}
+                        </div>
+                        <span class="font-monospace fw-bold text-success" style="font-size:13px;">₹ {{ "%.0f"|format(c.total_val) }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item border-0 text-center text-muted py-4">No customer data.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam text-success me-2"></i> Top Materials</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for m in top_materials %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-2.5 border-0 border-bottom">
+                        <div style="font-size:13px; font-weight:500; max-width:70%; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">
+                            {{ m.material_name }}
+                        </div>
+                        <span class="badge bg-light text-success border border-success font-monospace" style="font-size:12px;">
+                            {{ "%.0f"|format(m.qty) }}
+                        </span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item border-0 text-center text-muted py-4">No materials sold.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="erp-card">
+    <div class="erp-card-header">
+        <i class="bi bi-file-earmark-bar-graph" style="font-size:18px; color:#2e7d32;"></i>
+        <h5>Sales Register Data</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            ({{ rows|length }} row{{ 's' if rows|length != 1 }})
+        </span>
+    </div>
+
+    <!-- ── Filter Bar ────────────────────────────────────────────── -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="/sales/register" class="row g-2 align-items-end" id="filter-form">
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Customer</label>
+                <select name="customer_id" class="form-select form-select-sm">
+                    <option value="all">All Customers</option>
+                    {% for p in parties %}
+                    <option value="{{ p.id }}" {% if customer_id == p.id|string %}selected{% endif %}>{{ p.company_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Material</label>
+                <select name="material_id" class="form-select form-select-sm">
+                    <option value="all">All Materials</option>
+                    {% for m in materials %}
+                    <option value="{{ m.id }}" {% if material_id == m.id|string %}selected{% endif %}>{{ m.material_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Financial Year</label>
+                <select name="financial_year" class="form-select form-select-sm">
+                    <option value="all">All Years</option>
+                    <option value="2024-2025" {% if financial_year == '2024-2025' %}selected{% endif %}>2024 - 2025</option>
+                    <option value="2025-2026" {% if financial_year == '2025-2026' %}selected{% endif %}>2025 - 2026</option>
+                    <option value="2026-2027" {% if financial_year == '2026-2027' %}selected{% endif %}>2026 - 2027</option>
+                </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Month</label>
+                <select name="month" class="form-select form-select-sm">
+                    <option value="all">All Months</option>
+                    <option value="01" {% if month == '01' %}selected{% endif %}>January</option>
+                    <option value="02" {% if month == '02' %}selected{% endif %}>February</option>
+                    <option value="03" {% if month == '03' %}selected{% endif %}>March</option>
+                    <option value="04" {% if month == '04' %}selected{% endif %}>April</option>
+                    <option value="05" {% if month == '05' %}selected{% endif %}>May</option>
+                    <option value="06" {% if month == '06' %}selected{% endif %}>June</option>
+                    <option value="07" {% if month == '07' %}selected{% endif %}>July</option>
+                    <option value="08" {% if month == '08' %}selected{% endif %}>August</option>
+                    <option value="09" {% if month == '09' %}selected{% endif %}>September</option>
+                    <option value="10" {% if month == '10' %}selected{% endif %}>October</option>
+                    <option value="11" {% if month == '11' %}selected{% endif %}>November</option>
+                    <option value="12" {% if month == '12' %}selected{% endif %}>December</option>
+                </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Quick Range</label>
+                <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
+                    <option value="all" {% if date_filter == 'all' or not date_filter %}selected{% endif %}>All Time</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+                    <option value="last_6_months" {% if date_filter == 'last_6_months' %}selected{% endif %}>Last 6 Months</option>
+                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Start Date</label>
+                <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+            </div>
+
+            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">End Date</label>
+                <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+            </div>
+
+            <div class="col-md-2 col-sm-12 d-flex gap-2">
+                <button type="submit" class="btn btn-sm text-white px-3 py-2 w-100" style="font-size:12.5px; background-color:#2e7d32;">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+                <a href="/sales/register" class="btn btn-sm btn-outline-secondary px-3 py-2 w-100" style="font-size:12.5px;">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ── Main Table ────────────────────────────────────────────── -->
+    <div class="erp-card-body p-0">
+        {% if rows %}
+        <div style="overflow-x:auto; max-height: 500px;">
+        <table class="erp-table" style="position:relative;">
+            <thead style="position: sticky; top: 0; z-index: 5; background: #fafafa; box-shadow: 0 1px 0 #ddd;">
+                <tr>
+                    <th>Date</th>
+                    <th>Invoice No.</th>
+                    <th>Customer Name</th>
+                    <th>GSTIN</th>
+                    <th>State</th>
+                    <th>Material</th>
+                    <th style="text-align:right;">Taxable Value</th>
+                    <th style="text-align:right;">CGST</th>
+                    <th style="text-align:right;">SGST</th>
+                    <th style="text-align:right;">IGST</th>
+                    <th style="text-align:right;">GST Total</th>
+                    <th style="text-align:right;">Round Off</th>
+                    <th style="text-align:right;">Invoice Total</th>
+                    <th>Pay Mode</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td style="white-space:nowrap;">{{ r.invoice_date }}</td>
+                    <td>
+                        <span style="font-family:monospace; font-weight:600; font-size:12.5px; color:#2e7d32;">
+                            {{ r.invoice_number }}
+                        </span>
+                    </td>
+                    <td style="font-weight:500;">{{ r.customer_name }}</td>
+                    <td><span style="font-family:monospace; font-size:12px;">{{ r.gstin or '—' }}</span></td>
+                    <td>{{ r.state }}</td>
+                    <td>{{ r.material }}</td>
+                    <td style="text-align:right; font-family:monospace;">{{ "%.2f"|format(r.taxable_value) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#666;">{{ "%.2f"|format(r.cgst) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#666;">{{ "%.2f"|format(r.sgst) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#666;">{{ "%.2f"|format(r.igst) }}</td>
+                    <td style="text-align:right; font-family:monospace; font-weight:600;">{{ "%.2f"|format(r.gst_total) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#999;">{{ "%.2f"|format(r.round_off) }}</td>
+                    <td style="text-align:right; font-family:monospace; font-weight:700; color:#1b5e20;">₹ {{ "%.2f"|format(r.grand_total) }}</td>
+                    <td>{{ r.payment_mode or '—' }}</td>
+                    <td>
+                        {% if r.status == 'CONFIRMED' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size:10px;">Confirmed</span>
+                        {% elif r.status == 'DRAFT' %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0.5" style="font-size:10px;">Draft</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5" style="font-size:10px;">{{ r.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if total_pages > 1 %}
+        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
+            <div class="text-muted small" style="font-size:12.5px;">
+                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Export Excel and Print buttons -->
+        <div class="p-3 bg-light border-top d-flex justify-content-start gap-2">
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportRegisterExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-spreadsheet" style="color:#2e7d32; font-size:15px;"></i> Export to Excel
+            </button>
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="window.print()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-printer" style="color:#0d6efd; font-size:15px;"></i> Print Register
+            </button>
+        </div>
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <p>No transactions registered for the chosen filter criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function toggleCustomDates() {
+    const select = document.getElementById('date_filter');
+    const customFields = document.querySelectorAll('.custom-date-field');
+    customFields.forEach(field => {
+        field.style.display = select.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+function exportRegisterExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/sales/register/export?" + params.toString();
+}
+
+// Chart.js render
+document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('monthlySalesChart');
+    if (!ctx) return;
+
+    const rawData = {{ monthly_analytics|tojson }};
+    const labels = rawData.map(item => item.month);
+    const taxable = rawData.map(item => item.taxable);
+    const revenue = rawData.map(item => item.revenue);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Taxable Revenue (₹)',
+                    data: taxable,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Gross Revenue (₹)',
+                    data: revenue,
+                    backgroundColor: 'rgba(46, 125, 50, 0.6)',
+                    borderColor: 'rgba(46, 125, 50, 1)',
+                    borderWidth: 1,
+                    type: 'line',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

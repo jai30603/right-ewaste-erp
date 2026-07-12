@@ -27,7 +27,22 @@ GST_RATES = ["0", "5", "12", "18", "28"]
 def material():
     q = request.args.get("q", "").strip()
     materials = search_materials(q) if q else get_all_materials()
-    return render_template("material.html", materials=materials, q=q)
+    
+    page = int(request.args.get("page", 1))
+    per_page = 15
+    total_items = len(materials)
+    total_pages = (total_items + per_page - 1) // per_page
+    offset = (page - 1) * per_page
+    paginated_materials = materials[offset : offset + per_page]
+    
+    return render_template(
+        "material.html",
+        materials=paginated_materials,
+        q=q,
+        page=page,
+        total_pages=total_pages,
+        total_items=total_items
+    )
 
 
 # ── Add ───────────────────────────────────────────────────────────────────────
