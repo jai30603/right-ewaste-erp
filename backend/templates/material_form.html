@@ -63,10 +63,13 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">HSN Code</label>
-                    <input type="text" name="hsn_code" class="form-control"
+                    <label class="form-label">HSN Code <span class="text-danger">*</span></label>
+                    <input type="text" name="hsn_code" class="form-control {{ 'is-invalid' if errors.hsn_code }}"
                            value="{{ val('hsn_code') }}"
-                           placeholder="e.g. 8471" style="font-family:monospace;">
+                           placeholder="e.g. 8471" style="font-family:monospace;" required>
+                    {% if errors.hsn_code %}
+                    <div class="invalid-feedback">{{ errors.hsn_code }}</div>
+                    {% endif %}
                 </div>
 
             </div>
@@ -74,10 +77,10 @@
             <hr class="form-section-divider">
 
             <!-- ── Pricing ────────────────────────────────────────── -->
-            <h6 class="form-section-title">Unit &amp; Tax</h6>
+            <h6 class="form-section-title">Unit &amp; Tax &amp; Tracking</h6>
             <div class="row g-3 mb-2">
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Unit <span class="text-danger">*</span></label>
                     <select name="uom"
                             class="form-select {{ 'is-invalid' if errors.uom }}" required>
@@ -91,7 +94,7 @@
                     {% endif %}
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">GST Percentage <span class="text-danger">*</span></label>
                     <select name="gst_percentage"
                             class="form-select {{ 'is-invalid' if errors.gst_percentage }}" required>
@@ -103,6 +106,15 @@
                     {% if errors.gst_percentage %}
                     <div class="invalid-feedback">{{ errors.gst_percentage }}</div>
                     {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Tracking Type <span class="text-danger">*</span></label>
+                    <select name="tracking_type" class="form-select" required>
+                        <option value="BOTH" {{ 'selected' if val('tracking_type') == 'BOTH' or not val('tracking_type') }}>Weight &amp; Pieces</option>
+                        <option value="WEIGHT_ONLY" {{ 'selected' if val('tracking_type') == 'WEIGHT_ONLY' }}>Weight Only</option>
+                        <option value="PIECES_ONLY" {{ 'selected' if val('tracking_type') == 'PIECES_ONLY' }}>Pieces Only</option>
+                    </select>
                 </div>
 
             </div>

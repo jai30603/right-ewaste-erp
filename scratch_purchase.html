@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Summary – Right Ewaste ERP</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="erp-wrapper">
+
+    <!-- ── Sidebar ────────────────────────────────────────────────── -->
+    <aside class="erp-sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-icon">♻️</div>
+            <h6>Right Ewaste</h6>
+            <small>ERP System</small>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Main</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/" class="">
+                        <i class="bi bi-grid-1x2 nav-icon"></i>
+                        Dashboard
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Masters</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/party" class="">
+                        <i class="bi bi-people nav-icon"></i>
+                        Party
+                    </a>
+                </li>
+                <li>
+                    <a href="/material" class="">
+                        <i class="bi bi-box-seam nav-icon"></i>
+                        Material
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Transactions</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/sales" class="">
+                        <i class="bi bi-receipt nav-icon"></i>
+                        Sales Invoice
+                    </a>
+                </li>
+                <li>
+                    <a href="/purchase" class="">
+                        <i class="bi bi-cart nav-icon"></i>
+                        Purchase Invoice
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Inventory</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/inventory" class="active">
+                        <i class="bi bi-box nav-icon"></i>
+                        Stock Summary
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            &copy; 2025 Right Ewaste Recycle
+        </div>
+
+    </aside>
+
+    <!-- ── Main ───────────────────────────────────────────────────── -->
+    <div class="erp-main">
+
+        <!-- Topbar -->
+        <header class="erp-topbar">
+            <div>
+                <p class="page-title mb-0">Inventory Summary</p>
+                <nav aria-label="breadcrumb" class="d-none d-sm-block">
+                    <ol class="breadcrumb mb-0" style="font-size:12px;">
+                        
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Stock Summary</li>
+
+                    </ol>
+                </nav>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-chip"><i class="bi bi-building me-1"></i>Right Ewaste</span>
+            </div>
+        </header>
+
+        <!-- Flash messages -->
+        
+        
+        
+
+        <!-- Page content -->
+        <main class="erp-content">
+            
+
+<!-- ── Metrics Grid ────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #0d9488 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Total Materials</p>
+                        <h4 class="mb-0 font-monospace fw-bold" style="color:#0f766e;">4</h4>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle text-teal" style="color:#0d9488; font-size:22px; line-height:1;">
+                        <i class="bi bi-box"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #d97706 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Low Stock Alerts</p>
+                        <h4 class="mb-0 font-monospace fw-bold text-danger">
+                            4
+                        </h4>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle" style="color:#d97706; font-size:22px; line-height:1;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #2563eb !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Purchases / Sales (Qty)</p>
+                        <h5 class="mb-0 font-monospace fw-bold" style="color:#475569;">
+                            58.0 / 1970.0
+                        </h5>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle" style="color:#2563eb; font-size:22px; line-height:1;">
+                        <i class="bi bi-arrow-down-up"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #16a34a !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Total Stock Value</p>
+                        <h4 class="mb-0 font-monospace fw-bold" style="color:#16a34a;">₹ -127505.83</h4>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle" style="color:#16a34a; font-size:22px; line-height:1;">
+                        <i class="bi bi-currency-rupee"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="erp-card">
+    <div class="erp-card-header">
+        <i class="bi bi-box" style="font-size:18px; color:#0d9488;"></i>
+        <h5>Material Inventory Summary</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            (4 items)
+        </span>
+    </div>
+
+    <!-- ── Filter Bar ────────────────────────────────────────────── -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="/inventory" class="row g-2 align-items-end" id="filter-form">
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm" value="" placeholder="Code, Name...">
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Category</label>
+                <select name="category" id="category" class="form-select form-select-sm">
+                    <option value="all" selected>All Categories</option>
+                    
+                    <option value="Laptop" >Laptop</option>
+                    
+                    <option value="Other" >Other</option>
+                    
+                </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Quick Filter</label>
+                <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
+                    <option value="all" selected>All Time</option>
+                    <option value="today" >Today</option>
+                    <option value="this_week" >This Week</option>
+                    <option value="this_month" >This Month</option>
+                    <option value="last_6_months" >Last 6 Months</option>
+                    <option value="custom" >Custom Range</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 col-sm-6 custom-date-field" style="display: none;">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Start Date</label>
+                <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="">
+            </div>
+
+            <div class="col-md-2 col-sm-6 custom-date-field" style="display: none;">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">End Date</label>
+                <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="">
+            </div>
+
+            <div class="col-md-2 col-sm-12 d-flex gap-2">
+                <button type="submit" class="btn btn-sm text-white px-3 py-2 w-100" style="font-size:12.5px; background-color:#0d9488;">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+                <a href="/inventory" class="btn btn-sm btn-outline-secondary px-3 py-2 w-100" style="font-size:12.5px;">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ── Summary Table ────────────────────────────────────────── -->
+    <div class="erp-card-body p-0">
+        
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Material Code</th>
+                    <th>Material Name</th>
+                    <th>Category</th>
+                    <th style="text-align:right;">Purchased Quantity</th>
+                    <th style="text-align:right;">Sold Quantity</th>
+                    <th style="text-align:right;">Current Stock</th>
+                    <th style="text-align:center;">Unit</th>
+                    <th style="text-align:right;">Stock Value</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>
+                        <a href="/inventory/1/ledger"
+                           style="color:#0f766e; font-family:monospace; font-size:12.5px; font-weight:600; text-decoration:none;">
+                            MAT-00001
+                        </a>
+                    </td>
+                    <td style="font-weight:500;">Water Filter Scrap</td>
+                    <td><span class="badge-type" style="background:#f1f5f9; color:#475569;">—</span></td>
+                    <td style="text-align:right; font-family:monospace;">35.00</td>
+                    <td style="text-align:right; font-family:monospace;">1900.00</td>
+                    <td style="text-align:right; font-family:monospace; font-weight:600;">
+                        <span class="text-danger">
+                            -1865.00
+                        </span>
+                        
+                        <span class="badge bg-danger ms-1" style="font-size:8.5px; padding:2px 4px;">Low</span>
+                        
+                    </td>
+                    <td style="text-align:center;">KGS</td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace;">
+                        ₹ -124333.33
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="/inventory/1/ledger"
+                           class="btn btn-sm btn-outline-teal px-2 py-0.5" 
+                           style="font-size:11px; border-color:#0d9488; color:#0d9488; border-radius:5px;"
+                           title="View Material Ledger">
+                            <i class="bi bi-journal-text me-1"></i> Ledger
+                        </a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="/inventory/2/ledger"
+                           style="color:#0f766e; font-family:monospace; font-size:12.5px; font-weight:600; text-decoration:none;">
+                            MAT-00002
+                        </a>
+                    </td>
+                    <td style="font-weight:500;">Laptop Scrap</td>
+                    <td><span class="badge-type" style="background:#f1f5f9; color:#475569;">Laptop</span></td>
+                    <td style="text-align:right; font-family:monospace;">23.00</td>
+                    <td style="text-align:right; font-family:monospace;">70.00</td>
+                    <td style="text-align:right; font-family:monospace; font-weight:600;">
+                        <span class="text-danger">
+                            -47.00
+                        </span>
+                        
+                        <span class="badge bg-danger ms-1" style="font-size:8.5px; padding:2px 4px;">Low</span>
+                        
+                    </td>
+                    <td style="text-align:center;">KG</td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace;">
+                        ₹ -3172.50
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="/inventory/2/ledger"
+                           class="btn btn-sm btn-outline-teal px-2 py-0.5" 
+                           style="font-size:11px; border-color:#0d9488; color:#0d9488; border-radius:5px;"
+                           title="View Material Ledger">
+                            <i class="bi bi-journal-text me-1"></i> Ledger
+                        </a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="/inventory/4/ledger"
+                           style="color:#0f766e; font-family:monospace; font-size:12.5px; font-weight:600; text-decoration:none;">
+                            MAT-00004
+                        </a>
+                    </td>
+                    <td style="font-weight:500;">PCB Scrap</td>
+                    <td><span class="badge-type" style="background:#f1f5f9; color:#475569;">Other</span></td>
+                    <td style="text-align:right; font-family:monospace;">0.00</td>
+                    <td style="text-align:right; font-family:monospace;">0.00</td>
+                    <td style="text-align:right; font-family:monospace; font-weight:600;">
+                        <span class="text-danger">
+                            0.00
+                        </span>
+                        
+                        <span class="badge bg-danger ms-1" style="font-size:8.5px; padding:2px 4px;">Low</span>
+                        
+                    </td>
+                    <td style="text-align:center;">KG</td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace;">
+                        ₹ 0.00
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="/inventory/4/ledger"
+                           class="btn btn-sm btn-outline-teal px-2 py-0.5" 
+                           style="font-size:11px; border-color:#0d9488; color:#0d9488; border-radius:5px;"
+                           title="View Material Ledger">
+                            <i class="bi bi-journal-text me-1"></i> Ledger
+                        </a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="/inventory/5/ledger"
+                           style="color:#0f766e; font-family:monospace; font-size:12.5px; font-weight:600; text-decoration:none;">
+                            MAT-00005
+                        </a>
+                    </td>
+                    <td style="font-weight:500;">Plastic Scrap</td>
+                    <td><span class="badge-type" style="background:#f1f5f9; color:#475569;">—</span></td>
+                    <td style="text-align:right; font-family:monospace;">0.00</td>
+                    <td style="text-align:right; font-family:monospace;">0.00</td>
+                    <td style="text-align:right; font-family:monospace; font-weight:600;">
+                        <span class="text-danger">
+                            0.00
+                        </span>
+                        
+                        <span class="badge bg-danger ms-1" style="font-size:8.5px; padding:2px 4px;">Low</span>
+                        
+                    </td>
+                    <td style="text-align:center;">KGS</td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace;">
+                        ₹ 0.00
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="/inventory/5/ledger"
+                           class="btn btn-sm btn-outline-teal px-2 py-0.5" 
+                           style="font-size:11px; border-color:#0d9488; color:#0d9488; border-radius:5px;"
+                           title="View Material Ledger">
+                            <i class="bi bi-journal-text me-1"></i> Ledger
+                        </a>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        </div>
+
+        <!-- Export Excel and PDF buttons -->
+        <div class="p-3 bg-light border-top d-flex justify-content-start gap-2">
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-spreadsheet" style="color:#0d9488; font-size:15px;"></i> Export to Excel
+            </button>
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportPDF()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-pdf" style="color:#dc3545; font-size:15px;"></i> Export to PDF
+            </button>
+        </div>
+
+        
+    </div>
+</div>
+
+
+        </main>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function toggleCustomDates() {
+    const select = document.getElementById('date_filter');
+    const customFields = document.querySelectorAll('.custom-date-field');
+    customFields.forEach(field => {
+        field.style.display = select.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+function exportExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/inventory/export?" + params.toString();
+}
+
+function exportPDF() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/inventory/export/pdf?" + params.toString();
+}
+</script>
+
+
+</body>
+</html>

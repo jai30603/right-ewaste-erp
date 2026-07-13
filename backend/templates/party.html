@@ -91,6 +91,34 @@
                     <td>{{ p.city }}</td>
                     <td>{{ p.state }}</td>
                     <td style="text-align:right; white-space:nowrap;">
+                        {% if p.party_type == 'CUSTOMER' %}
+                        <a href="/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-success"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px;"
+                           title="Customer Ledger">
+                            <i class="bi bi-journal-text"></i> Customer Ledger
+                        </a>
+                        {% elif p.party_type == 'SUPPLIER' %}
+                        <a href="/purchase/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-info"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px; color: #0891b2; border-color: #0891b2;"
+                           title="Supplier Ledger">
+                            <i class="bi bi-journal-text"></i> Supplier Ledger
+                        </a>
+                        {% elif p.party_type == 'BOTH' %}
+                        <a href="/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-success"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px;"
+                           title="Customer Ledger">
+                            <i class="bi bi-journal-text"></i> Cust Ledger
+                        </a>
+                        <a href="/purchase/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-info"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px; color: #0891b2; border-color: #0891b2;"
+                           title="Supplier Ledger">
+                            <i class="bi bi-journal-text"></i> Supp Ledger
+                        </a>
+                        {% endif %}
                         <a href="/party/{{ p.id }}/edit"
                            class="btn btn-sm btn-outline-warning"
                            style="font-size:12px; padding:4px 10px; border-radius:6px;">

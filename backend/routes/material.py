@@ -8,6 +8,7 @@ from repositories.material_repository import (
     update_material,
     delete_material,
 )
+from repositories.activity_log_repository import log_activity
 
 material_bp = Blueprint("material", __name__)
 
@@ -70,7 +71,9 @@ def add_material_page():
             request.form["uom"],
             request.form["gst_percentage"],
             request.form.get("description"),
+            request.form.get("tracking_type", "BOTH")
         )
+        log_activity("System User", "Material Added", f"Added material {request.form['material_name']} ({request.form['category']})")
         flash("Material added successfully.", "success")
         return redirect(url_for("material.material"))
 
@@ -117,7 +120,9 @@ def edit_material_page(material_id):
             request.form["uom"],
             request.form["gst_percentage"],
             request.form.get("description"),
+            request.form.get("tracking_type", "BOTH")
         )
+        log_activity("System User", "Material Updated", f"Updated material {request.form['material_name']}")
         flash("Material updated successfully.", "success")
         return redirect(url_for("material.material"))
 
@@ -143,6 +148,7 @@ def delete_material_page(material_id):
         return redirect(url_for("material.material"))
 
     delete_material(material_id)
+    log_activity("System User", "Material Deleted", f"Deleted material {existing['material_name']}")
     flash(f"Material '{existing['material_name']}' deleted.", "warning")
     return redirect(url_for("material.material"))
 
@@ -157,6 +163,9 @@ def _validate(form):
 
     if not form.get("category", "").strip():
         errors["category"] = "Category is required."
+
+    if not form.get("hsn_code", "").strip():
+        errors["hsn_code"] = "HSN code is required."
 
     if not form.get("uom", "").strip():
         errors["uom"] = "Unit is required."

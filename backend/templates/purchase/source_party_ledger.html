@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}{{ party.company_name }} – Purchase History – Right Ewaste ERP{% endblock %}
+{% block page_title %}Purchase History{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/party" class="text-decoration-none text-muted">Parties</a></li>
+<li class="breadcrumb-item active">{{ party.company_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="font-family: 'Inter', sans-serif;">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="/party" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Parties
+        </a>
+    </div>
+
+    <!-- Header Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Value -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total Inbound Value</span>
+                    <i class="bi bi-wallet2 text-success fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">₹{{ "%.2f"|format(stats.total_purchases) }}</h4>
+                <span class="text-muted small">Excluding Draft/Cancelled</span>
+            </div>
+        </div>
+
+        <!-- Total Invoices -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total Shipments</span>
+                    <i class="bi bi-truck text-primary fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">{{ stats.total_invoices }}</h4>
+                <span class="text-muted small">Intake receipts count</span>
+            </div>
+        </div>
+
+        <!-- Total Weight -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total Weight Received</span>
+                    <i class="bi bi-speedometer2 text-info fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">{{ "%.2f"|format(stats.total_weight) }} kg</h4>
+                <span class="text-muted small">Cumulative load weight</span>
+            </div>
+        </div>
+
+        <!-- Total Pieces -->
+        <div class="col-12 col-sm-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total Pieces Received</span>
+                    <i class="bi bi-cpu-fill text-warning fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">{{ stats.total_pieces }} pcs</h4>
+                <span class="text-muted small">Cumulative units count</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Party Info and Top Materials -->
+        <div class="col-12 col-lg-4">
+            <!-- Party profile card -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-3">
+                <div class="d-flex align-items-center mb-3">
+                    <div style="width:50px; height:50px; background:#eff6ff; color:#2563eb; border-radius:12px;" class="d-flex align-items-center justify-content-center me-3">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark m-0">{{ party.company_name }}</h6>
+                        <span class="text-muted small">Code: <code style="color:#2563eb;">{{ party.party_code }}</code></span>
+                    </div>
+                </div>
+                <div style="font-size: 13.5px; line-height: 1.8;" class="text-secondary">
+                    {% if party.contact_person %}<div><strong>Contact:</strong> {{ party.contact_person }}</div>{% endif %}
+                    {% if party.phone %}<div><strong>Phone:</strong> {{ party.phone }}</div>{% endif %}
+                    {% if party.email %}<div><strong>Email:</strong> {{ party.email }}</div>{% endif %}
+                    {% if party.gstin %}<div><strong>GSTIN:</strong> <span style="font-family: monospace;">{{ party.gstin }}</span></div>{% endif %}
+                    {% if party.pan %}<div><strong>PAN:</strong> <span style="font-family: monospace;">{{ party.pan }}</span></div>{% endif %}
+                    <div class="mt-2 pt-2 border-top">
+                        <strong>Address:</strong><br>
+                        {{ party.billing_address or '—' }}<br>
+                        {{ party.city or '' }}{% if party.state %}, {{ party.state }}{% endif %}{% if party.pincode %} – {{ party.pincode }}{% endif %}
+                    </div>
+                    <div class="mt-2 pt-2 border-top">
+                        <strong>Last Transaction Date:</strong><br>
+                        <span class="fw-bold text-primary">{{ stats.last_purchase_date }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top materials supplied -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-tag-fill text-primary me-2"></i> Top Materials Supplied</h6>
+                <ul class="list-group list-group-flush">
+                    {% for m in stats.frequent_materials %}
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <span style="font-size: 13px; font-weight:500;">{{ m.material_name }}</span>
+                        <span class="badge bg-primary-subtle text-primary" style="font-size: 11px; font-family: monospace;">{{ "%.2f"|format(m.total_qty) }} {{ m.uom }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item px-0 text-center py-3 text-muted" style="font-size: 13px;">No materials recorded.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Ledger Table list -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-receipt text-primary me-2"></i> Purchase History</h6>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover text-secondary" style="font-size: 13.5px;">
+                        <thead class="bg-light text-dark small text-uppercase fw-bold">
+                            <tr>
+                                <th>Invoice No.</th>
+                                <th>Date</th>
+                                <th>Intake Type</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in purchases %}
+                            <tr>
+                                <td>
+                                    <a href="/purchase/{{ inv.id }}/view" class="fw-bold text-primary text-decoration-none" style="font-family: monospace;">{{ inv.purchase_invoice_number }}</a>
+                                </td>
+                                <td>{{ inv.invoice_date }}</td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;">{{ inv.intake_type or 'Purchase' }}</span>
+                                </td>
+                                <td class="text-end fw-bold text-dark">₹{{ "%.2f"|format(inv.grand_total) }}</td>
+                                <td class="text-center">
+                                    {% if inv.status == 'DRAFT' %}
+                                        <span class="badge bg-secondary-subtle text-secondary px-2 py-0.5" style="font-size: 10px;">Draft</span>
+                                    {% elif inv.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger-subtle text-danger px-2 py-0.5" style="font-size: 10px;">Cancelled</span>
+                                    {% elif inv.status == 'PAID' %}
+                                        <span class="badge bg-success-subtle text-success px-2 py-0.5" style="font-size: 10px;">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-primary-subtle text-primary px-2 py-0.5" style="font-size: 10px;">{{ inv.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">No purchases found for this source party.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

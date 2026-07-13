@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Dashboard – Right Ewaste ERP{% endblock %}
+{% block page_title %}Purchase Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Purchase Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="font-family: 'Inter', sans-serif;">
+    <!-- KPI Row 1 -->
+    <div class="row g-3 mb-4">
+        <!-- Today's Purchases -->
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Today's Purchases</span>
+                    <i class="bi bi-calendar-event fs-4 opacity-50"></i>
+                </div>
+                <h3 class="fw-bold mb-1">₹{{ "%.2f"|format(stats.today_purchases) }}</h3>
+                <span class="text-white-50 small">Updates in real-time</span>
+                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;">₹</div>
+            </div>
+        </div>
+
+        <!-- This Month's Purchases -->
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">This Month Purchases</span>
+                    <i class="bi bi-calendar-month fs-4 opacity-50"></i>
+                </div>
+                <h3 class="fw-bold mb-1">₹{{ "%.2f"|format(stats.monthly_purchases) }}</h3>
+                <span class="text-white-50 small">Current billing cycle</span>
+                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;">₹</div>
+            </div>
+        </div>
+
+        <!-- Total Invoices -->
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #0f766e, #14b8a6); color: white;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Number of Receipts</span>
+                    <i class="bi bi-file-earmark-text fs-4 opacity-50"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ stats.invoice_count }}</h3>
+                <span class="text-white-50 small">Active transactions</span>
+                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;"><i class="bi bi-files"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row 2 -->
+    <div class="row g-3 mb-4">
+        <!-- Average Invoice Value -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total Weight</span>
+                    <i class="bi bi-speedometer text-primary fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">{{ "%.2f"|format(stats.total_weight) }} kg</h4>
+                <span class="text-muted small">E-waste collected</span>
+            </div>
+        </div>
+
+        <!-- Total Pieces -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total Pieces</span>
+                    <i class="bi bi-cpu text-primary fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">{{ stats.total_pieces }} pcs</h4>
+                <span class="text-muted small">Total items collected</span>
+            </div>
+        </div>
+
+        <!-- Top Source Party -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Top Source Party</span>
+                    <i class="bi bi-person-badge text-success fs-5 opacity-75"></i>
+                </div>
+                <h5 class="fw-bold mb-1 text-truncate" title="{{ stats.top_supplier }}">{{ stats.top_supplier }}</h5>
+                <span class="text-muted small">Top volume supplier</span>
+            </div>
+        </div>
+
+        <!-- Total GST Paid -->
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white text-dark">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold" style="letter-spacing: 0.5px; font-size: 11px;">Total GST Paid</span>
+                    <i class="bi bi-percent text-danger fs-5 opacity-75"></i>
+                </div>
+                <h4 class="fw-bold mb-1">₹{{ "%.2f"|format(stats.gst_paid) }}</h4>
+                <span class="text-muted small">CGST + SGST + IGST</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row 3 — Today's Activity -->
+    <div class="row g-3 mb-4">
+        <!-- Today's Received Weight -->
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #065f46, #10b981); color: white;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Today's Received Weight</span>
+                    <i class="bi bi-scale fs-4 opacity-50"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ "%.2f"|format(stats.today_weight) }} kg</h3>
+                <span class="text-white-50 small">E-waste received today</span>
+                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;"><i class="bi bi-scale"></i></div>
+            </div>
+        </div>
+
+        <!-- Today's Received Pieces -->
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #1e40af, #60a5fa); color: white;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Today's Received Pieces</span>
+                    <i class="bi bi-box-seam fs-4 opacity-50"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ stats.today_pieces }} pcs</h3>
+                <span class="text-white-50 small">Devices received today</span>
+                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;"><i class="bi bi-box-seam"></i></div>
+            </div>
+        </div>
+
+        <!-- Pending Processing -->
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #7c3aed, #a78bfa); color: white;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Pending Processing</span>
+                    <i class="bi bi-gear-wide-connected fs-4 opacity-50"></i>
+                </div>
+                <h3 class="fw-bold mb-1">{{ stats.pending_processing }}</h3>
+                <span class="text-white-50 small">Factory module — coming soon</span>
+                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <!-- Top Suppliers Chart -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-bar-chart-steps text-primary me-2"></i> Top Source Parties</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="suppliersChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Material-wise Purchases Chart -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart text-primary me-2"></i> Material Distribution</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="materialChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category-wise Purchases Chart -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-donut-chart text-primary me-2"></i> Category Distribution</h6>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Logs / Listings -->
+    <div class="row g-3">
+        <!-- Recent Purchases Table -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark m-0"><i class="bi bi-receipt text-primary me-2"></i> Recent Inbound Invoices</h6>
+                    <a href="/purchase" class="btn btn-sm btn-outline-primary" style="font-size: 11px; border-radius: 20px;">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover text-secondary" style="font-size: 13.5px;">
+                        <thead class="bg-light text-dark small text-uppercase fw-bold">
+                            <tr>
+                                <th>Invoice No.</th>
+                                <th>Date</th>
+                                <th>Source Party</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in charts.recent_purchases %}
+                            <tr>
+                                <td>
+                                    <a href="/purchase/{{ inv.id }}/view" class="fw-bold text-primary text-decoration-none" style="font-family: monospace;">{{ inv.purchase_invoice_number }}</a>
+                                </td>
+                                <td>{{ inv.invoice_date }}</td>
+                                <td class="fw-bold text-dark">{{ inv.company_name }}</td>
+                                <td class="text-end fw-bold text-dark">₹{{ "%.2f"|format(inv.grand_total) }}</td>
+                                <td class="text-center">
+                                    {% if inv.status == 'DRAFT' %}
+                                        <span class="badge bg-secondary-subtle text-secondary px-2 py-0.5" style="font-size: 10px;">Draft</span>
+                                    {% elif inv.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger-subtle text-danger px-2 py-0.5" style="font-size: 10px;">Cancelled</span>
+                                    {% elif inv.status == 'PAID' %}
+                                        <span class="badge bg-success-subtle text-success px-2 py-0.5" style="font-size: 10px;">Paid</span>
+                                    {% else %}
+                                        <span class="badge bg-primary-subtle text-primary px-2 py-0.5" style="font-size: 10px;">{{ inv.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4">No recent receipts recorded.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Source Parties List -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-dark m-0"><i class="bi bi-people text-primary me-2"></i> Recent Source Parties</h6>
+                    <a href="/party" class="btn btn-sm btn-outline-primary" style="font-size: 11px; border-radius: 20px;">Manage</a>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for p in charts.recent_suppliers %}
+                    <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 13.5px;">{{ p.company_name }}</div>
+                            <span class="text-muted small"><i class="bi bi-geo-alt me-1"></i>{{ p.state }} &nbsp;|&nbsp; <i class="bi bi-telephone me-1"></i>{{ p.phone or '—' }}</span>
+                        </div>
+                        <a href="/purchase/party/{{ p.id }}/ledger" class="btn btn-sm btn-outline-success py-1 px-2 text-decoration-none" style="font-size: 10px; border-radius: 20px;">
+                            <i class="bi bi-journal-text"></i> Ledger
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 text-muted">No source parties found.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Top Suppliers Chart
+    const supCtx = document.getElementById('suppliersChart').getContext('2d');
+    const supLabels = [{% for r in charts.top_suppliers %}"{{ r.label }}"{% if not loop.last %},{% endif %}{% endfor %}];
+    const supData = [{% for r in charts.top_suppliers %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(supCtx, {
+        type: 'bar',
+        data: {
+            labels: supLabels.length ? supLabels : ['No Data'],
+            datasets: [{
+                label: 'Purchase Value (₹)',
+                data: supData.length ? supData : [0],
+                backgroundColor: 'rgba(37, 99, 235, 0.85)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // 2. Material-wise Chart
+    const matCtx = document.getElementById('materialChart').getContext('2d');
+    const matLabels = [{% for r in charts.material_wise %}"{{ r.label }}"{% if not loop.last %},{% endif %}{% endfor %}];
+    const matData = [{% for r in charts.material_wise %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(matCtx, {
+        type: 'pie',
+        data: {
+            labels: matLabels.length ? matLabels : ['No Data'],
+            datasets: [{
+                data: matData.length ? matData : [1],
+                backgroundColor: ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        }
+    });
+
+    // 3. Category-wise Chart
+    const catCtx = document.getElementById('categoryChart').getContext('2d');
+    const catLabels = [{% for r in charts.category_wise %}"{{ r.label }}"{% if not loop.last %},{% endif %}{% endfor %}];
+    const catData = [{% for r in charts.category_wise %}{{ r.value }}{% if not loop.last %},{% endif %}{% endfor %}];
+    
+    new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+            labels: catLabels.length ? catLabels : ['No Data'],
+            datasets: [{
+                data: catData.length ? catData : [1],
+                backgroundColor: ['#0f766e', '#14b8a6', '#5eead4', '#99f6e4', '#ccfbf1']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        }
+    });
+});
+</script>
+{% endblock %}

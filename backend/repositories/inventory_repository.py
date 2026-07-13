@@ -5,7 +5,7 @@ def get_stock_summary(search_query=None, category=None, start_date=None, end_dat
     conn = get_connection()
     cursor = conn.cursor()
     
-    p_where = ["pi.is_active = 1"]
+    p_where = ["pi.is_active = 1", "pi.status NOT IN ('DRAFT', 'CANCELLED')"]
     p_params = []
     if start_date:
         p_where.append("pi.invoice_date >= ?")
@@ -15,7 +15,7 @@ def get_stock_summary(search_query=None, category=None, start_date=None, end_dat
         p_params.append(end_date)
     p_clause = " AND ".join(p_where)
     
-    s_where = ["si.is_active = 1"]
+    s_where = ["si.is_active = 1", "si.status NOT IN ('DRAFT', 'CANCELLED')"]
     s_params = []
     if start_date:
         s_where.append("si.invoice_date >= ?")
@@ -87,7 +87,7 @@ def get_material_ledger(material_id, start_date=None, end_date=None):
             pii.rate AS rate
         FROM purchase_invoice_item pii
         JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
-        WHERE pii.material_id = ? AND pi.is_active = 1
+        WHERE pii.material_id = ? AND pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
     """
     p_params = [material_id]
     
@@ -107,7 +107,7 @@ def get_material_ledger(material_id, start_date=None, end_date=None):
             sii.rate AS rate
         FROM sales_invoice_item sii
         JOIN sales_invoice si ON sii.sales_invoice_id = si.id
-        WHERE sii.material_id = ? AND si.is_active = 1
+        WHERE sii.material_id = ? AND si.is_active = 1 AND si.status NOT IN ('DRAFT', 'CANCELLED')
     """
     s_params = [material_id]
     

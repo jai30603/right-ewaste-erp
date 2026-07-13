@@ -14,12 +14,12 @@ def _generate_purchase_invoice_number(cursor):
     """
     year = datetime.now().year
     cursor.execute(
-        "SELECT MAX(CAST(SUBSTR(purchase_invoice_number, 11) AS INTEGER)) "
+        "SELECT MAX(CAST(SUBSTR(purchase_invoice_number, 10) AS INTEGER)) "
         "FROM purchase_invoice WHERE purchase_invoice_number LIKE ?",
-        (f"PINV-{year}-%",)
+        (f"PUR-{year}-%",)
     )
     max_num = cursor.fetchone()[0] or 0
-    return f"PINV-{year}-{(max_num + 1):05d}"
+    return f"PUR-{year}-{(max_num + 1):06d}"
 
 
 # ── Read queries ──────────────────────────────────────────────────────────────
@@ -168,7 +168,9 @@ def get_purchase_invoice_items(invoice_id):
 def create_purchase_invoice(
     party_id, invoice_date, supplier_invoice_number, payment_mode,
     transporter, vehicle_number, remarks, items, company_state_code, party_state_code,
-    eway_bill_number=None, reference_number=None, status="CONFIRMED", created_by=None
+    eway_bill_number=None, reference_number=None, status="CONFIRMED", created_by=None,
+    intake_type="Purchase", vehicle_type=None, driver_name=None,
+    weight_slip_number=None, ready_for_processing=0
 ):
     totals = build_purchase_totals(items, company_state_code, party_state_code)
     conn = get_connection()
@@ -181,8 +183,9 @@ def create_purchase_invoice(
                 purchase_invoice_number, invoice_date, supplier_id, supplier_invoice_number,
                 payment_mode, vehicle_number, transporter, remarks, subtotal, cgst, sgst, igst,
                 gst_amount, round_off, grand_total, status, eway_bill_number, reference_number,
-                created_by
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                created_by, intake_type, vehicle_type, driver_name, weight_slip_number,
+                ready_for_processing
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             invoice_number,
             invoice_date,
@@ -203,6 +206,11 @@ def create_purchase_invoice(
             eway_bill_number or None,
             reference_number or None,
             created_by or None,
+            intake_type or "Purchase",
+            vehicle_type or None,
+            driver_name or None,
+            weight_slip_number or None,
+            int(ready_for_processing or 0)
         ))
         invoice_id = cursor.lastrowid
         for item in items:
@@ -232,7 +240,9 @@ def create_purchase_invoice(
 def update_purchase_invoice(
     invoice_id, party_id, invoice_date, supplier_invoice_number, payment_mode,
     transporter, vehicle_number, remarks, items, company_state_code, party_state_code,
-    eway_bill_number=None, reference_number=None, status="CONFIRMED", updated_by=None
+    eway_bill_number=None, reference_number=None, status="CONFIRMED", updated_by=None,
+    intake_type="Purchase", vehicle_type=None, driver_name=None,
+    weight_slip_number=None, ready_for_processing=0
 ):
     totals = build_purchase_totals(items, company_state_code, party_state_code)
     conn = get_connection()
@@ -244,7 +254,9 @@ def update_purchase_invoice(
                 supplier_id = ?, invoice_date = ?, supplier_invoice_number = ?, payment_mode = ?,
                 vehicle_number = ?, transporter = ?, remarks = ?, subtotal = ?, cgst = ?, sgst = ?,
                 igst = ?, gst_amount = ?, round_off = ?, grand_total = ?, status = ?,
-                eway_bill_number = ?, reference_number = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP
+                eway_bill_number = ?, reference_number = ?, updated_by = ?, intake_type = ?,
+                vehicle_type = ?, driver_name = ?, weight_slip_number = ?,
+                ready_for_processing = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """, (
             party_id,
@@ -265,6 +277,11 @@ def update_purchase_invoice(
             eway_bill_number or None,
             reference_number or None,
             updated_by or None,
+            intake_type or "Purchase",
+            vehicle_type or None,
+            driver_name or None,
+            weight_slip_number or None,
+            int(ready_for_processing or 0),
             invoice_id,
         ))
         cursor.execute("DELETE FROM purchase_invoice_item WHERE purchase_invoice_id = ?", (invoice_id,))
@@ -350,7 +367,7 @@ def get_purchase_register_rows(
         JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
         JOIN party p ON pi.supplier_id = p.id
         JOIN material m ON pii.material_id = m.id
-        WHERE pi.is_active = 1
+        WHERE pi.is_active = 1 AND pi.status != 'DRAFT'
     """
     params = []
     
@@ -387,10 +404,14 @@ def get_purchase_register_rows(
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
+    
+    cursor.execute("SELECT state_code FROM company LIMIT 1")
+    company_row = cursor.fetchone()
+    company_state_code = company_row[0] if company_row else "27"
+    
     conn.close()
     
     results = []
-    company_state_code = "27"
     for r in rows:
         item = dict(r)
         taxable = float(item["taxable_value"] or 0.0)
@@ -420,8 +441,8 @@ def get_purchase_monthly_analytics():
                SUM(pi.subtotal) AS taxable,
                SUM(pi.cgst + pi.sgst + pi.igst) AS gst,
                SUM(pi.grand_total) AS total
-        FROM purchase_invoice pi
-        WHERE pi.is_active = 1
+         FROM purchase_invoice pi
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
         GROUP BY month
         ORDER BY month ASC
         LIMIT 12
@@ -438,7 +459,7 @@ def get_top_suppliers():
         SELECT p.company_name, SUM(pi.grand_total) AS total_val
         FROM purchase_invoice pi
         JOIN party p ON pi.supplier_id = p.id
-        WHERE pi.is_active = 1
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
         GROUP BY pi.supplier_id
         ORDER BY total_val DESC
         LIMIT 5
@@ -456,7 +477,7 @@ def get_top_purchased_materials():
         FROM purchase_invoice_item pii
         JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
         JOIN material m ON pii.material_id = m.id
-        WHERE pi.is_active = 1
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
         GROUP BY pii.material_id
         ORDER BY qty DESC
         LIMIT 5
@@ -464,3 +485,253 @@ def get_top_purchased_materials():
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def get_purchase_dashboard_stats():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    month_str = datetime.now().strftime("%Y-%m-%d")[:7] # YYYY-MM
+    
+    # Today's Purchases
+    cursor.execute("""
+        SELECT SUM(grand_total) FROM purchase_invoice 
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED') AND invoice_date = ?
+    """, (today_str,))
+    today_purchases = cursor.fetchone()[0] or 0.0
+    
+    # Monthly Purchases
+    cursor.execute("""
+        SELECT SUM(grand_total) FROM purchase_invoice 
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED') AND invoice_date LIKE ?
+    """, (f"{month_str}-%",))
+    monthly_purchases = cursor.fetchone()[0] or 0.0
+    
+    # Total Weight
+    cursor.execute("""
+        SELECT SUM(pii.weight) FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+    """)
+    total_weight = cursor.fetchone()[0] or 0.0
+    
+    # Total Pieces
+    cursor.execute("""
+        SELECT SUM(pii.pieces) FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+    """)
+    total_pieces = cursor.fetchone()[0] or 0
+    
+    # Invoice Count
+    cursor.execute("""
+        SELECT COUNT(id) FROM purchase_invoice 
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+    """)
+    invoice_count = cursor.fetchone()[0] or 0
+    
+    # GST Paid
+    cursor.execute("""
+        SELECT SUM(cgst + sgst + igst) FROM purchase_invoice 
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+    """)
+    gst_paid = cursor.fetchone()[0] or 0.0
+    
+    # Top Supplier
+    cursor.execute("""
+        SELECT p.company_name, SUM(pi.grand_total) AS total_val
+        FROM purchase_invoice pi
+        JOIN party p ON pi.supplier_id = p.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY pi.supplier_id
+        ORDER BY total_val DESC
+        LIMIT 1
+    """)
+    top_sup_row = cursor.fetchone()
+    top_supplier = top_sup_row[0] if top_sup_row else "—"
+    
+    # Most Purchased Material
+    cursor.execute("""
+        SELECT m.material_name, SUM(pii.quantity) AS qty
+        FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        JOIN material m ON pii.material_id = m.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY pii.material_id
+        ORDER BY qty DESC
+        LIMIT 1
+    """)
+    top_mat_row = cursor.fetchone()
+    top_material = top_mat_row[0] if top_mat_row else "—"
+    
+    # Today's Weight Received
+    cursor.execute("""
+        SELECT SUM(pii.weight) FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED') AND pi.invoice_date = ?
+    """, (today_str,))
+    today_weight = cursor.fetchone()[0] or 0.0
+
+    # Today's Pieces Received
+    cursor.execute("""
+        SELECT SUM(pii.pieces) FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED') AND pi.invoice_date = ?
+    """, (today_str,))
+    today_pieces = cursor.fetchone()[0] or 0
+
+    conn.close()
+
+    return {
+        "today_purchases": today_purchases,
+        "monthly_purchases": monthly_purchases,
+        "total_weight": total_weight,
+        "total_pieces": total_pieces,
+        "invoice_count": invoice_count,
+        "gst_paid": gst_paid,
+        "top_supplier": top_supplier,
+        "top_material": top_material,
+        "today_weight": today_weight,
+        "today_pieces": today_pieces,
+        "pending_processing": 0  # Placeholder for future Factory module integration
+    }
+
+
+def get_purchase_charts_data():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Material-wise Purchases
+    cursor.execute("""
+        SELECT m.material_name AS label, SUM(pii.quantity) AS value
+        FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        JOIN material m ON pii.material_id = m.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY pii.material_id
+        ORDER BY value DESC
+        LIMIT 5
+    """)
+    material_wise = [dict(r) for r in cursor.fetchall()]
+    
+    # Category-wise Purchases
+    cursor.execute("""
+        SELECT m.category AS label, SUM(pii.quantity) AS value
+        FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        JOIN material m ON pii.material_id = m.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY m.category
+        ORDER BY value DESC
+    """)
+    category_wise = [dict(r) for r in cursor.fetchall()]
+    
+    # Top Suppliers List
+    cursor.execute("""
+        SELECT p.company_name AS label, SUM(pi.grand_total) AS value
+        FROM purchase_invoice pi
+        JOIN party p ON pi.supplier_id = p.id
+        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY pi.supplier_id
+        ORDER BY value DESC
+        LIMIT 5
+    """)
+    top_suppliers = [dict(r) for r in cursor.fetchall()]
+    
+    # Recent purchases
+    cursor.execute("""
+        SELECT pi.id, pi.purchase_invoice_number, pi.invoice_date, p.company_name, pi.grand_total, pi.status
+        FROM purchase_invoice pi
+        JOIN party p ON pi.supplier_id = p.id
+        WHERE pi.is_active = 1
+        ORDER BY pi.invoice_date DESC, pi.id DESC
+        LIMIT 5
+    """)
+    recent_purchases = [dict(r) for r in cursor.fetchall()]
+    
+    # Recent suppliers added
+    cursor.execute("""
+        SELECT id, company_name, phone, state, created_at
+        FROM party
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 5
+    """)
+    recent_suppliers = [dict(r) for r in cursor.fetchall()]
+    
+    # Recent materials added
+    cursor.execute("""
+        SELECT id, material_code, material_name, category, uom
+        FROM material
+        WHERE is_active = 1
+        ORDER BY id DESC
+        LIMIT 5
+    """)
+    recent_materials = [dict(r) for r in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        "material_wise": material_wise,
+        "category_wise": category_wise,
+        "top_suppliers": top_suppliers,
+        "recent_purchases": recent_purchases,
+        "recent_suppliers": recent_suppliers,
+        "recent_materials": recent_materials
+    }
+
+
+def get_source_party_ledger_stats(party_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Total purchases amount and invoice count
+    cursor.execute("""
+        SELECT SUM(grand_total), COUNT(id) FROM purchase_invoice
+        WHERE supplier_id = ? AND is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+    """, (party_id,))
+    amt_cnt = cursor.fetchone()
+    total_purchases = amt_cnt[0] or 0.0
+    total_invoices = amt_cnt[1] or 0
+    
+    # Total Weight and Pieces
+    cursor.execute("""
+        SELECT SUM(pii.weight), SUM(pii.pieces) FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        WHERE pi.supplier_id = ? AND pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+    """, (party_id,))
+    wp = cursor.fetchone()
+    total_weight = wp[0] or 0.0
+    total_pieces = wp[1] or 0
+    
+    # Last purchase date
+    cursor.execute("""
+        SELECT MAX(invoice_date) FROM purchase_invoice
+        WHERE supplier_id = ? AND is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+    """, (party_id,))
+    last_purchase_date = cursor.fetchone()[0] or "—"
+    
+    # Frequent materials
+    cursor.execute("""
+        SELECT m.material_name, SUM(pii.quantity) as total_qty, m.uom
+        FROM purchase_invoice_item pii
+        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
+        JOIN material m ON pii.material_id = m.id
+        WHERE pi.supplier_id = ? AND pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY pii.material_id
+        ORDER BY total_qty DESC
+        LIMIT 5
+    """, (party_id,))
+    frequent_materials = [dict(r) for r in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {
+        "total_purchases": total_purchases,
+        "total_invoices": total_invoices,
+        "total_weight": total_weight,
+        "total_pieces": total_pieces,
+        "last_purchase_date": last_purchase_date,
+        "frequent_materials": frequent_materials
+    }

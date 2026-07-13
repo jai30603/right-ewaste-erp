@@ -64,7 +64,7 @@ class PurchaseServiceTest(unittest.TestCase):
                 return None
 
             def fetchall(self):
-                return [["PINV-2026-00005"], ["PINV-2026-00003"]]
+                return [["PUR-2026-000005"], ["PUR-2026-000003"]]
 
         class FakeConn:
             def cursor(self):
@@ -74,7 +74,7 @@ class PurchaseServiceTest(unittest.TestCase):
                 return None
 
         with patch("backend.services.purchase_service.get_connection", return_value=FakeConn()):
-            self.assertEqual(generate_purchase_invoice_number(), "PINV-2026-00006")
+            self.assertEqual(generate_purchase_invoice_number(), "PUR-2026-000006")
 
 
 if __name__ == "__main__":

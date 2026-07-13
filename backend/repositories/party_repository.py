@@ -133,3 +133,13 @@ def delete_party(party_id):
     """, (party_id,))
     conn.commit()
     conn.close()
+
+
+def get_active_party_states():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT state FROM party WHERE state IS NOT NULL AND state != '' AND is_active = 1")
+    states = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return states
+

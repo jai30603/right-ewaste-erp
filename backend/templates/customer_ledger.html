@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Ledger – {{ party.company_name }} – Right Ewaste ERP{% endblock %}
+{% block page_title %}Customer Ledger{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/party" class="text-decoration-none text-muted">Customer Directory</a></li>
+<li class="breadcrumb-item active">{{ party.company_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="font-family: 'Inter', sans-serif;">
+    
+    <!-- Customer Details Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="row g-3 align-items-center">
+            <div class="col-12 col-md-auto d-flex justify-content-center">
+                <div class="rounded-circle bg-success bg-opacity-10 p-4 text-success" style="width: 80px; height: 80px; display: flex; justify-content: center; align-items: center;">
+                    <i class="bi bi-building fs-1"></i>
+                </div>
+            </div>
+            <div class="col-12 col-md">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <h3 class="fw-bold mb-0 text-dark">{{ party.company_name }}</h3>
+                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">{{ party.party_type }}</span>
+                </div>
+                <p class="text-muted mb-0"><i class="bi bi-geo-alt-fill me-1"></i> {{ party.billing_address }}, {{ party.city }}, {{ party.state }} - {{ party.pincode }}</p>
+                <div class="row mt-3 g-2 text-secondary small">
+                    <div class="col-6 col-sm-4 col-md-3"><strong>GSTIN:</strong> {{ party.gstin or '—' }}</div>
+                    <div class="col-6 col-sm-4 col-md-3"><strong>PAN:</strong> {{ party.pan or '—' }}</div>
+                    <div class="col-6 col-sm-4 col-md-3"><strong>State Code:</strong> {{ party.state_code }}</div>
+                    <div class="col-6 col-sm-4 col-md-3"><strong>Contact:</strong> {{ party.contact_person or '—' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="row g-3 mb-4">
+        <!-- Total Purchase Value -->
+        <div class="col-12 col-sm-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold">Total Purchases</span>
+                    <i class="bi bi-currency-rupee text-success fs-5"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">₹{{ "%.2f"|format(total_purchase_val) }}</h4>
+                <span class="text-muted small">Accumulated grand total</span>
+            </div>
+        </div>
+
+        <!-- Invoice Count -->
+        <div class="col-12 col-sm-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold">Invoice Count</span>
+                    <i class="bi bi-file-earmark-text text-success fs-5"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">{{ total_invoices }}</h4>
+                <span class="text-muted small">Billed transactions</span>
+            </div>
+        </div>
+
+        <!-- Last Purchase Date -->
+        <div class="col-12 col-sm-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small text-uppercase fw-bold">Last Purchase</span>
+                    <i class="bi bi-calendar3 text-success fs-5"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">{{ last_purchase_date }}</h4>
+                <span class="text-muted small">Most recent order</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger / Invoices List -->
+    <div class="row g-3">
+        <!-- Invoices List -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-receipt text-success me-2"></i> Sales Invoices</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover text-secondary">
+                        <thead class="bg-light text-dark small text-uppercase fw-bold">
+                            <tr>
+                                <th>Inv No</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in invoices %}
+                            <tr>
+                                <td>
+                                    <a href="/sales/{{ inv.id }}/view" class="fw-bold text-success text-decoration-none" style="font-family: monospace;">{{ inv.invoice_number }}</a>
+                                </td>
+                                <td>{{ inv.invoice_date }}</td>
+                                <td class="fw-bold text-dark">₹{{ "%.2f"|format(inv.grand_total) }}</td>
+                                <td>
+                                    {% if inv.status == 'DRAFT' %}
+                                    <span class="badge bg-secondary text-white rounded-pill">Draft</span>
+                                    {% elif inv.status == 'CONFIRMED' %}
+                                    <span class="badge bg-primary text-white rounded-pill">Confirmed</span>
+                                    {% elif inv.status == 'PRINTED' %}
+                                    <span class="badge bg-info text-dark rounded-pill">Printed</span>
+                                    {% elif inv.status == 'PAID' %}
+                                    <span class="badge bg-success text-white rounded-pill">Paid</span>
+                                    {% else %}
+                                    <span class="badge bg-danger text-white rounded-pill">Cancelled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4">No purchases found for this client.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Materials Purchased -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-box-seam text-success me-2"></i> Top Materials</h5>
+                <ul class="list-group list-group-flush">
+                    {% for mat in top_materials %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent text-secondary py-3">
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark">{{ mat.material_name }}</h6>
+                            <span class="small text-muted">{{ mat.uom }}</span>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-bold" style="font-size: 12px;">{{ mat.total_qty }} {{ mat.uom }}</span>
+                    </li>
+                    {% else %}
+                    <li class="text-center text-muted py-4">No material data available</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

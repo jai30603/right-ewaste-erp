@@ -1,5 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -14,8 +14,10 @@
 <body>
 
 <div class="erp-wrapper">
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-    <!-- ── Sidebar ────────────────────────────────────────────────── -->
+    <!-- Sidebar -->
     <aside class="erp-sidebar">
 
         <div class="sidebar-brand">
@@ -55,18 +57,48 @@
         </div>
 
         <div class="sidebar-section">
-            <div class="sidebar-section-label">Transactions</div>
+            <div class="sidebar-section-label">Purchase</div>
             <ul class="sidebar-nav">
                 <li>
-                    <a href="/sales" class="{{ 'active' if request.path.startswith('/sales') else '' }}">
-                        <i class="bi bi-receipt nav-icon"></i>
-                        Sales Invoice
+                    <a href="/purchase/dashboard" class="{{ 'active' if request.path == '/purchase/dashboard' else '' }}">
+                        <i class="bi bi-speedometer2 nav-icon"></i>
+                        Dashboard
                     </a>
                 </li>
                 <li>
-                    <a href="/purchase" class="{{ 'active' if request.path.startswith('/purchase') else '' }}">
+                    <a href="/purchase" class="{{ 'active' if request.path == '/purchase' or (request.path.startswith('/purchase/') and 'dashboard' not in request.path and 'register' not in request.path and 'party' not in request.path) else '' }}">
                         <i class="bi bi-cart nav-icon"></i>
-                        Purchase Invoice
+                        Invoices
+                    </a>
+                </li>
+                <li>
+                    <a href="/purchase/register" class="{{ 'active' if request.path == '/purchase/register' else '' }}">
+                        <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
+                        Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Sales</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/sales/dashboard" class="{{ 'active' if request.path == '/sales/dashboard' else '' }}">
+                        <i class="bi bi-speedometer2 nav-icon"></i>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="/sales" class="{{ 'active' if request.path == '/sales' or (request.path.startswith('/sales/') and 'dashboard' not in request.path and 'register' not in request.path) else '' }}">
+                        <i class="bi bi-receipt nav-icon"></i>
+                        Invoices
+                    </a>
+                </li>
+                <li>
+                    <a href="/sales/register" class="{{ 'active' if request.path == '/sales/register' else '' }}">
+                        <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
+                        Register
                     </a>
                 </li>
             </ul>
@@ -88,15 +120,9 @@
             <div class="sidebar-section-label">Reports</div>
             <ul class="sidebar-nav">
                 <li>
-                    <a href="/sales/register" class="{{ 'active' if request.path == '/sales/register' else '' }}">
-                        <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
-                        Sales Register
-                    </a>
-                </li>
-                <li>
-                    <a href="/purchase/register" class="{{ 'active' if request.path == '/purchase/register' else '' }}">
-                        <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
-                        Purchase Register
+                    <a href="/audit-log" class="{{ 'active' if request.path == '/audit-log' else '' }}">
+                        <i class="bi bi-journal-text nav-icon"></i>
+                        Audit Trail
                     </a>
                 </li>
             </ul>
@@ -108,11 +134,13 @@
 
     </aside>
 
-    <!-- ── Main ───────────────────────────────────────────────────── -->
+    <!-- Main -->
     <div class="erp-main">
 
-        <!-- Topbar -->
         <header class="erp-topbar">
+            <button class="sidebar-toggle-btn" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+                <i class="bi bi-list"></i>
+            </button>
             <div>
                 <p class="page-title mb-0">{% block page_title %}{% endblock %}</p>
                 <nav aria-label="breadcrumb" class="d-none d-sm-block">
@@ -123,10 +151,12 @@
             </div>
             <div class="topbar-right">
                 <span class="topbar-chip"><i class="bi bi-building me-1"></i>Right Ewaste</span>
+                <button id="darkModeToggle" class="btn btn-sm dark-mode-btn" title="Toggle Dark Mode" onclick="toggleDarkMode()">
+                    <i class="bi bi-moon-fill" id="darkModeIcon"></i>
+                </button>
             </div>
         </header>
 
-        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div style="padding: 12px 32px 0;">
@@ -142,7 +172,6 @@
         {% endif %}
         {% endwith %}
 
-        <!-- Page content -->
         <main class="erp-content">
             {% block content %}{% endblock %}
         </main>
@@ -152,7 +181,55 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Sidebar toggle for mobile
+    function toggleSidebar() {
+        var sidebar = document.querySelector('.erp-sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+        document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+    }
+    function closeSidebar() {
+        var sidebar = document.querySelector('.erp-sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    // Close sidebar when a nav link is clicked on mobile
+    document.addEventListener('DOMContentLoaded', function() {
+        var navLinks = document.querySelectorAll('.sidebar-nav a');
+        navLinks.forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 992) { closeSidebar(); }
+            });
+        });
+    });
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        var icon = document.getElementById('darkModeIcon');
+        if (icon) icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+        localStorage.setItem('erpTheme', theme);
+    }
+    function toggleDarkMode() {
+        var current = document.documentElement.getAttribute('data-theme');
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+    (function () {
+        var saved = localStorage.getItem('erpTheme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+    })();
+    document.addEventListener('DOMContentLoaded', function () {
+        var saved = localStorage.getItem('erpTheme') || 'light';
+        applyTheme(saved);
+    });
+</script>
+
 {% block scripts %}{% endblock %}
 
 </body>
 </html>
+

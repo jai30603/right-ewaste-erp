@@ -58,7 +58,7 @@ def get_material_by_id(material_id):
 
 def add_material(
     material_name, category, hsn_code,
-    uom, gst_percentage, description
+    uom, gst_percentage, description, tracking_type='BOTH'
 ):
     material_code = generate_material_code()
     conn = get_connection()
@@ -66,11 +66,11 @@ def add_material(
     cursor.execute("""
         INSERT INTO material (
             material_code, material_name, category,
-            hsn_code, uom, gst_percentage, description
-        ) VALUES (?,?,?,?,?,?,?)
+            hsn_code, uom, gst_percentage, description, tracking_type
+        ) VALUES (?,?,?,?,?,?,?,?)
     """, (
         material_code, material_name, category or None,
-        hsn_code or None, uom, gst_percentage, description or None
+        hsn_code or None, uom, gst_percentage, description or None, tracking_type
     ))
     conn.commit()
     conn.close()
@@ -79,7 +79,7 @@ def add_material(
 def update_material(
     material_id,
     material_name, category, hsn_code,
-    uom, gst_percentage, description
+    uom, gst_percentage, description, tracking_type='BOTH'
 ):
     conn = get_connection()
     cursor = conn.cursor()
@@ -91,11 +91,12 @@ def update_material(
             uom            = ?,
             gst_percentage = ?,
             description    = ?,
+            tracking_type  = ?,
             updated_at     = CURRENT_TIMESTAMP
         WHERE id = ?
     """, (
         material_name, category or None, hsn_code or None,
-        uom, gst_percentage, description or None,
+        uom, gst_percentage, description or None, tracking_type,
         material_id
     ))
     conn.commit()

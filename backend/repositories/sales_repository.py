@@ -20,7 +20,7 @@ def _generate_invoice_number(cursor):
         (f"INV-{year}-%",)
     )
     max_num = cursor.fetchone()[0] or 0
-    return f"INV-{year}-{(max_num + 1):05d}"
+    return f"INV-{year}-{(max_num + 1):06d}"
 
 
 from services.invoice_service import calculate_gst as _calculate_gst
@@ -35,7 +35,8 @@ def get_all_invoices(
     start_date=None, end_date=None, search_query=None,
     financial_year=None, month=None, customer_id=None,
     material_id=None, state=None, gst_type=None,
-    status=None, payment_mode=None, sort_by=None
+    status=None, payment_mode=None, sort_by=None,
+    category=None, created_by=None
 ):
     conn = get_connection()
     cursor = conn.cursor()
@@ -85,6 +86,18 @@ def get_all_invoices(
             WHERE sii.sales_invoice_id = si.id AND sii.material_id = ?
         )"""
         params.append(int(material_id))
+
+    if category and category != "all":
+        query += """ AND EXISTS (
+            SELECT 1 FROM sales_invoice_item sii
+            JOIN material m ON sii.material_id = m.id
+            WHERE sii.sales_invoice_id = si.id AND m.category = ?
+        )"""
+        params.append(category)
+
+    if created_by and created_by != "all":
+        query += " AND si.created_by = ?"
+        params.append(created_by)
         
     if state and state != "all":
         query += " AND p.state = ?"
@@ -113,6 +126,8 @@ def get_all_invoices(
             si.vehicle_number LIKE ? OR
             si.transporter LIKE ? OR
             si.remarks LIKE ? OR
+            si.reference_number LIKE ? OR
+            si.status LIKE ? OR
             EXISTS (
                 SELECT 1 FROM sales_invoice_item sii
                 JOIN material m ON sii.material_id = m.id
@@ -120,7 +135,7 @@ def get_all_invoices(
             )
         )"""
         like_str = f"%{search_query}%"
-        params.extend([like_str] * 8)
+        params.extend([like_str] * 10)
         
     if sort_by == "date_desc":
         query += " ORDER BY si.invoice_date DESC, si.invoice_number DESC"
@@ -132,6 +147,8 @@ def get_all_invoices(
         query += " ORDER BY p.company_name ASC"
     elif sort_by == "grand_total":
         query += " ORDER BY si.grand_total DESC"
+    elif sort_by == "created_at":
+        query += " ORDER BY si.created_at DESC"
     else:
         query += " ORDER BY si.invoice_date DESC, si.invoice_number DESC"
         
@@ -443,7 +460,7 @@ def get_sales_register_rows(
         JOIN sales_invoice si ON sii.sales_invoice_id = si.id
         JOIN party p ON si.party_id = p.id
         JOIN material m ON sii.material_id = m.id
-        WHERE si.is_active = 1
+        WHERE si.is_active = 1 AND si.status != 'DRAFT'
     """
     params = []
     
@@ -480,10 +497,14 @@ def get_sales_register_rows(
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
+    
+    cursor.execute("SELECT state_code FROM company LIMIT 1")
+    company_row = cursor.fetchone()
+    company_state_code = company_row[0] if company_row else "27"
+    
     conn.close()
     
     results = []
-    company_state_code = "27"
     for r in rows:
         item = dict(r)
         taxable = float(item["taxable_value"] or 0.0)

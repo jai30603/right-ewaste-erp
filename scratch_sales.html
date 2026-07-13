@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Invoice – Right Ewaste ERP</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="erp-wrapper">
+
+    <!-- ── Sidebar ────────────────────────────────────────────────── -->
+    <aside class="erp-sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-icon">♻️</div>
+            <h6>Right Ewaste</h6>
+            <small>ERP System</small>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Main</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/" class="">
+                        <i class="bi bi-grid-1x2 nav-icon"></i>
+                        Dashboard
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Masters</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/party" class="">
+                        <i class="bi bi-people nav-icon"></i>
+                        Party
+                    </a>
+                </li>
+                <li>
+                    <a href="/material" class="">
+                        <i class="bi bi-box-seam nav-icon"></i>
+                        Material
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Transactions</div>
+            <ul class="sidebar-nav">
+                <li>
+                    <a href="/sales" class="active">
+                        <i class="bi bi-receipt nav-icon"></i>
+                        Sales Invoice
+                    </a>
+                </li>
+                <li>
+                    <a href="/purchase" class="">
+                        <i class="bi bi-cart nav-icon"></i>
+                        Purchase Invoice
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            &copy; 2025 Right Ewaste Recycle
+        </div>
+
+    </aside>
+
+    <!-- ── Main ───────────────────────────────────────────────────── -->
+    <div class="erp-main">
+
+        <!-- Topbar -->
+        <header class="erp-topbar">
+            <div>
+                <p class="page-title mb-0">Sales Invoice</p>
+                <nav aria-label="breadcrumb" class="d-none d-sm-block">
+                    <ol class="breadcrumb mb-0" style="font-size:12px;">
+                        
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Sales Invoice</li>
+
+                    </ol>
+                </nav>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-chip"><i class="bi bi-building me-1"></i>Right Ewaste</span>
+            </div>
+        </header>
+
+        <!-- Flash messages -->
+        
+        
+        
+
+        <!-- Page content -->
+        <main class="erp-content">
+            
+
+<div class="erp-card">
+
+    <div class="erp-card-header">
+        <i class="bi bi-receipt" style="font-size:18px; color:#3cb371;"></i>
+        <h5>Sales Invoices</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            (4 records)
+        </span>
+        <div class="ms-auto">
+            <a href="/sales/add" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i> New Invoice
+            </a>
+        </div>
+    </div>
+
+    <div class="erp-card-body p-0">
+
+        <!-- ── Filter Bar ────────────────────────────────────────────── -->
+        <div class="p-3 bg-light border-bottom">
+            <form method="GET" action="/sales" class="row g-2 align-items-end" id="filter-form">
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#3a5244;">Quick Filter</label>
+                    <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
+                        <option value="all" selected>All Invoices</option>
+                        <option value="today" >Today</option>
+                        <option value="this_week" >This Week</option>
+                        <option value="this_month" >This Month</option>
+                        <option value="last_6_months" >Last 6 Months</option>
+                        <option value="custom" >Custom Range</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#3a5244;">Year</label>
+                    <select name="year" id="year" class="form-select form-select-sm">
+                        <option value="all" selected>All Years</option>
+                        <option value="2024" >2024</option>
+                        <option value="2025" >2025</option>
+                        <option value="2026" >2026</option>
+                        <option value="2027" >2027</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#3a5244;">Month</label>
+                    <select name="month" id="month" class="form-select form-select-sm">
+                        <option value="all" selected>All Months</option>
+                        <option value="01" >January</option>
+                        <option value="02" >February</option>
+                        <option value="03" >March</option>
+                        <option value="04" >April</option>
+                        <option value="05" >May</option>
+                        <option value="06" >June</option>
+                        <option value="07" >July</option>
+                        <option value="08" >August</option>
+                        <option value="09" >September</option>
+                        <option value="10" >October</option>
+                        <option value="11" >November</option>
+                        <option value="12" >December</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6 custom-date-field" style="display: none;">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#3a5244;">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="">
+                </div>
+
+                <div class="col-md-2 col-sm-6 custom-date-field" style="display: none;">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#3a5244;">End Date</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="">
+                </div>
+
+                <div class="col-md-4 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-erp-primary px-3 py-2" style="font-size:12.5px;">
+                        <i class="bi bi-filter"></i> Apply Filter
+                    </button>
+                    <a href="/sales" class="btn btn-sm btn-erp-secondary px-3 py-2" style="font-size:12.5px;">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Invoice No.</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Payment Mode</th>
+                    <th>Transporter</th>
+                    <th>Vehicle No.</th>
+                    <th style="text-align:center;">Items</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Grand Total</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>
+                        <a href="/sales/4/view"
+                           style="color:#2d6a4f; font-family:monospace; font-size:12px;
+                                  font-weight:600; text-decoration:none;">
+                            INV-2026-00004
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">2026-07-11</td>
+                    <td style="font-weight:500;">MAHESHWARI TRADERS</td>
+                    <td>NEFT</td>
+                    <td>—</td>
+                    <td><span style="font-family:monospace; font-size:12px;">—</span></td>
+                    <td style="text-align:center;">
+                        <span class="badge-type" style="background:#eff6ff; color:#1e40af;">
+                            2
+                        </span>
+                    </td>
+                    <td>
+                        
+                            <span class="badge-type badge-customer">Confirmed</span>
+                        
+                    </td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace; white-space:nowrap;">
+                        ₹ 1227.00
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <a href="/sales/4/view"
+                           title="Preview"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="/sales/4/pdf"
+                           title="Download PDF"
+                           style="color:#1e40af; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                        <a href="/sales/4/edit"
+                           title="Edit"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="/sales/4/delete" style="display:inline;" onsubmit="return confirm('Delete this sales invoice?');">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="/sales/3/view"
+                           style="color:#2d6a4f; font-family:monospace; font-size:12px;
+                                  font-weight:600; text-decoration:none;">
+                            INV-2026-00003
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">2026-07-11</td>
+                    <td style="font-weight:500;">ABC SCRAP DEALERS</td>
+                    <td>Cash</td>
+                    <td>—</td>
+                    <td><span style="font-family:monospace; font-size:12px;">—</span></td>
+                    <td style="text-align:center;">
+                        <span class="badge-type" style="background:#eff6ff; color:#1e40af;">
+                            1
+                        </span>
+                    </td>
+                    <td>
+                        
+                            <span class="badge-type badge-customer">Confirmed</span>
+                        
+                    </td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace; white-space:nowrap;">
+                        ₹ 0.00
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <a href="/sales/3/view"
+                           title="Preview"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="/sales/3/pdf"
+                           title="Download PDF"
+                           style="color:#1e40af; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                        <a href="/sales/3/edit"
+                           title="Edit"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="/sales/3/delete" style="display:inline;" onsubmit="return confirm('Delete this sales invoice?');">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="/sales/2/view"
+                           style="color:#2d6a4f; font-family:monospace; font-size:12px;
+                                  font-weight:600; text-decoration:none;">
+                            INV-2026-00002
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">2026-07-10</td>
+                    <td style="font-weight:500;">MAHESHWARI TRADERS</td>
+                    <td>NEFT</td>
+                    <td>Self</td>
+                    <td><span style="font-family:monospace; font-size:12px;">MH01AB1234</span></td>
+                    <td style="text-align:center;">
+                        <span class="badge-type" style="background:#eff6ff; color:#1e40af;">
+                            1
+                        </span>
+                    </td>
+                    <td>
+                        
+                            <span class="badge-type badge-customer">Confirmed</span>
+                        
+                    </td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace; white-space:nowrap;">
+                        ₹ 58292.00
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <a href="/sales/2/view"
+                           title="Preview"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="/sales/2/pdf"
+                           title="Download PDF"
+                           style="color:#1e40af; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                        <a href="/sales/2/edit"
+                           title="Edit"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="/sales/2/delete" style="display:inline;" onsubmit="return confirm('Delete this sales invoice?');">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <a href="/sales/1/view"
+                           style="color:#2d6a4f; font-family:monospace; font-size:12px;
+                                  font-weight:600; text-decoration:none;">
+                            INV-2026-00001
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">2026-07-10</td>
+                    <td style="font-weight:500;">MAHESHWARI TRADERS</td>
+                    <td>NEFT</td>
+                    <td>Self</td>
+                    <td><span style="font-family:monospace; font-size:12px;">MH01AB1234</span></td>
+                    <td style="text-align:center;">
+                        <span class="badge-type" style="background:#eff6ff; color:#1e40af;">
+                            0
+                        </span>
+                    </td>
+                    <td>
+                        
+                            <span class="badge-type badge-customer">Confirmed</span>
+                        
+                    </td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace; white-space:nowrap;">
+                        ₹ 59000.00
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <a href="/sales/1/view"
+                           title="Preview"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="/sales/1/pdf"
+                           title="Download PDF"
+                           style="color:#1e40af; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                        <a href="/sales/1/edit"
+                           title="Edit"
+                           style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="/sales/1/delete" style="display:inline;" onsubmit="return confirm('Delete this sales invoice?');">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                
+            </tbody>
+        </table>
+        </div>
+        
+        <!-- Export Excel button -->
+        <div class="p-3 bg-light border-top d-flex justify-content-start">
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-spreadsheet" style="color:#2d6a4f; font-size:15px;"></i> Export to Excel
+            </button>
+        </div>
+        
+
+    </div>
+</div>
+
+
+        </main>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function toggleCustomDates() {
+    const select = document.getElementById('date_filter');
+    const customFields = document.querySelectorAll('.custom-date-field');
+    customFields.forEach(field => {
+        field.style.display = select.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+function exportExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/sales/export?" + params.toString();
+}
+</script>
+
+
+</body>
+</html>

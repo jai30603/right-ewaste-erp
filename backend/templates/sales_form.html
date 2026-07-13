@@ -114,6 +114,18 @@
                        value="{{ val('remarks') }}" placeholder="Optional notes">
             </div>
 
+            <!-- Customer Info banner (populated dynamically) -->
+            <div class="col-12" id="customer-info-banner" style="display: none; margin-top: 15px;">
+                <div class="card border-0 bg-light p-3 rounded-3 text-secondary" style="font-size: 13.0px; border-left: 4px solid #2e7d32 !important;">
+                    <div class="row g-2">
+                        <div class="col-md-3"><strong>GSTIN:</strong> <span id="info-gstin">—</span></div>
+                        <div class="col-md-3"><strong>State:</strong> <span id="info-state">—</span></div>
+                        <div class="col-md-3"><strong>State Code:</strong> <span id="info-state-code">—</span></div>
+                        <div class="col-12 mt-1"><strong>Billing Address:</strong> <span id="info-address">—</span></div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -244,7 +256,8 @@
                 <option value="{{ m.id }}"
                         data-gst="{{ m.gst_percentage }}"
                         data-uom="{{ m.uom or '' }}"
-                        data-hsn="{{ m.hsn_code or '' }}">
+                        data-hsn="{{ m.hsn_code or '' }}"
+                        data-tracking-type="{{ m.tracking_type or 'BOTH' }}">
                     {{ m.material_name }}
                 </option>
                 {% endfor %}
@@ -360,10 +373,33 @@ function onMaterialChange(select) {
     const gst = opt ? (parseFloat(opt.dataset.gst) || 0) : 0;
     const uom = opt ? (opt.dataset.uom || '') : '';
     const hsn = opt ? (opt.dataset.hsn || '') : '';
+    const trackingType = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
     
     tr.querySelector('.gst-pct').value = gst;
     tr.querySelector('.uom-code').value = uom;
     tr.querySelector('.hsn-code').value = hsn;
+
+    const weightInput = tr.querySelector('input[name="weight[]"]');
+    const piecesInput = tr.querySelector('input[name="pieces[]"]');
+
+    if (trackingType === 'WEIGHT_ONLY') {
+        weightInput.removeAttribute('disabled');
+        weightInput.style.background = '';
+        piecesInput.setAttribute('disabled', 'true');
+        piecesInput.style.background = '#f4f7f5';
+        piecesInput.value = '0';
+    } else if (trackingType === 'PIECES_ONLY') {
+        piecesInput.removeAttribute('disabled');
+        piecesInput.style.background = '';
+        weightInput.setAttribute('disabled', 'true');
+        weightInput.style.background = '#f4f7f5';
+        weightInput.value = '0';
+    } else {
+        weightInput.removeAttribute('disabled');
+        weightInput.style.background = '';
+        piecesInput.removeAttribute('disabled');
+        piecesInput.style.background = '';
+    }
     
     tr.querySelector('.qty-input').focus();
     recalcAll();
@@ -378,8 +414,35 @@ function calcRow(input) {
     recalcAll();
 }
 
-// ── Customer change → re-run GST ───────────────────────────────────────
+// ── Customer change → re-run GST & load details ──────────────────────
 function onPartyChange() {
+    const sel = document.getElementById('party-select');
+    const partyId = sel.value;
+    const banner = document.getElementById('customer-info-banner');
+    if (!partyId) {
+        banner.style.display = 'none';
+        recalcAll();
+        return;
+    }
+
+    fetch(`/api/party/${partyId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                banner.style.display = 'none';
+            } else {
+                document.getElementById('info-gstin').textContent = data.gstin || '—';
+                document.getElementById('info-state').textContent = data.state || '—';
+                document.getElementById('info-state-code').textContent = data.state_code || '—';
+                document.getElementById('info-address').textContent = data.billing_address || '—';
+                banner.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching party details:', err);
+            banner.style.display = 'none';
+        });
+
     recalcAll();
 }
 
@@ -497,13 +560,9 @@ window.addEventListener('DOMContentLoaded', function(){
     const last = rows[rows.length - 1];
     
     // Set material selection
-    last.querySelector('.material-select').value = '{{ item.material_id }}';
-    
-    // Trigger and populate based on selection
-    const opt = last.querySelector('.material-select').options[last.querySelector('.material-select').selectedIndex];
-    last.querySelector('.gst-pct').value = opt ? (opt.dataset.gst || 0) : 0;
-    last.querySelector('.uom-code').value = opt ? (opt.dataset.uom || '') : '';
-    last.querySelector('.hsn-code').value = opt ? (opt.dataset.hsn || '') : '';
+    const selEl = last.querySelector('.material-select');
+    selEl.value = '{{ item.material_id }}';
+    onMaterialChange(selEl);
     
     last.querySelector('.qty-input').value = '{{ item.quantity or 0 }}';
     last.querySelector('.amount-input').value = '{{ item.amount or 0 }}';
@@ -515,7 +574,9 @@ window.addEventListener('DOMContentLoaded', function(){
     addRow();
     {% endif %}
     
-    if (document.getElementById('party-select').value) recalcAll();
+    if (document.getElementById('party-select').value) {
+        onPartyChange();
+    }
 });
 </script>
 {% endblock %}

@@ -37,6 +37,9 @@
                     <span style="background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.5px;">
                         ✓ {{ invoice.status }}
                     </span>
+                    <span style="background:#f1f5f9; color:#475569; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.5px; margin-left:5px;">
+                        Intake: {{ invoice.intake_type or 'Purchase' }}
+                    </span>
                 </div>
                 {% endif %}
             </div>
@@ -44,7 +47,7 @@
     </div>
     <div class="row mb-4">
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Supplier</div>
+            <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Source Party</div>
             {% if supplier %}
             <div style="font-size:14px; font-weight:700; color:#0f2318;">{{ supplier.company_name }}</div>
             <div style="font-size:12px; color:#5a6a62; line-height:1.8; margin-top:4px;">{% if supplier.billing_address %}{{ supplier.billing_address }}<br>{% endif %}{{ supplier.city }}{% if supplier.state %}, {{ supplier.state }}{% endif %}{% if supplier.pincode %} – {{ supplier.pincode }}{% endif %}<br>{% if supplier.gstin %}<strong>GSTIN:</strong> {{ supplier.gstin }}<br>{% endif %}{% if supplier.phone %}<strong>Ph:</strong> {{ supplier.phone }}{% endif %}</div>
@@ -56,6 +59,15 @@
                 <div><strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}</div>
                 <div><strong>Transporter:</strong> {{ invoice.transporter or '—' }}</div>
                 <div><strong>Vehicle No.:</strong> <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span></div>
+                {% if invoice.vehicle_type %}
+                <div><strong>Vehicle Type:</strong> {{ invoice.vehicle_type }}</div>
+                {% endif %}
+                {% if invoice.driver_name %}
+                <div><strong>Driver Name:</strong> {{ invoice.driver_name }}</div>
+                {% endif %}
+                {% if invoice.weight_slip_number %}
+                <div><strong>Weight Slip Ref.:</strong> <span style="font-family:monospace;">{{ invoice.weight_slip_number }}</span></div>
+                {% endif %}
                 {% if invoice.eway_bill_number %}
                 <div><strong>E-Way Bill:</strong> <span style="font-family:monospace;">{{ invoice.eway_bill_number }}</span></div>
                 {% endif %}

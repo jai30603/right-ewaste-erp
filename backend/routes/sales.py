@@ -29,10 +29,49 @@ from repositories.sales_repository import (
 from repositories.party_repository import get_all_parties, get_party_by_id
 from repositories.material_repository import get_all_materials
 from repositories.company_repository import get_company
+from repositories.activity_log_repository import log_activity
 
 sales_bp = Blueprint("sales", __name__)
 
 PAYMENT_MODES = ["Cash", "NEFT", "RTGS", "UPI", "Cheque", "Credit"]
+
+
+# ── V2 Stock & Status Transition Validation ───────────────────────────────
+
+def check_stock_available(material_id, needed_qty, exclude_invoice_id=None):
+    from repositories.inventory_repository import get_stock_summary
+    summary = get_stock_summary()
+    for row in summary:
+        if row["id"] == material_id:
+            current_stock = float(row["current_stock"] or 0.0)
+            if exclude_invoice_id:
+                from database import get_connection
+                conn = get_connection()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT SUM(quantity) FROM sales_invoice_item 
+                    WHERE sales_invoice_id = ? AND material_id = ?
+                """, (exclude_invoice_id, material_id))
+                res = cursor.fetchone()
+                existing_invoice_qty = float(res[0] or 0.0) if res else 0.0
+                conn.close()
+                current_stock += existing_invoice_qty
+            return current_stock >= needed_qty
+    return needed_qty <= 0.0
+
+
+def validate_status_transition(old_status, new_status):
+    if old_status == new_status:
+        return True
+    if old_status == "DRAFT":
+        return new_status in ["DRAFT", "CONFIRMED", "CANCELLED"]
+    if old_status == "CONFIRMED":
+        return new_status in ["CONFIRMED", "PRINTED", "PAID", "CANCELLED"]
+    if old_status == "PRINTED":
+        return new_status in ["PRINTED", "PAID", "CANCELLED"]
+    if old_status in ["PAID", "CANCELLED"]:
+        return False
+    return True
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -138,6 +177,8 @@ def sales():
     
     customer_id = request.args.get("customer_id", "all").strip()
     material_id = request.args.get("material_id", "all").strip()
+    category = request.args.get("category", "all").strip()
+    created_by = request.args.get("created_by", "all").strip()
     state = request.args.get("state", "all").strip()
     gst_type = request.args.get("gst_type", "all").strip()
     status = request.args.get("status", "all").strip()
@@ -157,20 +198,25 @@ def sales():
         gst_type=gst_type,
         status=status,
         payment_mode=payment_mode,
-        sort_by=sort_by
+        sort_by=sort_by,
+        category=category,
+        created_by=created_by
     )
 
-    from repositories.party_repository import get_all_parties
+    from repositories.party_repository import get_all_parties, get_active_party_states
     from repositories.material_repository import get_all_materials
+    from repositories.inventory_repository import get_all_categories
     from database import get_connection
 
-    parties = get_all_parties()
+    parties = [p for p in get_all_parties() if p["party_type"] in ("CUSTOMER", "BOTH")]
     materials = get_all_materials()
+    states = get_active_party_states()
+    categories_list = get_all_categories()
     
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT state FROM party WHERE state IS NOT NULL AND state != '' AND is_active = 1")
-    states = [r[0] for r in cursor.fetchall()]
+    cursor.execute("SELECT DISTINCT created_by FROM sales_invoice WHERE created_by IS NOT NULL AND created_by != ''")
+    creators = [r[0] for r in cursor.fetchall()]
     conn.close()
 
     page = int(request.args.get("page", 1))
@@ -186,6 +232,8 @@ def sales():
         parties=parties,
         materials=materials,
         states=states,
+        categories_list=categories_list,
+        creators=creators,
         q=q,
         date_filter=date_filter,
         year=year,
@@ -195,6 +243,8 @@ def sales():
         end_date=end_date,
         customer_id=customer_id,
         material_id=material_id,
+        category=category,
+        created_by=created_by,
         state=state,
         gst_type=gst_type,
         status=status,
@@ -204,6 +254,7 @@ def sales():
         total_pages=total_pages,
         total_items=total_items
     )
+
 
 
 @sales_bp.route("/sales/export")
@@ -353,7 +404,7 @@ def export_sales_pdf():
 
 @sales_bp.route("/sales/add", methods=["GET", "POST"])
 def add_sales_invoice():
-    parties   = get_all_parties()
+    parties   = [p for p in get_all_parties() if p["party_type"] in ("CUSTOMER", "BOTH")]
     materials = get_all_materials()
     company   = get_company()
     company_state_code = company["state_code"] if company else ""
@@ -374,11 +425,31 @@ def add_sales_invoice():
             mid = material_ids[i].strip()
             if not mid:
                 continue
+
+            # Fetch material tracking type
+            from repositories.material_repository import get_material_by_id
+            mat = get_material_by_id(int(mid))
+            tracking_type = mat["tracking_type"] if mat else "BOTH"
+            
+            qty_val = float(qtys[i] or 0)
+            weight_val = float(weights[i] or 0)
+            pieces_val = int(pieces_list[i] or 0)
+            
+            if qty_val <= 0:
+                errors["items"] = "Quantity must be greater than zero for all items."
+            
+            if tracking_type == "WEIGHT_ONLY" and weight_val <= 0:
+                errors["items"] = f"Weight is required and must be greater than 0 for item '{mat['material_name']}'."
+            elif tracking_type == "PIECES_ONLY" and pieces_val <= 0:
+                errors["items"] = f"Pieces are required and must be greater than 0 for item '{mat['material_name']}'."
+            elif tracking_type == "BOTH" and (weight_val <= 0 or pieces_val <= 0):
+                errors["items"] = f"Both Weight and Pieces are required for item '{mat['material_name']}'."
+
             items.append({
                 "material_id":    int(mid),
-                "qty":            float(qtys[i]            or 0),
-                "weight":         float(weights[i]         or 0),
-                "pieces":         int(pieces_list[i]       or 0),
+                "qty":            qty_val,
+                "weight":         weight_val,
+                "pieces":         pieces_val,
                 "rate":           float(rates[i]           or 0),
                 "amount":         float(amounts[i]         or 0),
                 "gst_percentage": float(gst_percentages[i] or 0),
@@ -386,6 +457,22 @@ def add_sales_invoice():
 
         if not items:
             errors["items"] = "Add at least one item."
+
+        # Check stock for each item if status is CONFIRMED
+        status_val = request.form.get("status", "CONFIRMED")
+        if status_val == "CONFIRMED":
+            stock_errors = []
+            for item in items:
+                mid = item["material_id"]
+                qty = item["qty"]
+                is_available = check_stock_available(mid, qty)
+                if not is_available:
+                    from repositories.material_repository import get_material_by_id
+                    mat = get_material_by_id(mid)
+                    mat_name = mat["material_name"] if mat else "Selected material"
+                    stock_errors.append(f"Stock not available for '{mat_name}' (insufficient quantity).")
+            if stock_errors:
+                errors["items"] = " ".join(stock_errors)
 
         if errors:
             flash("Please fix the errors below.", "danger")
@@ -416,8 +503,8 @@ def add_sales_invoice():
                 party_state_code   = party_state_code,
                 eway_bill_number   = request.form.get("eway_bill_number"),
                 reference_number   = request.form.get("reference_number"),
-                status             = request.form.get("status", "CONFIRMED"),
-                created_by         = None,
+                status             = status_val,
+                created_by         = "System User",
             )
         except RuntimeError as exc:
             flash(str(exc), "danger")
@@ -431,6 +518,10 @@ def add_sales_invoice():
                 errors={},
                 today=date.today().isoformat(),
             )
+
+        invoice = get_invoice_by_id(invoice_id)
+        inv_num = invoice["invoice_number"] if invoice else f"ID {invoice_id}"
+        log_activity("System User", "Create Invoice", f"Created sales invoice {inv_num}")
 
         flash("Sales invoice created successfully.", "success")
         return redirect(url_for("sales.view_invoice", invoice_id=invoice_id))
@@ -456,7 +547,7 @@ def edit_sales_invoice(invoice_id):
         flash("Sales invoice not found.", "danger")
         return redirect(url_for("sales.sales"))
 
-    parties = get_all_parties()
+    parties = [p for p in get_all_parties() if p["party_type"] in ("CUSTOMER", "BOTH")]
     materials = get_all_materials()
     company = get_company()
     company_state_code = company["state_code"] if company else ""
@@ -476,11 +567,31 @@ def edit_sales_invoice(invoice_id):
             mid = material_ids[i].strip()
             if not mid:
                 continue
+
+            # Fetch material tracking type
+            from repositories.material_repository import get_material_by_id
+            mat = get_material_by_id(int(mid))
+            tracking_type = mat["tracking_type"] if mat else "BOTH"
+            
+            qty_val = float(qtys[i] or 0)
+            weight_val = float(weights[i] or 0)
+            pieces_val = int(pieces_list[i] or 0)
+            
+            if qty_val <= 0:
+                errors["items"] = "Quantity must be greater than zero for all items."
+            
+            if tracking_type == "WEIGHT_ONLY" and weight_val <= 0:
+                errors["items"] = f"Weight is required and must be greater than 0 for item '{mat['material_name']}'."
+            elif tracking_type == "PIECES_ONLY" and pieces_val <= 0:
+                errors["items"] = f"Pieces are required and must be greater than 0 for item '{mat['material_name']}'."
+            elif tracking_type == "BOTH" and (weight_val <= 0 or pieces_val <= 0):
+                errors["items"] = f"Both Weight and Pieces are required for item '{mat['material_name']}'."
+
             items.append({
                 "material_id": int(mid),
-                "qty": float(qtys[i] or 0),
-                "weight": float(weights[i] or 0),
-                "pieces": int(pieces_list[i] or 0),
+                "qty": qty_val,
+                "weight": weight_val,
+                "pieces": pieces_val,
                 "rate": float(rates[i] or 0),
                 "amount": float(amounts[i] or 0),
                 "gst_percentage": float(gst_percentages[i] or 0),
@@ -489,11 +600,34 @@ def edit_sales_invoice(invoice_id):
         if not items:
             errors["items"] = "Add at least one item."
 
+        # 1. Status Transition validation
+        old_status = existing["status"] or "CONFIRMED"
+        new_status = request.form.get("status", "CONFIRMED")
+        if not validate_status_transition(old_status, new_status):
+            errors["status"] = f"Invalid status transition from {old_status} to {new_status}."
+
+        # 2. Check stock for each item if new status is CONFIRMED
+        if new_status == "CONFIRMED" and not errors.get("status"):
+            stock_errors = []
+            for item in items:
+                mid = item["material_id"]
+                qty = item["qty"]
+                is_available = check_stock_available(mid, qty, exclude_invoice_id=invoice_id)
+                if not is_available:
+                    from repositories.material_repository import get_material_by_id
+                    mat = get_material_by_id(mid)
+                    mat_name = mat["material_name"] if mat else "Selected material"
+                    stock_errors.append(f"Stock not available for '{mat_name}' (insufficient quantity).")
+            if stock_errors:
+                errors["items"] = " ".join(stock_errors)
+
         if errors:
             flash("Please fix the errors below.", "danger")
+            form_data = dict(request.form)
+            form_data["status"] = new_status
             return render_template(
                 "sales_form.html",
-                form=request.form,
+                form=form_data,
                 parties=parties,
                 materials=materials,
                 payment_modes=PAYMENT_MODES,
@@ -518,9 +652,10 @@ def edit_sales_invoice(invoice_id):
             party_state_code,
             eway_bill_number   = request.form.get("eway_bill_number"),
             reference_number   = request.form.get("reference_number"),
-            status             = request.form.get("status", "CONFIRMED"),
-            updated_by         = None
+            status             = new_status,
+            updated_by         = "System User"
         )
+        log_activity("System User", "Update Invoice", f"Updated sales invoice {existing['invoice_number']}")
         flash("Sales invoice updated successfully.", "success")
         return redirect(url_for("sales.view_invoice", invoice_id=invoice_id))
 
@@ -557,6 +692,7 @@ def delete_sales_invoice_route(invoice_id):
         flash("Sales invoice not found.", "danger")
         return redirect(url_for("sales.sales"))
     delete_sales_invoice(invoice_id)
+    log_activity("System User", "Delete Invoice", f"Deleted sales invoice {existing['invoice_number']}")
     flash("Sales invoice deleted successfully.", "warning")
     return redirect(url_for("sales.sales"))
 
@@ -567,6 +703,7 @@ def delete_sales_invoice_route(invoice_id):
 def view_invoice(invoice_id):
     increment_print_count(invoice_id)
     ctx = _invoice_context(invoice_id)
+    log_activity("System User", "Print Invoice", f"Printed sales invoice {ctx['invoice']['invoice_number']}")
     return render_template("sales_invoice.html", **ctx)
 
 
@@ -588,6 +725,7 @@ def _fetch_pdf_resource(uri, rel):
 def download_pdf(invoice_id):
     increment_pdf_download_count(invoice_id)
     ctx  = _invoice_context(invoice_id)
+    log_activity("System User", "Download PDF", f"Downloaded PDF for sales invoice {ctx['invoice']['invoice_number']}")
     html = render_template("sales_invoice_pdf.html", **ctx)
 
     buf = io.BytesIO()
@@ -883,4 +1021,151 @@ def duplicate_invoice(invoice_id):
     except Exception as e:
         flash(f"Failed to duplicate invoice: {e}", "danger")
         return redirect(url_for("sales.sales"))
+
+
+# ── API Customer Details ──────────────────────────────────────────────────────
+
+@sales_bp.route("/api/party/<int:party_id>")
+def api_party_details(party_id):
+    party = get_party_by_id(party_id)
+    if not party:
+        return {"error": "Party not found"}, 404
+    return {
+        "id": party["id"],
+        "company_name": party["company_name"],
+        "gstin": party["gstin"] or "",
+        "billing_address": party["billing_address"] or "",
+        "state": party["state"] or "",
+        "state_code": party["state_code"] or ""
+    }
+
+
+# ── Sales Dashboard ───────────────────────────────────────────────────────────
+
+@sales_bp.route("/sales/dashboard")
+def sales_dashboard():
+    from database import get_connection
+    from datetime import date
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 1. Total confirmed invoices count & revenue
+    cursor.execute("""
+        SELECT COUNT(*), SUM(grand_total), AVG(grand_total), MAX(grand_total), MIN(grand_total)
+        FROM sales_invoice
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+    """)
+    totals = cursor.fetchone()
+    invoice_count = totals[0] or 0
+    total_sales = totals[1] or 0.0
+    avg_sales = totals[2] or 0.0
+    max_sales = totals[3] or 0.0
+    min_sales = totals[4] or 0.0
+    
+    # 2. Today's sales
+    today_str = date.today().isoformat()
+    cursor.execute("""
+        SELECT SUM(grand_total) FROM sales_invoice
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED') AND invoice_date = ?
+    """, (today_str,))
+    today_sales = cursor.fetchone()[0] or 0.0
+    
+    # 3. This month's sales
+    month_str = date.today().strftime("%Y-%m")
+    cursor.execute("""
+        SELECT SUM(grand_total) FROM sales_invoice
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED') AND strftime('%Y-%m', invoice_date) = ?
+    """, (month_str,))
+    this_month_sales = cursor.fetchone()[0] or 0.0
+    
+    # 4. Total GST Collected
+    cursor.execute("""
+        SELECT SUM(cgst + sgst + igst) FROM sales_invoice
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+    """)
+    total_gst = cursor.fetchone()[0] or 0.0
+    
+    # 5. Top Customer
+    cursor.execute("""
+        SELECT p.company_name, SUM(si.grand_total) as val
+        FROM sales_invoice si
+        JOIN party p ON si.party_id = p.id
+        WHERE si.is_active = 1 AND si.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY si.party_id
+        ORDER BY val DESC
+        LIMIT 1
+    """)
+    top_customer_row = cursor.fetchone()
+    top_customer = top_customer_row[0] if top_customer_row else "—"
+    
+    # 6. Top Selling Material
+    cursor.execute("""
+        SELECT m.material_name, SUM(sii.quantity) as qty
+        FROM sales_invoice_item sii
+        JOIN sales_invoice si ON sii.sales_invoice_id = si.id
+        JOIN material m ON sii.material_id = m.id
+        WHERE si.is_active = 1 AND si.status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY sii.material_id
+        ORDER BY qty DESC
+        LIMIT 1
+    """)
+    top_material_row = cursor.fetchone()
+    top_selling_material = top_material_row[0] if top_material_row else "—"
+    
+    # Monthly sales trends (last 12 months)
+    cursor.execute("""
+        SELECT strftime('%Y-%m', invoice_date) as month, SUM(grand_total) as val, SUM(cgst + sgst + igst) as gst_val
+        FROM sales_invoice
+        WHERE is_active = 1 AND status NOT IN ('DRAFT', 'CANCELLED')
+        GROUP BY month
+        ORDER BY month ASC
+        LIMIT 12
+    """)
+    trend_rows = cursor.fetchall()
+    months = [r[0] for r in trend_rows]
+    revenues = [float(r[1] or 0) for r in trend_rows]
+    gsts = [float(r[2] or 0) for r in trend_rows]
+    
+    # Sales by category
+    cursor.execute("""
+        SELECT m.category, SUM(sii.amount) as val
+        FROM sales_invoice_item sii
+        JOIN sales_invoice si ON sii.sales_invoice_id = si.id
+        JOIN material m ON sii.material_id = m.id
+        WHERE si.is_active = 1 AND si.status NOT IN ('DRAFT', 'CANCELLED') AND m.category IS NOT NULL
+        GROUP BY m.category
+    """)
+    category_rows = cursor.fetchall()
+    categories = [r[0] for r in category_rows]
+    category_vals = [float(r[1] or 0) for r in category_rows]
+    
+    conn.close()
+    
+    return render_template(
+        "sales_dashboard.html",
+        invoice_count=invoice_count,
+        total_sales=total_sales,
+        avg_sales=avg_sales,
+        max_sales=max_sales,
+        min_sales=min_sales,
+        today_sales=today_sales,
+        this_month_sales=this_month_sales,
+        total_gst=total_gst,
+        top_customer=top_customer,
+        top_selling_material=top_selling_material,
+        months=months,
+        revenues=revenues,
+        gsts=gsts,
+        categories=categories,
+        category_vals=category_vals
+    )
+
+# ── Audit Trail (Activity Log) ───────────────────────────────────────────────
+
+@sales_bp.route("/audit-log")
+def audit_log():
+    from repositories.activity_log_repository import get_all_activities
+    logs = get_all_activities()
+    return render_template("activity_log.html", logs=logs)
 

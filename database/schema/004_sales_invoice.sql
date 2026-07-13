@@ -32,6 +32,18 @@ CREATE TABLE IF NOT EXISTS sales_invoice (
 
     is_active INTEGER DEFAULT 1,
 
+    eway_bill_number TEXT,
+
+    reference_number TEXT,
+
+    created_by TEXT,
+
+    updated_by TEXT,
+
+    print_count INTEGER DEFAULT 0,
+
+    pdf_download_count INTEGER DEFAULT 0,
+
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

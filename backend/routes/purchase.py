@@ -401,7 +401,7 @@ def add_purchase_invoice():
     materials = get_all_materials()
     company = get_company()
     company_state_code = company["state_code"] if company else ""
-    suppliers = [p for p in parties if p["party_type"] in {"SUPPLIER", "BOTH"}]
+    suppliers = [p for p in parties if p["is_active"] == 1]
 
     if request.method == "POST":
         errors = _validate_header(request.form)
@@ -422,14 +422,6 @@ def add_purchase_invoice():
             rate_val = float(rates[i] or 0)
             w_val = float(weights[i] or 0)
             p_val = int(pieces_list[i] or 0)
-            
-            # Row verification: material, rate, weight or pieces required
-            if qty_val <= 0:
-                errors[f"row_{i}_qty"] = "Quantity must be greater than zero."
-            if rate_val <= 0:
-                errors[f"row_{i}_rate"] = "Rate is required."
-            if w_val <= 0 and p_val <= 0:
-                errors[f"row_{i}_weight_pieces"] = "Either Weight or Pieces is required."
 
             items.append({
                 "material_id": int(mid),
@@ -440,6 +432,9 @@ def add_purchase_invoice():
                 "amount": float(amounts[i] or 0),
                 "gst_percentage": float(gst_percentages[i] or 0),
             })
+
+        from services.purchase_service import validate_purchase_items
+        validate_purchase_items(items, errors)
 
         if not items:
             errors["items"] = "Add at least one item."
@@ -459,8 +454,14 @@ def add_purchase_invoice():
 
         supplier = get_party_by_id(int(request.form["supplier_id"]))
         supplier_state_code = supplier["state_code"] if supplier else ""
+        intake_type = request.form.get("intake_type", "Purchase")
+        vehicle_type = request.form.get("vehicle_type")
+        driver_name = request.form.get("driver_name")
+        weight_slip_number = request.form.get("weight_slip_number")
+        ready_for_processing = int(request.form.get("ready_for_processing", 0))
 
         try:
+            from repositories.activity_log_repository import log_activity
             invoice_id = create_purchase_invoice(
                 party_id=request.form["supplier_id"],
                 invoice_date=request.form["invoice_date"],
@@ -475,8 +476,16 @@ def add_purchase_invoice():
                 eway_bill_number=request.form.get("eway_bill_number"),
                 reference_number=request.form.get("reference_number"),
                 status=request.form.get("status", "CONFIRMED"),
-                created_by=None
+                created_by="System User",
+                intake_type=intake_type,
+                vehicle_type=vehicle_type,
+                driver_name=driver_name,
+                weight_slip_number=weight_slip_number,
+                ready_for_processing=ready_for_processing
             )
+            # Log action
+            inv_number = request.form.get("purchase_invoice_number", f"ID {invoice_id}")
+            log_activity("System User", "Create Purchase Invoice", f"Created purchase {inv_number} from party {supplier['company_name']} via {intake_type}")
         except Exception as exc:
             flash(str(exc), "danger")
             return render_template(
@@ -509,6 +518,8 @@ def add_purchase_invoice():
 def view_purchase_invoice(invoice_id):
     increment_purchase_print_count(invoice_id)
     ctx = _invoice_context(invoice_id)
+    from repositories.activity_log_repository import log_activity
+    log_activity("System User", "Print Purchase Invoice", f"Viewed/Printed purchase invoice {ctx['invoice']['purchase_invoice_number']}")
     return render_template("purchase_invoice.html", **ctx)
 
 
@@ -516,6 +527,8 @@ def view_purchase_invoice(invoice_id):
 def download_purchase_pdf(invoice_id):
     increment_purchase_pdf_download_count(invoice_id)
     ctx = _invoice_context(invoice_id)
+    from repositories.activity_log_repository import log_activity
+    log_activity("System User", "Generate PDF", f"Downloaded PDF for purchase invoice {ctx['invoice']['purchase_invoice_number']}")
     html = render_template("purchase_invoice_pdf.html", **ctx)
     buf = io.BytesIO()
     pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
@@ -542,7 +555,7 @@ def edit_purchase_invoice(invoice_id):
     materials = get_all_materials()
     company = get_company()
     company_state_code = company["state_code"] if company else ""
-    suppliers = [p for p in parties if p["party_type"] in {"SUPPLIER", "BOTH"}]
+    suppliers = [p for p in parties if p["is_active"] == 1]
 
     if request.method == "POST":
         errors = _validate_header(request.form)
@@ -563,13 +576,6 @@ def edit_purchase_invoice(invoice_id):
             rate_val = float(rates[i] or 0)
             w_val = float(weights[i] or 0)
             p_val = int(pieces_list[i] or 0)
-            
-            if qty_val <= 0:
-                errors[f"row_{i}_qty"] = "Quantity must be greater than zero."
-            if rate_val <= 0:
-                errors[f"row_{i}_rate"] = "Rate is required."
-            if w_val <= 0 and p_val <= 0:
-                errors[f"row_{i}_weight_pieces"] = "Either Weight or Pieces is required."
 
             items.append({
                 "material_id": int(mid),
@@ -580,6 +586,14 @@ def edit_purchase_invoice(invoice_id):
                 "amount": float(amounts[i] or 0),
                 "gst_percentage": float(gst_percentages[i] or 0),
             })
+
+        from services.purchase_service import validate_purchase_items, validate_purchase_status_transition
+        validate_purchase_items(items, errors)
+        
+        old_status = existing["status"] or "CONFIRMED"
+        new_status = request.form.get("status", "CONFIRMED")
+        if not validate_purchase_status_transition(old_status, new_status):
+            errors["status"] = f"Invalid status transition from {old_status} to {new_status}."
 
         if not items:
             errors["items"] = "Add at least one item."
@@ -600,8 +614,14 @@ def edit_purchase_invoice(invoice_id):
 
         supplier = get_party_by_id(int(request.form["supplier_id"]))
         supplier_state_code = supplier["state_code"] if supplier else ""
-        
+        intake_type = request.form.get("intake_type", "Purchase")
+        vehicle_type = request.form.get("vehicle_type")
+        driver_name = request.form.get("driver_name")
+        weight_slip_number = request.form.get("weight_slip_number")
+        ready_for_processing = int(request.form.get("ready_for_processing", 0))
+
         try:
+            from repositories.activity_log_repository import log_activity
             update_purchase_invoice(
                 invoice_id,
                 request.form["supplier_id"],
@@ -616,9 +636,16 @@ def edit_purchase_invoice(invoice_id):
                 supplier_state_code,
                 eway_bill_number=request.form.get("eway_bill_number"),
                 reference_number=request.form.get("reference_number"),
-                status=request.form.get("status", "CONFIRMED"),
-                updated_by=None
+                status=new_status,
+                updated_by="System User",
+                intake_type=intake_type,
+                vehicle_type=vehicle_type,
+                driver_name=driver_name,
+                weight_slip_number=weight_slip_number,
+                ready_for_processing=ready_for_processing
             )
+            # Log action
+            log_activity("System User", "Update Purchase Invoice", f"Updated purchase {existing['purchase_invoice_number']} details & items")
         except Exception as e:
             flash(str(e), "danger")
             return render_template(
@@ -648,6 +675,11 @@ def edit_purchase_invoice(invoice_id):
     form_data["eway_bill_number"] = existing["eway_bill_number"] or ""
     form_data["reference_number"] = existing["reference_number"] or ""
     form_data["status"] = existing["status"] or "CONFIRMED"
+    form_data["intake_type"] = existing["intake_type"] or "Purchase"
+    form_data["vehicle_type"] = existing["vehicle_type"] or ""
+    form_data["driver_name"] = existing["driver_name"] or ""
+    form_data["weight_slip_number"] = existing["weight_slip_number"] or ""
+    form_data["ready_for_processing"] = existing["ready_for_processing"] or 0
 
     return render_template(
         "purchase_form.html",
@@ -670,6 +702,8 @@ def delete_purchase_invoice_route(invoice_id):
         flash("Purchase invoice not found.", "danger")
         return redirect(url_for("purchase.purchase"))
     delete_purchase_invoice(invoice_id)
+    from repositories.activity_log_repository import log_activity
+    log_activity("System User", "Delete Purchase Invoice", f"Deleted purchase invoice {existing['purchase_invoice_number']}")
     flash("Purchase invoice deleted successfully.", "warning")
     return redirect(url_for("purchase.purchase"))
 
@@ -930,13 +964,50 @@ def duplicate_purchase_invoice(invoice_id):
             eway_bill_number=existing["eway_bill_number"],
             reference_number=existing["reference_number"],
             status="DRAFT",
-            created_by=None
+            created_by="System User",
+            intake_type=existing["intake_type"] or "Purchase"
         )
         flash("Invoice duplicated successfully as a DRAFT. Please review and update details.", "success")
         return redirect(url_for("purchase.edit_purchase_invoice", invoice_id=new_id))
     except Exception as e:
         flash(f"Failed to duplicate invoice: {e}", "danger")
         return redirect(url_for("purchase.purchase"))
+
+
+# ── Purchase Dashboard & Party Ledger ────────────────────────────────────────
+
+@purchase_bp.route("/purchase/dashboard")
+def purchase_dashboard():
+    from repositories.purchase_repository import get_purchase_dashboard_stats, get_purchase_charts_data
+    stats = get_purchase_dashboard_stats()
+    charts = get_purchase_charts_data()
+    return render_template(
+        "purchase/purchase_dashboard.html",
+        stats=stats,
+        charts=charts
+    )
+
+
+@purchase_bp.route("/purchase/party/<int:party_id>/ledger")
+def source_party_ledger(party_id):
+    from repositories.party_repository import get_party_by_id
+    from repositories.purchase_repository import get_source_party_ledger_stats, get_all_purchase_invoices
+    
+    party = get_party_by_id(party_id)
+    if not party:
+        flash("Party not found.", "danger")
+        return redirect(url_for("party.party"))
+        
+    stats = get_source_party_ledger_stats(party_id)
+    # Fetch all purchases for this specific party to render history list
+    purchases = get_all_purchase_invoices(supplier_id=str(party_id))
+    
+    return render_template(
+        "purchase/source_party_ledger.html",
+        party=party,
+        stats=stats,
+        purchases=purchases
+    )
 
 
 # ── Internal PDF resource loader ──────────────────────────────────────────────

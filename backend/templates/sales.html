@@ -110,6 +110,27 @@
                         <option value="inv_number" {% if sort_by == 'inv_number' %}selected{% endif %}>Invoice Number</option>
                         <option value="customer" {% if sort_by == 'customer' %}selected{% endif %}>Customer Name</option>
                         <option value="grand_total" {% if sort_by == 'grand_total' %}selected{% endif %}>Grand Total</option>
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Created Date</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Category</label>
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="all">All Categories</option>
+                        {% for cat in categories_list %}
+                        <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1b5e20;">Created By</label>
+                    <select name="created_by" class="form-select form-select-sm">
+                        <option value="all">All Users</option>
+                        {% for creator in creators %}
+                        <option value="{{ creator }}" {% if created_by == creator %}selected{% endif %}>{{ creator }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -157,6 +178,7 @@
                     <th>Customer Name</th>
                     <th>GSTIN</th>
                     <th>State</th>
+                    <th>Created By</th>
                     <th style="text-align:center;">Items</th>
                     <th style="text-align:right;">Taxable Value</th>
                     <th style="text-align:right;">CGST</th>
@@ -180,6 +202,7 @@
                     <td style="font-weight:500;">{{ inv.company_name }}</td>
                     <td><span style="font-family:monospace; font-size:12px;">{{ inv.gstin or '—' }}</span></td>
                     <td>{{ inv.state }}</td>
+                    <td><span class="small text-muted">{{ inv.created_by or '—' }}</span></td>
                     <td style="text-align:center;">
                         <span class="badge-type" style="background:#e8f5e9; color:#1b5e20;">{{ inv.item_count }}</span>
                     </td>
@@ -198,6 +221,10 @@
                             <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0.5" style="font-size:10px;">Draft</span>
                         {% elif inv.status == 'CANCELLED' %}
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5" style="font-size:10px;">Cancelled</span>
+                        {% elif inv.status == 'PRINTED' %}
+                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-0.5" style="font-size:10px;">Printed</span>
+                        {% elif inv.status == 'PAID' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size:10px;">Paid</span>
                         {% else %}
                             <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5" style="font-size:10px;">{{ inv.status }}</span>
                         {% endif %}

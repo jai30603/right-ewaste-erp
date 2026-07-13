@@ -112,14 +112,64 @@
                     <option value="DRAFT" {{ 'selected' if val('status') == 'DRAFT' }}>Draft</option>
                     <option value="CONFIRMED" {{ 'selected' if val('status') == 'CONFIRMED' or not val('status') }}>Confirmed</option>
                     <option value="CANCELLED" {{ 'selected' if val('status') == 'CANCELLED' }}>Cancelled</option>
-                    <option value="RECEIVED" {{ 'selected' if val('status') == 'RECEIVED' }}>Received</option>
-                    <option value="PAID" {{ 'selected' if val('status') == 'PAID' }}>Paid</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Intake Type</label>
+                <select name="intake_type" class="form-select form-select-sm">
+                    <option value="Purchase" {{ 'selected' if val('intake_type') == 'Purchase' or not val('intake_type') }}>Purchase</option>
+                    <option value="Donation" {{ 'selected' if val('intake_type') == 'Donation' }}>Donation</option>
+                    <option value="Direct Pickup" {{ 'selected' if val('intake_type') == 'Direct Pickup' }}>Direct Pickup</option>
                 </select>
             </div>
 
             <div class="col-md-12">
                 <label class="form-label">Remarks</label>
                 <input type="text" name="remarks" class="form-control form-control-sm" value="{{ val('remarks') }}" placeholder="Optional notes">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Transport Details ─────────────────────────────────────────────── -->
+<div class="erp-card mb-3">
+    <div class="erp-card-header" style="border-bottom: 2px solid #2563eb;">
+        <i class="bi bi-truck" style="font-size:18px; color:#2563eb;"></i>
+        <h5>Transport Details <small class="text-muted" style="font-size:12px;">(Optional)</small></h5>
+    </div>
+    <div class="erp-card-body">
+        <div class="row g-3">
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Vehicle Type</label>
+                <select name="vehicle_type" class="form-select form-select-sm">
+                    <option value="" {{ 'selected' if not val('vehicle_type') }}>— Select —</option>
+                    <option value="Truck" {{ 'selected' if val('vehicle_type') == 'Truck' }}>Truck</option>
+                    <option value="Tempo" {{ 'selected' if val('vehicle_type') == 'Tempo' }}>Tempo</option>
+                    <option value="Mini Truck" {{ 'selected' if val('vehicle_type') == 'Mini Truck' }}>Mini Truck</option>
+                    <option value="Pickup Van" {{ 'selected' if val('vehicle_type') == 'Pickup Van' }}>Pickup Van</option>
+                    <option value="Other" {{ 'selected' if val('vehicle_type') == 'Other' }}>Other</option>
+                </select>
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Driver Name</label>
+                <input type="text" name="driver_name" class="form-control form-control-sm" value="{{ val('driver_name') }}" placeholder="Driver's name">
+            </div>
+
+            <div class="col-md-3 col-sm-6">
+                <label class="form-label">Weight Slip / Weighbridge Ref.</label>
+                <input type="text" name="weight_slip_number" class="form-control form-control-sm" value="{{ val('weight_slip_number') }}" placeholder="WS-2024-001">
+            </div>
+
+            <div class="col-md-3 col-sm-6 d-flex align-items-end">
+                <div class="form-check ms-1 mt-2">
+                    <input class="form-check-input" type="checkbox" name="ready_for_processing" id="readyForProcessing" value="1"
+                        {{ 'checked' if val('ready_for_processing') == 1 or val('ready_for_processing') == '1' }}>
+                    <label class="form-check-label" for="readyForProcessing">
+                        Ready for Processing
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -253,7 +303,8 @@
                         data-gst="{{ m.gst_percentage }}"
                         data-uom="{{ m.uom or '' }}"
                         data-hsn="{{ m.hsn_code or '' }}"
-                        data-category="{{ m.category or '' }}">
+                        data-category="{{ m.category or '' }}"
+                        data-tracking-type="{{ m.tracking_type }}">
                     {{ m.material_name }}
                 </option>
                 {% endfor %}
@@ -393,11 +444,28 @@ function onMaterialChange(select) {
     const uom = opt ? (opt.dataset.uom || '') : '';
     const hsn = opt ? (opt.dataset.hsn || '') : '';
     const cat = opt ? (opt.dataset.category || '') : '';
+    const tracking = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
     
     tr.querySelector('.gst-pct').value = gst;
     tr.querySelector('.uom-code').value = uom;
     tr.querySelector('.hsn-code').value = hsn;
     tr.querySelector('.material-category').value = cat;
+    
+    const wInput = tr.querySelector('.weight-input');
+    const pInput = tr.querySelector('.pieces-input');
+    
+    if (tracking === "WEIGHT_ONLY") {
+        pInput.value = "0";
+        pInput.disabled = true;
+        wInput.disabled = false;
+    } else if (tracking === "PIECES_ONLY") {
+        wInput.value = "0";
+        wInput.disabled = true;
+        pInput.disabled = false;
+    } else {
+        wInput.disabled = false;
+        pInput.disabled = false;
+    }
     
     tr.querySelector('.qty-input').focus();
     recalcAll();
@@ -525,6 +593,10 @@ document.getElementById('invoice-form').addEventListener('submit', function(e) {
     
     rows.forEach((tr, index) => {
         const material = tr.querySelector('.material-select').value;
+        const select = tr.querySelector('.material-select');
+        const opt = select.options[select.selectedIndex];
+        const tracking = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
+        
         const qty = parseFloat(tr.querySelector('.qty-input').value) || 0;
         const rate = parseFloat(tr.querySelector('.rate-input').value) || 0;
         const weight = parseFloat(tr.querySelector('.weight-input').value) || 0;
@@ -539,9 +611,15 @@ document.getElementById('invoice-form').addEventListener('submit', function(e) {
         } else if (rate <= 0) {
             ok = false;
             errorMsg = `Row ${index + 1}: Rate must be greater than zero.`;
-        } else if (weight <= 0 && pieces <= 0) {
+        } else if (tracking === "WEIGHT_ONLY" && weight <= 0) {
             ok = false;
-            errorMsg = `Row ${index + 1}: Either Weight or Pieces must be greater than zero.`;
+            errorMsg = `Row ${index + 1}: Weight must be greater than zero for weight-only material.`;
+        } else if (tracking === "PIECES_ONLY" && pieces <= 0) {
+            ok = false;
+            errorMsg = `Row ${index + 1}: Pieces must be greater than zero for pieces-only material.`;
+        } else if (tracking === "BOTH" && (weight <= 0 || pieces <= 0)) {
+            ok = false;
+            errorMsg = `Row ${index + 1}: Both Weight and Pieces must be greater than zero.`;
         }
     });
     
@@ -563,11 +641,7 @@ window.addEventListener('DOMContentLoaded', function(){
     
     last.querySelector('.material-select').value = '{{ item.material_id }}';
     
-    const opt = last.querySelector('.material-select').options[last.querySelector('.material-select').selectedIndex];
-    last.querySelector('.gst-pct').value = opt ? (opt.dataset.gst || 0) : 0;
-    last.querySelector('.uom-code').value = opt ? (opt.dataset.uom || '') : '';
-    last.querySelector('.hsn-code').value = opt ? (opt.dataset.hsn || '') : '';
-    last.querySelector('.material-category').value = opt ? (opt.dataset.category || '') : '';
+    onMaterialChange(last.querySelector('.material-select'));
     
     last.querySelector('.qty-input').value = '{{ item.quantity or 0 }}';
     last.querySelector('.amount-input').value = '{{ item.amount or 0 }}';
