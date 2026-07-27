@@ -1,0 +1,586 @@
+Prompt for Replit AI — Dashboard UI Enhancement
+Role
+
+You are a Senior Enterprise UX Designer and Senior React + Tailwind CSS Frontend Engineer.
+
+Your task is to completely redesign the Dashboard of the Right Ewaste ERP into a modern, enterprise-grade command center.
+
+This is STRICTLY a UI/UX enhancement.
+
+Do NOT modify:
+
+Backend
+APIs
+Database
+Business Logic
+Authentication
+Permissions
+Existing calculations
+
+Improve only the frontend.
+
+Design Goal
+
+The Dashboard should feel comparable to:
+
+Microsoft 365 Admin Center
+Odoo Enterprise
+Oracle Fusion
+SAP Fiori
+Stripe Dashboard
+Linear
+Notion
+Atlassian
+GitHub Enterprise
+
+The design should immediately communicate professionalism and trust.
+
+Overall Layout
+
+Create a spacious, responsive dashboard using a 12-column grid.
+
+Suggested layout:
+
+---------------------------------------------------------
+Breadcrumb
+
+Good Morning, Admin 👋
+
+Today's business summary
+
+---------------------------------------------------------
+
+Quick Actions
+
+---------------------------------------------------------
+
+KPI Cards (6)
+
+---------------------------------------------------------
+
+Sales Analytics
+
+Purchase Analytics
+
+---------------------------------------------------------
+
+Inventory Overview
+
+Cash Flow Overview
+
+---------------------------------------------------------
+
+Recent Activities
+
+Notifications
+
+---------------------------------------------------------
+
+Recent Sales
+
+Recent Purchases
+
+---------------------------------------------------------
+
+Calendar
+
+Upcoming Tasks
+
+---------------------------------------------------------
+
+Avoid long scrolling wherever possible.
+
+Dashboard Header
+
+Modern header with:
+
+Greeting
+
+Current Date
+
+Company Name
+
+Quick Search
+
+Notification Bell
+
+User Profile
+
+Theme Toggle
+
+Breadcrumb
+
+Example:
+
+Dashboard
+
+Good Morning, Jailingam
+
+Monday, July 27
+
+Right Ewaste ERP
+Quick Actions
+
+Create a beautiful Quick Actions section.
+
+Cards or buttons like:
+
+New Sales Invoice
+
+New Purchase
+
+Add Customer
+
+Add Supplier
+
+Create Material
+
+Upload Documents
+
+Generate Report
+
+Employee Attendance
+
+Each action should have
+
+icon
+
+title
+
+short description
+
+hover animation
+
+KPI Cards
+
+Redesign the statistics cards.
+
+Examples:
+
+Total Revenue
+
+Today's Sales
+
+Purchase Orders
+
+Inventory Items
+
+Employees
+
+Storage Used
+
+Every card should contain:
+
+large number
+
+small label
+
+icon
+
+percentage increase/decrease
+
+mini trend chart
+
+hover animation
+
+loading skeleton
+
+subtle shadow
+
+Analytics Section
+
+Use professional chart cards.
+
+Cards:
+
+Sales Trend
+
+Purchase Trend
+
+Revenue vs Expenses
+
+Inventory Movement
+
+Certificate Generation
+
+Monthly Collections
+
+Each chart card should include:
+
+header
+
+date filter
+
+export button
+
+fullscreen button
+
+legend
+
+clean spacing
+
+Recent Activity
+
+Design a modern activity timeline.
+
+Examples
+
+Invoice Created
+
+Purchase Approved
+
+Material Added
+
+Employee Logged In
+
+Certificate Generated
+
+Document Uploaded
+
+Show:
+
+icon
+
+user
+
+description
+
+timestamp
+
+Notifications Panel
+
+Beautiful notification widget.
+
+Show
+
+Unread
+
+Warnings
+
+Tasks
+
+Approvals
+
+Errors
+
+Color coded badges.
+
+Recent Sales
+
+Professional table.
+
+Columns
+
+Invoice
+
+Customer
+
+Amount
+
+Status
+
+Date
+
+Actions
+
+Include
+
+sorting
+
+search
+
+pagination
+
+hover effects
+
+status badges
+
+Recent Purchases
+
+Same styling as Sales.
+
+Maintain consistency.
+
+Calendar Widget
+
+Modern monthly calendar.
+
+Show
+
+Today's events
+
+Holidays
+
+Upcoming collections
+
+Employee birthdays (future)
+
+Upcoming invoices
+
+Task Widget
+
+Display:
+
+Pending Tasks
+
+Due Today
+
+Overdue
+
+Completed
+
+Each task should have:
+
+checkbox
+
+priority
+
+assignee
+
+deadline
+
+Inventory Snapshot
+
+Beautiful card.
+
+Show
+
+Low Stock
+
+Out of Stock
+
+Highest Stock
+
+Today's Movements
+
+Warehouse Summary
+
+Include progress indicators.
+
+Storage Overview
+
+Display
+
+Used Storage
+
+Free Storage
+
+Company Storage
+
+My Drive Storage
+
+Chat Files Storage
+
+Use modern progress bars.
+
+Cash Flow Card
+
+Professional finance widget.
+
+Show
+
+Cash In
+
+Cash Out
+
+Net Balance
+
+Monthly Trend
+
+Charts
+
+Use modern chart styles.
+
+Consistent spacing.
+
+Responsive.
+
+Smooth animations.
+
+Professional colors.
+
+No clutter.
+
+Cards
+
+Every card should have:
+
+rounded corners
+
+subtle shadow
+
+consistent padding
+
+clean header
+
+icon
+
+action menu
+
+hover elevation
+
+Buttons
+
+Modern enterprise buttons.
+
+Primary
+
+Secondary
+
+Outline
+
+Ghost
+
+Icon buttons
+
+Loading states
+
+Disabled states
+
+Tables
+
+Improve every table.
+
+Sticky header
+
+Sorting
+
+Filtering
+
+Pagination
+
+Hover
+
+Empty states
+
+Skeleton loading
+
+Responsive
+
+Empty States
+
+If no data exists:
+
+Show meaningful illustrations/icons.
+
+Example
+
+No Sales Yet
+
+Create your first sales invoice to begin.
+
+Loading Experience
+
+Replace generic spinners with skeleton loaders.
+
+Dark Mode
+
+Ensure dashboard looks premium in dark mode.
+
+No harsh blacks.
+
+Use charcoal backgrounds.
+
+Maintain contrast.
+
+Responsive
+
+Optimize for
+
+Desktop
+
+Laptop
+
+Tablet
+
+Mobile
+
+Cards should automatically rearrange.
+
+Accessibility
+
+Keyboard navigation
+
+ARIA labels
+
+Focus states
+
+Readable typography
+
+Proper contrast
+
+Animation
+
+Add subtle animations.
+
+Examples
+
+Card hover
+
+Button hover
+
+Loading transitions
+
+Sidebar transitions
+
+Notification slide
+
+Chart fade
+
+Avoid excessive animations.
+
+Reusable Components
+
+If similar UI exists, create reusable components instead of duplicating code.
+
+Examples
+
+Stat Card
+
+Chart Card
+
+Page Header
+
+Quick Action Card
+
+Activity Card
+
+Notification Card
+
+Table Toolbar
+
+Dashboard Section
+
+Performance
+
+Lazy load charts.
+
+Reuse components.
+
+Avoid unnecessary re-renders.
+
+Optimize rendering.
+
+Existing Functionality
+
+Do NOT remove or change:
+
+Dashboard data
+
+Statistics
+
+Charts
+
+API calls
+
+Business logic
+
+Calculations
+
+Backend integration
+
+Only improve presentation.
+
+Final Goal
+
+The completed Dashboard should feel like a premium enterprise ERP command center that executives and employees can use daily. It should provide an immediate overview of business health, quick access to common actions, and actionable insights while maintaining a clean, modern, and consistent design aligned with the Right Ewaste ERP design system.

@@ -1,8 +1,9 @@
 {% extends "shared/base.html" %}
 {% block title %}Dashboard – Right Ewaste ERP{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
+
 {% block styles %}
-<link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/dashboard.css') }}?v=3" rel="stylesheet">
 {% endblock %}
 
 {% block breadcrumb %}
@@ -10,509 +11,743 @@
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-v2">
+<div class="dv3">
 
-  <!-- ══════════════════════════════════════════════════════════════
-       1. WELCOME BANNER
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="row mb-4 g-3">
-    <div class="col-12">
-      <div class="erp-card p-0 dash-banner">
-        <div class="erp-card-body d-flex align-items-center gap-4 flex-wrap">
-          <div class="dash-banner-icon">♻️</div>
-          <div class="flex-grow-1">
-            <h5 class="mb-1 dash-banner-title">Welcome to Right Ewaste ERP</h5>
-            <p class="mb-0 dash-banner-sub">
-              Manage e-waste collection, inventory, processing, sales and business operations from one unified platform.
-            </p>
-          </div>
-          <div class="d-flex flex-column align-items-end gap-2 ms-auto flex-shrink-0">
-            <span class="dash-version-badge">⚡ ERP Version 5.0</span>
-            <span class="dash-branch-badge">Super Admin Mode</span>
-            <span class="dash-date">{{ today }}</span>
-          </div>
+  <!-- ═══════════════════════════════════════════════════════════
+       1. GREETING HEADER
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="dv3-greeting-bar mb-4">
+    <div class="dv3-greeting-left">
+      <div class="dv3-greeting-avatar">
+        <i class="bi bi-person-circle"></i>
+      </div>
+      <div>
+        <div class="dv3-greeting-text">
+          <span id="dv3-greeting-word">Good Morning</span>,
+          <strong>{{ (current_user.full_name or current_user.username) if current_user else 'Admin' }}</strong> 👋
+        </div>
+        <div class="dv3-greeting-sub">
+          <i class="bi bi-calendar3 me-1"></i>{{ today }}
+          &nbsp;·&nbsp;
+          <i class="bi bi-lightning-charge-fill me-1 text-warning"></i>Right Ewaste ERP V5.0
         </div>
       </div>
     </div>
+    <div class="dv3-greeting-right">
+      <div class="dv3-search-box">
+        <i class="bi bi-search dv3-search-icon"></i>
+        <input type="text" id="dv3QuickSearch" placeholder="Quick navigate…" autocomplete="off" onkeyup="dv3QuickSearch(this.value)">
+      </div>
+      <div id="dv3-search-results" class="dv3-search-dropdown"></div>
+    </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════════
        2. QUICK ACTIONS
-  ══════════════════════════════════════════════════════════════ -->
-  <div class="row mb-4 g-3">
-    <div class="col-12">
-      <div class="erp-card">
-        <div class="erp-card-header erp-card-header-accent">
-          <i class="bi bi-lightning-charge-fill" style="font-size:18px;color:var(--brand-accent);"></i>
-          <h5>Quick Actions</h5>
+  ═══════════════════════════════════════════════════════════ -->
+  <section class="dv3-section mb-4">
+    <div class="dv3-section-header">
+      <div class="dv3-section-title">
+        <i class="bi bi-lightning-charge-fill"></i>
+        Quick Actions
+      </div>
+      <span class="dv3-section-sub">Frequently used operations</span>
+    </div>
+    <div class="dv3-qa-grid">
+
+      <a href="/sales/add" class="dv3-qa-card dv3-qa-blue" data-search="new sales invoice create customer billing">
+        <div class="dv3-qa-icon"><i class="bi bi-receipt"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">New Sales Invoice</div>
+          <div class="dv3-qa-desc">Create a customer tax invoice</div>
         </div>
-        <div class="erp-card-body">
-          <div class="quick-actions-grid">
-            <a href="/purchase/add" class="qa-btn qa-btn-green" id="qa-new-purchase">
-              <i class="bi bi-cart-plus"></i>
-              <span>+ New Purchase</span>
-            </a>
-            <a href="/sales/add" class="qa-btn qa-btn-blue" id="qa-new-sales">
-              <i class="bi bi-receipt"></i>
-              <span>+ New Sales Invoice</span>
-            </a>
-            <a href="/party/add" class="qa-btn qa-btn-teal" id="qa-add-party">
-              <i class="bi bi-person-plus"></i>
-              <span>+ Add Party</span>
-            </a>
-            <a href="/material/add" class="qa-btn qa-btn-purple" id="qa-add-material">
-              <i class="bi bi-plus-square"></i>
-              <span>+ Add Material</span>
-            </a>
-            <a href="/processing/dashboard" class="qa-btn qa-btn-amber" id="qa-processing">
-              <i class="bi bi-cpu"></i>
-              <span>+ Processing Job</span>
-            </a>
-            <a href="/certificates/new" class="qa-btn qa-btn-teal" id="qa-certificate">
-              <i class="bi bi-patch-check"></i>
-              <span>+ Certificate</span>
-            </a>
-            <a href="/documents/mydrive" class="qa-btn qa-btn-purple" id="qa-edms-mydrive">
-              <i class="bi bi-folder-symlink"></i>
-              <span>+ EDMS Documents</span>
-            </a>
-            <a href="/communication" class="qa-btn qa-btn-blue" id="qa-communication">
-              <i class="bi bi-chat-dots"></i>
-              <span>+ Communication</span>
-            </a>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/purchase/add" class="dv3-qa-card dv3-qa-green" data-search="new purchase inward gate entry supplier">
+        <div class="dv3-qa-icon"><i class="bi bi-cart-plus"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">New Purchase</div>
+          <div class="dv3-qa-desc">Record a supplier inward invoice</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/party/add" class="dv3-qa-card dv3-qa-teal" data-search="add party customer supplier vendor">
+        <div class="dv3-qa-icon"><i class="bi bi-person-plus"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">Add Party</div>
+          <div class="dv3-qa-desc">Register a customer or supplier</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/material/add" class="dv3-qa-card dv3-qa-purple" data-search="add material ewaste category hsn">
+        <div class="dv3-qa-icon"><i class="bi bi-box-seam"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">Add Material</div>
+          <div class="dv3-qa-desc">Create a new material category</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/documents/mydrive" class="dv3-qa-card dv3-qa-indigo" data-search="upload documents edms my drive files">
+        <div class="dv3-qa-icon"><i class="bi bi-cloud-upload"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">Upload Documents</div>
+          <div class="dv3-qa-desc">Store files in EDMS vault</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/factory-reports" class="dv3-qa-card dv3-qa-amber" data-search="generate report factory daily operations">
+        <div class="dv3-qa-icon"><i class="bi bi-file-earmark-bar-graph"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">Generate Report</div>
+          <div class="dv3-qa-desc">View factory daily report</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/employees/attendance/daily" class="dv3-qa-card dv3-qa-rose" data-search="attendance employee daily mark present">
+        <div class="dv3-qa-icon"><i class="bi bi-calendar-check"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">Mark Attendance</div>
+          <div class="dv3-qa-desc">Record today's staff attendance</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+      <a href="/processing/dashboard" class="dv3-qa-card dv3-qa-cyan" data-search="processing job ewaste dismantling sorting">
+        <div class="dv3-qa-icon"><i class="bi bi-cpu"></i></div>
+        <div class="dv3-qa-body">
+          <div class="dv3-qa-title">Processing Job</div>
+          <div class="dv3-qa-desc">Manage e-waste processing jobs</div>
+        </div>
+        <i class="bi bi-arrow-right dv3-qa-arrow"></i>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       3. BUSINESS KPI CARDS
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="dv3-section-label mb-2">
+    <span>Today's Operational Snapshot</span>
+  </div>
+  <div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="dv3-stat-card dv3-stat-green">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-green"><i class="bi bi-cart-check"></i></div>
+          <span class="dv3-stat-badge">Today</span>
+        </div>
+        <div class="dv3-stat-value">₹{{ "%.0f"|format(snapshot.today_purchase_value) }}</div>
+        <div class="dv3-stat-label">Today's Purchases</div>
+        <div class="dv3-stat-sub">{{ snapshot.today_purchase_count }} invoice{{ 's' if snapshot.today_purchase_count != 1 }}</div>
+        <div class="dv3-sparkline"></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="dv3-stat-card dv3-stat-blue">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-blue"><i class="bi bi-bag-check"></i></div>
+          <span class="dv3-stat-badge">Today</span>
+        </div>
+        <div class="dv3-stat-value">₹{{ "%.0f"|format(snapshot.today_sales_value) }}</div>
+        <div class="dv3-stat-label">Today's Sales</div>
+        <div class="dv3-stat-sub">{{ snapshot.today_sales_count }} invoice{{ 's' if snapshot.today_sales_count != 1 }}</div>
+        <div class="dv3-sparkline dv3-sparkline-blue"></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="dv3-stat-card dv3-stat-teal">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-teal"><i class="bi bi-boxes"></i></div>
+          <span class="dv3-stat-badge">Live</span>
+        </div>
+        <div class="dv3-stat-value">{{ snapshot.inventory_items }}</div>
+        <div class="dv3-stat-label">Stock Categories</div>
+        <div class="dv3-stat-sub">Active materials</div>
+        <div class="dv3-sparkline dv3-sparkline-teal"></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="dv3-stat-card dv3-stat-amber">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-amber"><i class="bi bi-hourglass-split"></i></div>
+          <span class="dv3-stat-badge dv3-badge-warn">Pending</span>
+        </div>
+        <div class="dv3-stat-value">{{ snapshot.pending_processing }}</div>
+        <div class="dv3-stat-label">Processing Queue</div>
+        <div class="dv3-stat-sub">Awaiting action</div>
+        <div class="dv3-sparkline dv3-sparkline-amber"></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="dv3-stat-card dv3-stat-indigo">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-indigo"><i class="bi bi-calendar-month"></i></div>
+          <span class="dv3-stat-badge">MTD</span>
+        </div>
+        <div class="dv3-stat-value">₹{{ "%.0f"|format(snapshot.monthly_purchase_value) }}</div>
+        <div class="dv3-stat-label">Monthly Purchase</div>
+        <div class="dv3-stat-sub">Current month</div>
+        <div class="dv3-sparkline dv3-sparkline-indigo"></div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="dv3-stat-card dv3-stat-rose">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-rose"><i class="bi bi-graph-up-arrow"></i></div>
+          <span class="dv3-stat-badge">MTD</span>
+        </div>
+        <div class="dv3-stat-value">₹{{ "%.0f"|format(snapshot.monthly_sales_value) }}</div>
+        <div class="dv3-stat-label">Monthly Sales</div>
+        <div class="dv3-stat-sub">Current month</div>
+        <div class="dv3-sparkline dv3-sparkline-rose"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       4. WORKFORCE KPI CARDS
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="dv3-section-label mb-2">
+    <span>Workforce Snapshot</span>
+  </div>
+  <div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-3">
+      <div class="dv3-stat-card dv3-stat-teal">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-teal"><i class="bi bi-person-badge"></i></div>
+          <span class="dv3-stat-badge">Total</span>
+        </div>
+        <div class="dv3-stat-value">{{ snapshot.total_employees }}</div>
+        <div class="dv3-stat-label">Active Employees</div>
+        <div class="dv3-stat-sub">Master records</div>
+        <div class="dv3-emp-progress-bar">
+          <div class="dv3-emp-progress-fill dv3-progress-teal" id="progPresent" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="dv3-stat-card dv3-stat-green">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-green"><i class="bi bi-check-circle"></i></div>
+          <span class="dv3-stat-badge dv3-badge-success">In</span>
+        </div>
+        <div class="dv3-stat-value">{{ snapshot.present_today }}</div>
+        <div class="dv3-stat-label">Present Today</div>
+        <div class="dv3-stat-sub">Daily attendance</div>
+        <div class="dv3-emp-progress-bar">
+          <div class="dv3-emp-progress-fill dv3-progress-green" id="progPresentGreen"
+               style="width:{{ ((snapshot.present_today / snapshot.total_employees) * 100)|int if snapshot.total_employees > 0 else 0 }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="dv3-stat-card dv3-stat-blue">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-blue"><i class="bi bi-calendar-event"></i></div>
+          <span class="dv3-stat-badge">Leave</span>
+        </div>
+        <div class="dv3-stat-value">{{ snapshot.employees_on_leave }}</div>
+        <div class="dv3-stat-label">On Leave Today</div>
+        <div class="dv3-stat-sub">Sanctioned absences</div>
+        <div class="dv3-emp-progress-bar">
+          <div class="dv3-emp-progress-fill dv3-progress-blue" 
+               style="width:{{ ((snapshot.employees_on_leave / snapshot.total_employees) * 100)|int if snapshot.total_employees > 0 else 0 }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="dv3-stat-card dv3-stat-amber">
+        <div class="dv3-stat-header">
+          <div class="dv3-stat-icon-wrap dv3-ic-amber"><i class="bi bi-hourglass"></i></div>
+          <span class="dv3-stat-badge dv3-badge-warn">Pending</span>
+        </div>
+        <div class="dv3-stat-value">{{ snapshot.pending_leave_requests }}</div>
+        <div class="dv3-stat-label">Leave Requests</div>
+        <div class="dv3-stat-sub">Awaiting approval</div>
+        <div class="dv3-emp-progress-bar">
+          <div class="dv3-emp-progress-fill dv3-progress-amber" 
+               style="width:{{ [((snapshot.pending_leave_requests / (snapshot.total_employees or 1)) * 100)|int, 100]|min }}%"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       5. ANALYTICS CHARTS
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="dv3-section-label mb-2">
+    <span>Analytics Overview</span>
+  </div>
+  <div class="row g-3 mb-4">
+
+    <!-- Sales Trend Chart -->
+    <div class="col-12 col-lg-6">
+      <div class="dv3-chart-card">
+        <div class="dv3-chart-header">
+          <div class="dv3-chart-title">
+            <div class="dv3-chart-icon dv3-cic-blue"><i class="bi bi-graph-up-arrow"></i></div>
+            <span>Sales Trend</span>
+          </div>
+          <div class="dv3-chart-actions">
+            <div class="dv3-filter-tabs" id="salesFilterTabs">
+              <button class="dv3-ftab active" onclick="switchChartPeriod('sales','3m',this)">3M</button>
+              <button class="dv3-ftab" onclick="switchChartPeriod('sales','6m',this)">6M</button>
+              <button class="dv3-ftab" onclick="switchChartPeriod('sales','1y',this)">1Y</button>
+            </div>
+            <button class="dv3-chart-btn" onclick="exportChart('salesChart','sales-trend')" title="Export PNG"><i class="bi bi-download"></i></button>
+            <button class="dv3-chart-btn" onclick="toggleFullscreen('salesChartCard')" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+          </div>
+        </div>
+        <div class="dv3-chart-body" id="salesChartCard">
+          <canvas id="salesChart" height="180"></canvas>
+        </div>
+        <div class="dv3-chart-footer">
+          <div class="dv3-cf-stat">
+            <span class="dv3-cf-val">₹{{ "%.0f"|format(snapshot.monthly_sales_value) }}</span>
+            <span class="dv3-cf-lbl">This Month</span>
+          </div>
+          <div class="dv3-cf-stat">
+            <span class="dv3-cf-val">{{ snapshot.total_sales_invoices }}</span>
+            <span class="dv3-cf-lbl">Total Invoices</span>
+          </div>
+          <div class="dv3-cf-stat">
+            <span class="dv3-cf-val">₹{{ "%.0f"|format(snapshot.today_sales_value) }}</span>
+            <span class="dv3-cf-lbl">Today</span>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
-       3. BUSINESS SNAPSHOT — KPI CARDS
-  ══════════════════════════════════════════════════════════════ -->
-  <h6 class="dash-section-label mb-3">Today's Operational Snapshot</h6>
-  <div class="row g-3 mb-4">
-
-    <div class="col-6 col-md-4 col-lg-2">
-      <div class="kpi-card kpi-green">
-        <div class="kpi-icon"><i class="bi bi-cart-check"></i></div>
-        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.today_purchase_value) }}</div>
-        <div class="kpi-label">Today's Purchases</div>
-        <div class="kpi-sub">{{ snapshot.today_purchase_count }} invoice{{ 's' if snapshot.today_purchase_count != 1 }}</div>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2">
-      <div class="kpi-card kpi-blue">
-        <div class="kpi-icon"><i class="bi bi-bag-check"></i></div>
-        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.today_sales_value) }}</div>
-        <div class="kpi-label">Today's Sales</div>
-        <div class="kpi-sub">{{ snapshot.today_sales_count }} invoice{{ 's' if snapshot.today_sales_count != 1 }}</div>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2">
-      <div class="kpi-card kpi-teal">
-        <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
-        <div class="kpi-value">{{ snapshot.inventory_items }}</div>
-        <div class="kpi-label">Current Stock Items</div>
-        <div class="kpi-sub">Active materials</div>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2">
-      <div class="kpi-card kpi-amber">
-        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
-        <div class="kpi-value">{{ snapshot.pending_processing }}</div>
-        <div class="kpi-label">Pending Processing</div>
-        <div class="kpi-sub">Queue items</div>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2">
-      <div class="kpi-card kpi-indigo">
-        <div class="kpi-icon"><i class="bi bi-calendar-month"></i></div>
-        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.monthly_purchase_value) }}</div>
-        <div class="kpi-label">Monthly Purchase</div>
-        <div class="kpi-sub">Current month</div>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-4 col-lg-2">
-      <div class="kpi-card kpi-rose">
-        <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
-        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.monthly_sales_value) }}</div>
-        <div class="kpi-label">Monthly Sales</div>
-        <div class="kpi-sub">Current month</div>
+    <!-- Purchase Trend Chart -->
+    <div class="col-12 col-lg-6">
+      <div class="dv3-chart-card">
+        <div class="dv3-chart-header">
+          <div class="dv3-chart-title">
+            <div class="dv3-chart-icon dv3-cic-green"><i class="bi bi-cart-check"></i></div>
+            <span>Purchase Trend</span>
+          </div>
+          <div class="dv3-chart-actions">
+            <div class="dv3-filter-tabs" id="purchaseFilterTabs">
+              <button class="dv3-ftab active" onclick="switchChartPeriod('purchase','3m',this)">3M</button>
+              <button class="dv3-ftab" onclick="switchChartPeriod('purchase','6m',this)">6M</button>
+              <button class="dv3-ftab" onclick="switchChartPeriod('purchase','1y',this)">1Y</button>
+            </div>
+            <button class="dv3-chart-btn" onclick="exportChart('purchaseChart','purchase-trend')" title="Export PNG"><i class="bi bi-download"></i></button>
+            <button class="dv3-chart-btn" onclick="toggleFullscreen('purchaseChartCard')" title="Fullscreen"><i class="bi bi-arrows-fullscreen"></i></button>
+          </div>
+        </div>
+        <div class="dv3-chart-body" id="purchaseChartCard">
+          <canvas id="purchaseChart" height="180"></canvas>
+        </div>
+        <div class="dv3-chart-footer">
+          <div class="dv3-cf-stat">
+            <span class="dv3-cf-val">₹{{ "%.0f"|format(snapshot.monthly_purchase_value) }}</span>
+            <span class="dv3-cf-lbl">This Month</span>
+          </div>
+          <div class="dv3-cf-stat">
+            <span class="dv3-cf-val">{{ snapshot.total_purchase_invoices }}</span>
+            <span class="dv3-cf-lbl">Total Invoices</span>
+          </div>
+          <div class="dv3-cf-stat">
+            <span class="dv3-cf-val">₹{{ "%.0f"|format(snapshot.today_purchase_value) }}</span>
+            <span class="dv3-cf-lbl">Today</span>
+          </div>
+        </div>
       </div>
     </div>
 
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
-       3.5 WORKFORCE SNAPSHOT KPI CARDS
-  ══════════════════════════════════════════════════════════════ -->
-  <h6 class="dash-section-label mb-3">Workforce Snapshot</h6>
+  <!-- ═══════════════════════════════════════════════════════════
+       6. INVENTORY | CASH FLOW | PENDING OPERATIONS
+  ═══════════════════════════════════════════════════════════ -->
   <div class="row g-3 mb-4">
 
-    <div class="col-6 col-md-3">
-      <div class="kpi-card kpi-teal">
-        <div class="kpi-icon"><i class="bi bi-person-badge"></i></div>
-        <div class="kpi-value">{{ snapshot.total_employees }}</div>
-        <div class="kpi-label">Active Employees</div>
-        <div class="kpi-sub">Total Master Records</div>
+    <!-- Inventory Snapshot -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dv3-info-card h-100">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-teal"><i class="bi bi-boxes"></i></div>
+          <div class="dv3-info-title">Inventory Snapshot</div>
+          <a href="/inventory/dashboard" class="dv3-info-link">View →</a>
+        </div>
+        <div class="dv3-info-body">
+          <div class="dv3-info-row">
+            <span class="dv3-ir-label"><i class="bi bi-box-seam text-success me-2"></i>Active Stock Categories</span>
+            <strong class="dv3-ir-val">{{ snapshot.inventory_items }}</strong>
+          </div>
+          <div class="dv3-info-row">
+            <span class="dv3-ir-label"><i class="bi bi-box-seam text-primary me-2"></i>Total Materials</span>
+            <strong class="dv3-ir-val">{{ snapshot.total_materials }}</strong>
+          </div>
+          <div class="dv3-info-row">
+            <span class="dv3-ir-label"><i class="bi bi-arrow-left-right text-info me-2"></i>Movement Ledger</span>
+            <span class="dv3-ir-badge dv3-badge-on">Active</span>
+          </div>
+          <div class="dv3-info-row">
+            <span class="dv3-ir-label"><i class="bi bi-shield-check text-success me-2"></i>Traceability Engine</span>
+            <span class="dv3-ir-badge dv3-badge-on">Online</span>
+          </div>
+          <div class="dv3-info-row border-0">
+            <span class="dv3-ir-label"><i class="bi bi-cpu text-warning me-2"></i>Processing Queue</span>
+            <strong class="dv3-ir-val {% if snapshot.pending_processing > 0 %}text-warning{% endif %}">{{ snapshot.pending_processing }}</strong>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="col-6 col-md-3">
-      <div class="kpi-card kpi-green">
-        <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
-        <div class="kpi-value">{{ snapshot.present_today }}</div>
-        <div class="kpi-label">Present Today</div>
-        <div class="kpi-sub">Daily Attendance</div>
+    <!-- Cash Flow / Revenue vs Expenses -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dv3-info-card h-100">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-indigo"><i class="bi bi-cash-stack"></i></div>
+          <div class="dv3-info-title">Cash Flow — MTD</div>
+        </div>
+        <div class="dv3-info-body">
+          <div class="dv3-cf-donut-wrap">
+            <canvas id="cashFlowDonut" height="130"></canvas>
+          </div>
+          <div class="dv3-cf-legend">
+            <div class="dv3-cf-leg-row">
+              <span class="dv3-cf-dot" style="background:#3b82f6;"></span>
+              <span>Purchase (Cash Out)</span>
+              <strong>₹{{ "%.0f"|format(snapshot.monthly_purchase_value) }}</strong>
+            </div>
+            <div class="dv3-cf-leg-row">
+              <span class="dv3-cf-dot" style="background:#10b981;"></span>
+              <span>Sales (Cash In)</span>
+              <strong>₹{{ "%.0f"|format(snapshot.monthly_sales_value) }}</strong>
+            </div>
+            <div class="dv3-cf-leg-row dv3-cf-net-row">
+              <span>Net Balance</span>
+              {% set net = snapshot.monthly_sales_value - snapshot.monthly_purchase_value %}
+              <strong class="{% if net >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {% if net >= 0 %}+{% endif %}₹{{ "%.0f"|format(net|abs) }}
+              </strong>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="col-6 col-md-3">
-      <div class="kpi-card kpi-blue">
-        <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
-        <div class="kpi-value">{{ snapshot.employees_on_leave }}</div>
-        <div class="kpi-label">Employees on Leave</div>
-        <div class="kpi-sub">Sanctioned Absences</div>
-      </div>
-    </div>
-
-    <div class="col-6 col-md-3">
-      <div class="kpi-card kpi-amber">
-        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
-        <div class="kpi-value">{{ snapshot.pending_leave_requests }}</div>
-        <div class="kpi-label">Pending Leave Requests</div>
-        <div class="kpi-sub">Awaiting Approval</div>
+    <!-- Pending Operations -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="dv3-info-card h-100">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-amber"><i class="bi bi-hourglass-split"></i></div>
+          <div class="dv3-info-title">Pending Operations</div>
+        </div>
+        <div class="dv3-info-body">
+          <div class="dv3-pending-item">
+            <div class="dv3-pi-icon dv3-pi-orange"><i class="bi bi-cpu"></i></div>
+            <div class="dv3-pi-body">
+              <div class="dv3-pi-label">Processing Jobs</div>
+              <div class="dv3-pi-sub">Sorting & dismantling queue</div>
+            </div>
+            <div class="dv3-pi-count {% if snapshot.pending_processing > 0 %}dv3-pc-warn{% else %}dv3-pc-ok{% endif %}">
+              {{ snapshot.pending_processing }}
+            </div>
+          </div>
+          <div class="dv3-pending-item">
+            <div class="dv3-pi-icon dv3-pi-blue"><i class="bi bi-calendar-event"></i></div>
+            <div class="dv3-pi-body">
+              <div class="dv3-pi-label">Leave Approvals</div>
+              <div class="dv3-pi-sub">Employee requests pending</div>
+            </div>
+            <div class="dv3-pi-count {% if snapshot.pending_leave_requests > 0 %}dv3-pc-warn{% else %}dv3-pc-ok{% endif %}">
+              {{ snapshot.pending_leave_requests }}
+            </div>
+          </div>
+          <div class="dv3-pending-item">
+            <div class="dv3-pi-icon dv3-pi-green"><i class="bi bi-patch-check"></i></div>
+            <div class="dv3-pi-body">
+              <div class="dv3-pi-label">Certificates</div>
+              <div class="dv3-pi-sub">Pending generation</div>
+            </div>
+            <div class="dv3-pi-count {% if snapshot.pending_certificates > 0 %}dv3-pc-warn{% else %}dv3-pc-ok{% endif %}">
+              {{ snapshot.pending_certificates }}
+            </div>
+          </div>
+          <div class="dv3-pending-item border-0 mb-0">
+            <div class="dv3-pi-icon" style="background:#ecfdf5;color:#065f46;"><i class="bi bi-shield-check"></i></div>
+            <div class="dv3-pi-body">
+              <div class="dv3-pi-label">System Security</div>
+              <div class="dv3-pi-sub">Super Admin — Full Control</div>
+            </div>
+            <span class="dv3-ir-badge dv3-badge-on">OK</span>
+          </div>
+        </div>
       </div>
     </div>
 
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
-       4. MODULES + RECENT ACTIVITY
-  ══════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════
+       7. ACTIVITY + COMMS + CALENDAR
+  ═══════════════════════════════════════════════════════════ -->
   <div class="row g-3 mb-4">
 
-    <!-- MODULE GRID -->
+    <!-- Recent Activity Timeline -->
     <div class="col-12 col-lg-8">
-      <div class="erp-card h-100">
-        <div class="erp-card-header erp-card-header-accent">
-          <i class="bi bi-grid-3x3-gap-fill" style="font-size:18px;color:var(--brand-accent);"></i>
-          <h5>Enterprise Modules</h5>
-          <span class="ms-auto text-muted" style="font-size:11px;">Super Admin Control</span>
+      <div class="dv3-info-card h-100">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-purple"><i class="bi bi-clock-history"></i></div>
+          <div class="dv3-info-title">Recent Activity</div>
+          <a href="/audit-log" class="dv3-info-link ms-auto">View all →</a>
         </div>
-        <div class="erp-card-body">
-          <div class="module-grid-v2">
-
-            <a href="/party" class="module-card-v2" id="mod-party">
-              <div class="mcv2-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-people-fill"></i></div>
-              <div>
-                <strong>Party Management</strong>
-                <p>Suppliers & Buyers master</p>
-              </div>
-            </a>
-
-            <a href="/material" class="module-card-v2" id="mod-material">
-              <div class="mcv2-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-box-seam"></i></div>
-              <div>
-                <strong>Material Master</strong>
-                <p>E-waste categories & rates</p>
-              </div>
-            </a>
-
-            <a href="/purchase" class="module-card-v2" id="mod-purchase">
-              <div class="mcv2-icon" style="background:#fef3c7;color:#92400e;"><i class="bi bi-cart-check"></i></div>
-              <div>
-                <strong>Inward Purchase</strong>
-                <p>Gate entry & purchase invoice</p>
-              </div>
-            </a>
-
-            <a href="/inventory/dashboard" class="module-card-v2" id="mod-inventory">
-              <div class="mcv2-icon" style="background:#ccfbf1;color:#0f766e;"><i class="bi bi-boxes"></i></div>
-              <div>
-                <strong>Inventory Stock</strong>
-                <p>Stock balances & Movements</p>
-              </div>
-            </a>
-
-            <a href="/processing/dashboard" class="module-card-v2" id="mod-processing">
-              <div class="mcv2-icon" style="background:#e0e7ff;color:#3730a3;"><i class="bi bi-cpu"></i></div>
-              <div>
-                <strong>Material Processing</strong>
-                <p>Sorting, dismantling & segregation</p>
-              </div>
-            </a>
-
-            <a href="/inventory/material-flow-dashboard" class="module-card-v2" id="mod-flow">
-              <div class="mcv2-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-diagram-3-fill"></i></div>
-              <div>
-                <strong>Material Flow</strong>
-                <p>Batch genealogy & reconciliation</p>
-              </div>
-            </a>
-
-            <a href="/sales/dashboard" class="module-card-v2" id="mod-sales">
-              <div class="mcv2-icon" style="background:#fce7f3;color:#9d174d;"><i class="bi bi-bag-fill"></i></div>
-              <div>
-                <strong>Sales</strong>
-                <p>Customer sales & invoices</p>
-              </div>
-            </a>
-
-            <a href="/certificates/dashboard" class="module-card-v2" id="mod-certificates">
-              <div class="mcv2-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-patch-check-fill"></i></div>
-              <div>
-                <strong>Certificates</strong>
-                <p>Recycling & disposal certificates</p>
-              </div>
-            </a>
-
-            <a href="/employees/dashboard" class="module-card-v2" id="mod-employee">
-              <div class="mcv2-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-person-badge"></i></div>
-              <div>
-                <strong>Employee Mgmt</strong>
-                <p>Attendance, leave & payroll</p>
-              </div>
-            </a>
-
-            <a href="/audit-log" class="module-card-v2" id="mod-reports">
-              <div class="mcv2-icon" style="background:#ecfdf5;color:#065f46;"><i class="bi bi-bar-chart-fill"></i></div>
-              <div>
-                <strong>Audit & Reports</strong>
-                <p>Business activity & compliance</p>
-              </div>
-            </a>
-
-            <a href="/documents/mydrive" class="module-card-v2" id="mod-edms">
-              <div class="mcv2-icon" style="background:#e0e7ff;color:#3730a3;"><i class="bi bi-folder-symlink-fill"></i></div>
-              <div>
-                <strong>EDMS Documents</strong>
-                <p>Personal Drive, Company Vault & Attachments</p>
-              </div>
-            </a>
-
-            <a href="/communication" class="module-card-v2" id="mod-communication">
-              <div class="mcv2-icon" style="background:#fae8ff;color:#86198f;"><i class="bi bi-chat-dots-fill"></i></div>
-              <div>
-                <strong>Communication</strong>
-                <p>Direct messaging & real-time team chat</p>
-              </div>
-            </a>
-
-            <span class="module-card-v2 mcv2-disabled" id="mod-settings">
-              <div class="mcv2-icon" style="background:#f1f5f9;color:#94a3b8;"><i class="bi bi-sliders"></i></div>
-              <div>
-                <strong>Settings <span class="mcv2-soon">Coming Soon</span></strong>
-                <p>System configuration</p>
-              </div>
-            </span>
-
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- RECENT ACTIVITY & WIDGETS -->
-    <div class="col-12 col-lg-4 d-flex flex-column gap-3">
-      
-      <!-- 💬 COMMUNICATION INTEGRATED WIDGET -->
-      <div class="erp-card" style="border-left: 4px solid var(--brand-accent, #0284c7);">
-        <div class="erp-card-header erp-card-header-accent d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-            <i class="bi bi-chat-dots-fill" style="font-size:18px;color:#0284c7;"></i>
-            <h5 class="mb-0">Communication Widget</h5>
-          </div>
-          <a href="/communication" class="btn btn-xs btn-primary py-1 px-2.5" style="font-size: 11px;">Open →</a>
-        </div>
-        <div class="erp-card-body py-3">
-          <div class="row g-2 text-center">
-            <div class="col-12">
-              <div class="p-2 border rounded-3 bg-danger bg-opacity-10 text-danger mb-1">
-                <div class="fw-bold fs-4" id="dash-comm-unread">0</div>
-                <div class="small fw-semibold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Unread Messages</div>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="p-2 border rounded-3 bg-light text-dark">
-                <div class="fw-bold text-primary fs-5" id="dash-comm-direct">0</div>
-                <div class="text-muted" style="font-size: 9.5px;">Direct Messages</div>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="p-2 border rounded-3 bg-light text-dark">
-                <div class="fw-bold text-success fs-5" id="dash-comm-groups">0</div>
-                <div class="text-muted" style="font-size: 9.5px;">Groups & Teams</div>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="p-2 border rounded-3 bg-light text-dark">
-                <div class="fw-bold text-warning fs-5" id="dash-comm-mentions">0</div>
-                <div class="text-muted" style="font-size: 9.5px;">Mentions</div>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="p-2 border rounded-3 bg-light text-dark">
-                <div class="fw-bold text-info fs-5" id="dash-comm-docs">0</div>
-                <div class="text-muted" style="font-size: 9.5px;">Recent Shared Docs</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="erp-card h-100">
-        <div class="erp-card-header erp-card-header-accent">
-          <i class="bi bi-clock-history" style="font-size:18px;color:var(--brand-accent);"></i>
-          <h5>Recent Activity</h5>
-          <a href="/audit-log" class="ms-auto btn btn-sm btn-outline-secondary" style="font-size:11px;padding:2px 8px;">View all →</a>
-        </div>
-        <div class="erp-card-body p-0">
+        <div class="dv3-info-body p-0">
           {% if recent_activity %}
-          <ul class="activity-feed">
+          <ul class="dv3-timeline">
             {% for entry in recent_activity %}
-            <li class="activity-item">
-              <div class="activity-dot"></div>
-              <div class="activity-body">
-                <div class="activity-action">{{ entry.action }}</div>
+            <li class="dv3-tl-item">
+              <div class="dv3-tl-dot"></div>
+              <div class="dv3-tl-content">
+                <div class="dv3-tl-action">{{ entry.action }}</div>
                 {% if entry.details %}
-                <div class="activity-details">{{ entry.details }}</div>
+                <div class="dv3-tl-detail">{{ entry.details }}</div>
                 {% endif %}
-                <div class="activity-meta">
-                  <i class="bi bi-person me-1"></i>{{ entry.user_name }}
-                  <span class="mx-1">·</span>
-                  <i class="bi bi-clock me-1"></i>{{ entry.formatted_time }}
+                <div class="dv3-tl-meta">
+                  <span><i class="bi bi-person me-1"></i>{{ entry.user_name }}</span>
+                  <span class="dv3-tl-sep">·</span>
+                  <span><i class="bi bi-clock me-1"></i>{{ entry.formatted_time }}</span>
                 </div>
               </div>
             </li>
             {% endfor %}
           </ul>
           {% else %}
-          <div class="empty-state py-5">
-            <div class="empty-icon"><i class="bi bi-clock-history"></i></div>
-            <p>No activity recorded yet.</p>
+          <div class="dv3-empty-state">
+            <i class="bi bi-clock-history dv3-empty-icon"></i>
+            <p class="dv3-empty-text">No activity recorded yet.</p>
+            <small class="text-muted">Actions will appear here as you use the ERP.</small>
           </div>
           {% endif %}
         </div>
       </div>
     </div>
 
+    <!-- Right Column: Communication Widget + Calendar -->
+    <div class="col-12 col-lg-4 d-flex flex-column gap-3">
+
+      <!-- Communication Widget -->
+      <div class="dv3-info-card">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon" style="background:#e0f2fe;color:#0284c7;"><i class="bi bi-chat-dots-fill"></i></div>
+          <div class="dv3-info-title">Communication</div>
+          <a href="/communication" class="dv3-info-link">Open →</a>
+        </div>
+        <div class="dv3-info-body">
+          <div class="dv3-comm-grid">
+            <div class="dv3-comm-stat dv3-cs-red">
+              <div class="dv3-cs-val" id="dash-comm-unread">—</div>
+              <div class="dv3-cs-lbl">Unread</div>
+            </div>
+            <div class="dv3-comm-stat dv3-cs-blue">
+              <div class="dv3-cs-val" id="dash-comm-direct">—</div>
+              <div class="dv3-cs-lbl">Direct</div>
+            </div>
+            <div class="dv3-comm-stat dv3-cs-green">
+              <div class="dv3-cs-val" id="dash-comm-groups">—</div>
+              <div class="dv3-cs-lbl">Groups</div>
+            </div>
+            <div class="dv3-comm-stat dv3-cs-amber">
+              <div class="dv3-cs-val" id="dash-comm-mentions">—</div>
+              <div class="dv3-cs-lbl">Mentions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Calendar -->
+      <div class="dv3-info-card flex-grow-1">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-rose"><i class="bi bi-calendar3"></i></div>
+          <div class="dv3-info-title" id="dv3-cal-title">July 2026</div>
+          <div class="d-flex gap-1 ms-auto">
+            <button class="dv3-cal-nav-btn" onclick="dv3CalNav(-1)"><i class="bi bi-chevron-left"></i></button>
+            <button class="dv3-cal-nav-btn" onclick="dv3CalNav(1)"><i class="bi bi-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="dv3-info-body pb-2">
+          <div id="dv3-calendar"></div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
-       5. MASTER DATA SUMMARY + OPERATIONAL ALERTS
-  ══════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════════
+       8. ENTERPRISE MODULES + MASTER DATA
+  ═══════════════════════════════════════════════════════════ -->
   <div class="row g-3 mb-4">
 
-    <!-- Master Data -->
-    <div class="col-12 col-md-6 col-lg-4">
-      <div class="erp-card h-100">
-        <div class="erp-card-header erp-card-header-accent">
-          <i class="bi bi-database-fill" style="font-size:18px;color:var(--brand-accent);"></i>
-          <h5>Master Data Summary</h5>
+    <!-- Enterprise Modules Grid -->
+    <div class="col-12 col-lg-8">
+      <div class="dv3-info-card">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-green"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+          <div class="dv3-info-title">Enterprise Modules</div>
+          <span class="ms-auto dv3-badge-subtle">Super Admin</span>
         </div>
-        <div class="erp-card-body">
-          <div class="master-stat-row">
-            <span><i class="bi bi-people me-2 text-success"></i>Total Parties</span>
-            <strong>{{ snapshot.total_parties }}</strong>
-          </div>
-          <div class="master-stat-row">
-            <span><i class="bi bi-box-seam me-2 text-primary"></i>Total Materials</span>
-            <strong>{{ snapshot.total_materials }}</strong>
-          </div>
-          <div class="master-stat-row">
-            <span><i class="bi bi-cart me-2 text-warning"></i>Purchase Invoices</span>
-            <strong>{{ snapshot.total_purchase_invoices }}</strong>
-          </div>
-          <div class="master-stat-row">
-            <span><i class="bi bi-receipt me-2 text-danger"></i>Sales Invoices</span>
-            <strong>{{ snapshot.total_sales_invoices }}</strong>
-          </div>
-          <div class="master-stat-row border-0">
-            <span><i class="bi bi-boxes me-2 text-info"></i>Active Stock Items</span>
-            <strong>{{ snapshot.inventory_items }}</strong>
+        <div class="dv3-info-body">
+          <div class="dv3-mod-grid">
+
+            <a href="/party" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-people-fill"></i></div>
+              <div><strong>Party</strong><p>Suppliers & Buyers</p></div>
+            </a>
+            <a href="/material" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-box-seam"></i></div>
+              <div><strong>Material</strong><p>E-waste categories</p></div>
+            </a>
+            <a href="/purchase" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#fef3c7;color:#92400e;"><i class="bi bi-cart-check"></i></div>
+              <div><strong>Purchase</strong><p>Inward invoices</p></div>
+            </a>
+            <a href="/inventory/dashboard" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#ccfbf1;color:#0f766e;"><i class="bi bi-boxes"></i></div>
+              <div><strong>Inventory</strong><p>Stock & movements</p></div>
+            </a>
+            <a href="/processing/dashboard" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#e0e7ff;color:#3730a3;"><i class="bi bi-cpu"></i></div>
+              <div><strong>Processing</strong><p>Sorting & dismantling</p></div>
+            </a>
+            <a href="/sales/dashboard" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#fce7f3;color:#9d174d;"><i class="bi bi-bag-fill"></i></div>
+              <div><strong>Sales</strong><p>Customer invoices</p></div>
+            </a>
+            <a href="/certificates/dashboard" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-patch-check-fill"></i></div>
+              <div><strong>Certificates</strong><p>Recycling & disposal</p></div>
+            </a>
+            <a href="/employees/dashboard" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-person-badge"></i></div>
+              <div><strong>Employees</strong><p>HR & Payroll</p></div>
+            </a>
+            <a href="/documents/mydrive" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#e0e7ff;color:#3730a3;"><i class="bi bi-folder-symlink-fill"></i></div>
+              <div><strong>EDMS</strong><p>Documents vault</p></div>
+            </a>
+            <a href="/communication" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#fae8ff;color:#86198f;"><i class="bi bi-chat-dots-fill"></i></div>
+              <div><strong>Communication</strong><p>Team messaging</p></div>
+            </a>
+            <a href="/factory-reports" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#ecfdf5;color:#065f46;"><i class="bi bi-bar-chart-fill"></i></div>
+              <div><strong>Reports</strong><p>Business analytics</p></div>
+            </a>
+            <a href="/inventory/material-flow-dashboard" class="dv3-mod-card">
+              <div class="dv3-mod-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-diagram-3-fill"></i></div>
+              <div><strong>Material Flow</strong><p>Batch genealogy</p></div>
+            </a>
+
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Inventory Stock Health -->
-    <div class="col-12 col-md-6 col-lg-4">
-      <div class="erp-card h-100">
-        <div class="erp-card-header erp-card-header-accent">
-          <i class="bi bi-boxes" style="font-size:18px;color:var(--brand-accent);"></i>
-          <h5>Inventory Stock Health</h5>
+    <!-- Master Data Summary -->
+    <div class="col-12 col-lg-4">
+      <div class="dv3-info-card h-100">
+        <div class="dv3-info-header">
+          <div class="dv3-info-icon dv3-cic-indigo"><i class="bi bi-database-fill"></i></div>
+          <div class="dv3-info-title">Master Data</div>
         </div>
-        <div class="erp-card-body">
-          <div class="pending-row">
-            <span><i class="bi bi-box-seam me-2 text-success"></i>Active Stock Categories</span>
-            <span class="pending-val">{{ snapshot.inventory_items }}</span>
-          </div>
-          <div class="pending-row">
-            <span><i class="bi bi-arrow-left-right me-2 text-info"></i>Stock Movement Ledger</span>
-            <span class="pending-val"><span class="badge bg-success-subtle">Active</span></span>
-          </div>
-          <div class="pending-row border-0">
-            <span><i class="bi bi-shield-check me-2 text-primary"></i>Traceability Engine</span>
-            <span class="pending-val"><span class="badge bg-primary-subtle">Online</span></span>
-          </div>
-          <p class="mt-3 mb-0 text-center text-muted" style="font-size:11.5px;">
-            Material movements are synced with ledger balances.
-          </p>
-        </div>
-      </div>
-    </div>
+        <div class="dv3-info-body">
 
-    <!-- Pending Tasks & Operations -->
-    <div class="col-12 col-md-6 col-lg-4">
-      <div class="erp-card h-100">
-        <div class="erp-card-header erp-card-header-accent">
-          <i class="bi bi-hourglass-split" style="font-size:18px;color:var(--warning);"></i>
-          <h5>Pending Operations</h5>
-        </div>
-        <div class="erp-card-body">
-          <div class="pending-row">
-            <span><i class="bi bi-cpu me-2 text-amber"></i>Pending Processing Jobs</span>
-            <span class="pending-val text-warning">{{ snapshot.pending_processing }}</span>
+          <div class="dv3-mds-item">
+            <div class="dv3-mds-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-people"></i></div>
+            <div class="dv3-mds-label">Total Parties</div>
+            <div class="dv3-mds-val">{{ snapshot.total_parties }}</div>
           </div>
-          <div class="pending-row">
-            <span><div class="bi bi-calendar-event me-2 text-info"></div>Pending Leave Approvals</span>
-            <span class="pending-val text-info">{{ snapshot.pending_leave_requests }}</span>
+          <div class="dv3-mds-item">
+            <div class="dv3-mds-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-box-seam"></i></div>
+            <div class="dv3-mds-label">Total Materials</div>
+            <div class="dv3-mds-val">{{ snapshot.total_materials }}</div>
           </div>
-          <div class="pending-row border-0">
-            <span><i class="bi bi-check-circle me-2 text-success"></i>System Security</span>
-            <span class="pending-val"><span class="badge bg-success-subtle">Super Admin</span></span>
+          <div class="dv3-mds-item">
+            <div class="dv3-mds-icon" style="background:#fef3c7;color:#92400e;"><i class="bi bi-cart"></i></div>
+            <div class="dv3-mds-label">Purchase Invoices</div>
+            <div class="dv3-mds-val">{{ snapshot.total_purchase_invoices }}</div>
           </div>
-          <p class="mt-3 mb-0 text-center text-muted" style="font-size:11.5px;">
-            Full control over factory operations & compliance.
-          </p>
+          <div class="dv3-mds-item">
+            <div class="dv3-mds-icon" style="background:#fce7f3;color:#9d174d;"><i class="bi bi-receipt"></i></div>
+            <div class="dv3-mds-label">Sales Invoices</div>
+            <div class="dv3-mds-val">{{ snapshot.total_sales_invoices }}</div>
+          </div>
+          <div class="dv3-mds-item">
+            <div class="dv3-mds-icon" style="background:#ccfbf1;color:#0f766e;"><i class="bi bi-boxes"></i></div>
+            <div class="dv3-mds-label">Active Stock Items</div>
+            <div class="dv3-mds-val">{{ snapshot.inventory_items }}</div>
+          </div>
+          <div class="dv3-mds-item border-0 mb-0">
+            <div class="dv3-mds-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-person-badge"></i></div>
+            <div class="dv3-mds-label">Active Employees</div>
+            <div class="dv3-mds-val">{{ snapshot.total_employees }}</div>
+          </div>
+
         </div>
       </div>
     </div>
 
   </div>
 
-</div><!-- /dashboard-v2 -->
+</div><!-- /dv3 -->
+
+<!-- Pass Jinja snapshot data to JavaScript -->
+<script>
+const SNAP = {
+  salesMTD:    {{ snapshot.monthly_sales_value | int }},
+  purchaseMTD: {{ snapshot.monthly_purchase_value | int }},
+  salesToday:  {{ snapshot.today_sales_value | int }},
+  purchaseToday: {{ snapshot.today_purchase_value | int }},
+  inventoryItems: {{ snapshot.inventory_items }},
+  totalEmployees: {{ snapshot.total_employees }},
+  presentToday: {{ snapshot.present_today }},
+  pendingProcessing: {{ snapshot.pending_processing }},
+  pendingLeave: {{ snapshot.pending_leave_requests }},
+};
+</script>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=3"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     fetch('/api/v1/communication/dashboard-stats')
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          document.getElementById('dash-comm-unread').innerText = data.unread_messages;
-          document.getElementById('dash-comm-direct').innerText = data.unread_direct;
-          document.getElementById('dash-comm-groups').innerText = data.unread_groups;
+          document.getElementById('dash-comm-unread').innerText   = data.unread_messages;
+          document.getElementById('dash-comm-direct').innerText   = data.unread_direct;
+          document.getElementById('dash-comm-groups').innerText   = data.unread_groups;
           document.getElementById('dash-comm-mentions').innerText = data.mentions;
-          document.getElementById('dash-comm-docs').innerText = data.shared_documents;
         }
+      })
+      .catch(() => {
+        ['dash-comm-unread','dash-comm-direct','dash-comm-groups','dash-comm-mentions']
+          .forEach(id => { const el = document.getElementById(id); if(el) el.innerText = '0'; });
       });
   });
 </script>
