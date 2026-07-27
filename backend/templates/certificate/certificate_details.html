@@ -1,0 +1,312 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Certificate Details - {{ cert.certificate_number }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/certificate.css') }}">
+<style>
+  .detail-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Actions Header Alert Banner -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <span class="text-muted small">Certificate Registry Ref</span>
+          <h4 class="fw-bold m-0 d-flex align-items-center gap-2">
+            {{ cert.certificate_number }}
+            {% if cert.status == 'LOCKED' %}
+              <span class="badge bg-success-subtle text-success fs-6">Locked (Approved)</span>
+            {% elif cert.status == 'SUPERSEDED' %}
+              <span class="badge bg-purple-subtle text-purple fs-6">Superseded</span>
+            {% elif cert.status == 'CANCELLED' %}
+              <span class="badge bg-danger-subtle text-danger fs-6">Cancelled</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary fs-6">Draft Proposal</span>
+            {% endif %}
+          </h4>
+        </div>
+        
+        <div class="d-flex gap-2">
+          {% if cert.status == 'DRAFT' %}
+            <form action="{{ url_for('certificates.generate_and_lock', cert_id=cert.id) }}" method="POST" class="d-inline">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-success fw-bold">
+                <i class="bi bi-shield-lock me-1"></i>Generate & Lock Certificate
+              </button>
+            </form>
+          {% endif %}
+
+          {% if cert.status in ('GENERATED', 'LOCKED') %}
+            <a href="{{ url_for('certificates.download_pdf', cert_id=cert.id) }}" class="btn btn-primary fw-bold">
+              <i class="bi bi-download me-1"></i>Download PDF Certificate
+            </a>
+            <a href="{{ url_for('certificates.supersede', cert_id=cert.id) }}" class="btn btn-warning fw-bold">
+              <i class="bi bi-arrow-left-right me-1"></i>Supersede / Correct
+            </a>
+          {% endif %}
+
+          {% if cert.status not in ('CANCELLED', 'SUPERSEDED') %}
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+              <i class="bi bi-x-circle me-1"></i>Cancel Certificate
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Replaced link warning if applicable -->
+  {% if cert.replaces_certificate_id %}
+  <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-info-circle-fill fs-4 me-2"></i>
+    <div>
+      This certificate is a replacement correction that supersedes certificate 
+      <a href="{{ url_for('certificates.job_details', cert_id=cert.replaces_certificate_id) }}" class="fw-bold">{{ cert.replaced_certificate_number }}</a>.
+    </div>
+  </div>
+  {% endif %}
+  
+  {% if cert.status == 'SUPERSEDED' %}
+  <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+    <div>
+      This certificate has been superseded by a corrected version: 
+      <a href="{{ url_for('certificates.job_details', cert_id=cert.superseded_certificate_id) }}" class="fw-bold">{{ cert.superseded_by_number }}</a>.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Core Content Row -->
+  <div class="row g-3">
+    <!-- Left Column: Details & Tables -->
+    <div class="col-12 col-lg-8">
+      
+      <!-- Metadata details -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Generation Date</div>
+              <div class="detail-value">{{ cert.generation_date or '—' }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Customer Name</div>
+              <div class="detail-value">{{ cert.customer_name }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Template Series</div>
+              <div class="detail-value"><span class="badge bg-secondary">{{ cert.template_key }} (v{{ cert.template_version }})</span></div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Certificate Type</div>
+              <div class="detail-value">{{ cert.certificate_type }}</div>
+            </div>
+            {% if cert.remarks %}
+            <div class="col-12 pt-2 border-top">
+              <div class="detail-label">Remarks / Description</div>
+              <div class="text-secondary small">{{ cert.remarks }}</div>
+            </div>
+            {% endif %}
+            {% if cert.status == 'CANCELLED' %}
+            <div class="col-12 pt-2 border-top text-danger">
+              <div class="detail-label text-danger">Cancellation Reason</div>
+              <div class="fw-bold small">{{ cert.cancellation_reason }}</div>
+              <small class="text-muted">Cancelled by {{ cert.cancelled_by }} on {{ cert.cancelled_at }}</small>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Materials certified table -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-box-seam text-primary me-2"></i>Certified Materials Summary</h6>
+        </div>
+        <div class="card-body p-0">
+          {% if cert.materials %}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Material</th>
+                  <th>Quantity</th>
+                  <th>Weight</th>
+                  <th>Certified State</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in cert.materials %}
+                <tr>
+                  <td>
+                    <span class="fw-bold text-dark">{{ m.material_name }}</span><br>
+                    <small class="text-muted">{{ m.material_code }}</small>
+                  </td>
+                  <td>{{ m.quantity }} {{ m.unit }}</td>
+                  <td>{{ "%.2f"|format(m.weight) }} KG</td>
+                  <td><span class="badge bg-success-subtle text-success">{{ m.inventory_state }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No processed materials found. Make sure the linked Processing Job has outputs recorded.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Asset spreadsheet preview -->
+      {% if asset_rows %}
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-file-earmark-spreadsheet text-primary me-2"></i>Asset List Viewer</h6>
+          <span class="badge bg-secondary">{{ asset_rows|length }} rows</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <table class="table table-sm table-hover align-middle mb-0" style="font-size: 12px;">
+              <thead class="table-light sticky-top">
+                <tr>
+                  {% for cell in asset_rows[0] %}
+                    <th>{{ cell }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in asset_rows[1:] %}
+                <tr>
+                  {% for cell in row %}
+                    <td>{{ cell }}</td>
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Future Verification UUID placeholders -->
+      <div class="card shadow-sm border-0 mb-3 bg-light">
+        <div class="card-body">
+          <h6 class="fw-bold text-dark mb-2"><i class="bi bi-qr-code text-secondary me-2"></i>Enterprise Security Controls</h6>
+          <div class="row g-2" style="font-size: 12.5px;">
+            <div class="col-4 text-muted">Verification ID:</div>
+            <div class="col-8 fw-bold text-dark">{{ cert.verification_uuid }}</div>
+            <div class="col-4 text-muted">Digital Signature:</div>
+            <div class="col-8 text-secondary font-monospace">{{ cert.digital_signature_hash or '— (Signature Pending)' }}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Relationship tree viewer & timelines -->
+    <div class="col-12 col-lg-4">
+      
+      <!-- Visual Relationship node map -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-diagram-3 text-primary me-2"></i>Relationship Map</h6>
+        </div>
+        <div class="card-body p-0 bg-light">
+          <div class="relationship-tree">
+            <!-- Customer -->
+            <a href="/party" class="tree-node mb-1">
+              <div class="tree-node-title">Customer</div>
+              <div class="tree-node-value">{{ cert.customer_name }}</div>
+            </a>
+            <div class="tree-connector"></div>
+            
+            <!-- Purchases -->
+            <div class="tree-node mb-1">
+              <div class="tree-node-title">Purchase Reference(s)</div>
+              <div class="tree-node-value">
+                {% for p in cert.purchases %}
+                  <a href="/purchase" class="d-block small text-primary fw-bold">{{ p.purchase_invoice_number }}</a>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="tree-connector"></div>
+            
+            <!-- Processing Jobs -->
+            <div class="tree-node mb-1">
+              <div class="tree-node-title">Processing Job(s)</div>
+              <div class="tree-node-value">
+                {% for job in cert.processing_jobs %}
+                  <a href="/processing/jobs/{{ job.processing_job_id }}" class="d-block small text-primary fw-bold">{{ job.processing_number }}</a>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="tree-connector"></div>
+            
+            <!-- Certificate -->
+            <div class="tree-node bg-primary text-white border-primary">
+              <div class="tree-node-title text-white-50">Certificate</div>
+              <div class="tree-node-value text-white">{{ cert.certificate_number }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Timeline audits -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-clock-history text-primary me-2"></i>Audit Timeline Logs</h6>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush" style="font-size: 12.5px;">
+            {% for act in cert.activities %}
+            <li class="list-group-item p-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="fw-bold text-dark">{{ act.action }}</span>
+                <small class="text-muted">{{ act.timestamp }}</small>
+              </div>
+              <div class="text-secondary small">{{ act.remarks or '' }}</div>
+              <div class="text-muted mt-1" style="font-size: 11px;"><i class="bi bi-person-fill me-1"></i>{{ act.performed_by }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Cancellation -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{{ url_for('certificates.cancel', cert_id=cert.id) }}" method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Cancel Certificate</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-secondary">Are you sure you want to cancel certificate <strong>{{ cert.certificate_number }}</strong>? This action is permanent and will be logged in the audits.</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-dark">Cancellation Reason</label>
+            <textarea name="reason" class="form-control" rows="3" required placeholder="Why is this certificate being cancelled?"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-danger fw-bold">Cancel Certificate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,441 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Generate Document Wizard{% endblock %}
+
+{% block styles %}
+<style>
+  .wizard-step-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 15px;
+  }
+  .step-tab {
+    font-size: 14px;
+    font-weight: 700;
+    color: #94a3b8;
+    cursor: default;
+    position: relative;
+    padding-bottom: 17px;
+  }
+  .step-tab.active {
+    color: #2563eb;
+  }
+  .step-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #2563eb;
+  }
+  .wizard-card {
+    background-color: #ffffff;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.02);
+    border-radius: 12px;
+  }
+  .preview-box {
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    background-color: #f8fafc;
+    min-height: 150px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="wizard-step-header" id="wizardHeader">
+    <div class="step-tab active" id="tab_step1">1. Supplier &amp; Purchase</div>
+    <div class="step-tab" id="tab_step2">2. Type &amp; Template</div>
+    <div class="step-tab" id="tab_step3">3. Document Data Input</div>
+    <div class="step-tab" id="tab_step4">4. Preview &amp; Generate</div>
+  </div>
+
+  <form id="wizardForm" method="POST" action="{{ url_for('certificates.create_certificate') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    
+    <!-- Step 1: Select Supplier and Purchase -->
+    <div class="card wizard-card p-4" id="step1">
+      <h5 class="fw-bold mb-4"><i class="bi bi-people-fill text-primary me-2"></i>Select Supplier &amp; Purchase Invoice</h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label fw-semibold">Supplier/Party <span class="text-danger">*</span></label>
+          <select id="customer_id_select" name="customer_id" class="form-select" required onchange="filterPurchases(this.value)">
+            <option value="">-- Select Supplier --</option>
+            {% for p in parties %}
+              <option value="{{ p.id }}">{{ p.company_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 mt-4">
+          <label class="form-label fw-semibold">Select Eligible Purchase Invoice <span class="text-danger">*</span></label>
+          <div class="table-responsive border rounded" style="max-height: 300px;">
+            <table class="table table-hover align-middle mb-0" id="purchasesTable">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 40px;"></th>
+                  <th>Purchase Number</th>
+                  <th>Date</th>
+                  <th>Total Weight</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="purchasesList">
+                <tr id="noPurchasesRow">
+                  <td colspan="5" class="text-center py-4 text-muted">Please select a supplier to load eligible purchases.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-4">
+        <button type="button" class="btn btn-primary px-4 fw-bold" onclick="goToStep(2)">Next <i class="bi bi-arrow-right ms-1"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Choose Template & Certificate Type -->
+    <div class="card wizard-card p-4" id="step2" style="display: none;">
+      <h5 class="fw-bold mb-4"><i class="bi bi-palette-fill text-primary me-2"></i>Choose Certificate Wording &amp; Layout</h5>
+      <div class="row g-3">
+        <div class="col-12 col-sm-6">
+          <label class="form-label fw-semibold">Certificate Type</label>
+          <select name="certificate_type" class="form-select" required>
+            <option value="RECYCLING">Recycling Certificate</option>
+            <option value="DECOMPOSITION">Decomposition Certificate</option>
+            <option value="REFURBISHMENT">Refurbishment Certificate</option>
+            <option value="COMBINED">Combined Certificate</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6">
+          <label class="form-label fw-semibold">Base Template Layout</label>
+          <select id="templateKeySelect" name="template_key" class="form-select" required onchange="applyDefaultTemplateJson(this.value)">
+            {% for t in templates %}
+              <option value="{{ t.template_key }}">{{ t.template_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Remarks</label>
+          <textarea name="remarks" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between mt-4">
+        <button type="button" class="btn btn-light px-4" onclick="goToStep(1)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+        <button type="button" class="btn btn-primary px-4 fw-bold" onclick="goToStep(3)">Next <i class="bi bi-arrow-right ms-1"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 3: Input Data Method -->
+    <div class="card wizard-card p-4" id="step3" style="display: none;">
+      <h5 class="fw-bold mb-3"><i class="bi bi-database-fill-add text-primary me-2"></i>Document Material Wording Input</h5>
+      
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Input Method</label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="input_mode" id="mode_standard" value="standard" checked onclick="toggleInputMode('standard')">
+            <label class="form-check-label" for="mode_standard">Standard (Use Purchase Invoice items)</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="input_mode" id="mode_custom" value="custom" onclick="toggleInputMode('custom')">
+            <label class="form-check-label" for="mode_custom">Customer Specific (Upload Excel/Paste Table)</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standard Preview Block -->
+      <div id="standardInputBlock" class="mb-3">
+        <div class="alert alert-info py-2 small"><i class="bi bi-info-circle me-1"></i> This document will automatically pull and render the material rows directly from the selected Purchase Invoice.</div>
+      </div>
+
+      <!-- Custom Ingest Grid Block -->
+      <div id="customInputBlock" class="mb-3" style="display: none;">
+        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active btn-sm" id="pills-paste-tab" data-bs-toggle="pill" data-bs-target="#pills-paste" type="button" role="tab"><i class="bi bi-clipboard-plus me-1"></i>Paste Clipboard Grid</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link btn-sm" id="pills-upload-tab" data-bs-toggle="pill" data-bs-target="#pills-upload" type="button" role="tab"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Upload Excel/CSV</button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="pills-tabContent">
+          <!-- Paste Clipboard Area -->
+          <div class="tab-pane fade show active" id="pills-paste" role="tabpanel">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Copy table from Excel (Ctrl+C) and Paste here (Ctrl+V):</label>
+              <textarea id="paste_tsv_input" class="form-control font-monospace small" rows="5" placeholder="Name&#9;Quantity&#9;Weight&#10;Copper Scrap&#9;5 Units&#9;50.00 KG" oninput="processPaste(this.value)"></textarea>
+            </div>
+          </div>
+
+          <!-- File Upload Area -->
+          <div class="tab-pane fade" id="pills-upload" role="tabpanel">
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Select Spreadsheet (.xlsx, .xls, .csv)</label>
+              <input type="file" id="spreadsheet_file" class="form-control form-control-sm" accept=".xlsx,.xls,.csv" onchange="uploadSpreadsheet(this)">
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <label class="form-label small fw-semibold">Preview Ingested Wording Grid:</label>
+          <div class="table-responsive border rounded bg-light" style="max-height: 250px;">
+            <table class="table table-bordered table-sm m-0 small" id="customPreviewTable">
+              <thead class="table-light"><tr><th>No columns loaded</th></tr></thead>
+              <tbody><tr><td>No spreadsheet data parsed yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between mt-4">
+        <button type="button" class="btn btn-light px-4" onclick="goToStep(2)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+        <button type="button" class="btn btn-primary px-4 fw-bold" onclick="goToStep(4)">Next <i class="bi bi-arrow-right ms-1"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 4: Verification & Finish -->
+    <div class="card wizard-card p-4" id="step4" style="display: none;">
+      <h5 class="fw-bold mb-3"><i class="bi bi-patch-check-fill text-primary me-2"></i>Verify Wording &amp; Finalize Document</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-6 border-end">
+          <h6 class="fw-bold text-secondary small text-uppercase mb-3">Document Details</h6>
+          <table class="table table-sm table-borderless small mb-0">
+            <tr><td style="width: 120px;" class="fw-semibold">Supplier Name:</td><td id="summary_supplier">N/A</td></tr>
+            <tr><td class="fw-semibold">Purchase Ref:</td><td id="summary_purchase">N/A</td></tr>
+            <tr><td class="fw-semibold">Wording Type:</td><td id="summary_type">N/A</td></tr>
+            <tr><td class="fw-semibold">Template Layout:</td><td id="summary_template">N/A</td></tr>
+          </table>
+        </div>
+        <div class="col-12 col-md-6">
+          <h6 class="fw-bold text-secondary small text-uppercase mb-3">Validation Checklist</h6>
+          <div id="wizardValidationChecklist">
+            <span class="badge bg-success-subtle text-success p-2 d-block text-start mb-2"><i class="bi bi-check-circle-fill me-1"></i> Supplier and Purchase matched</span>
+            <span class="badge bg-success-subtle text-success p-2 d-block text-start"><i class="bi bi-check-circle-fill me-1"></i> Materials and units verified</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between mt-4">
+        <button type="button" class="btn btn-light px-4" onclick="goToStep(3)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+        <button type="submit" class="btn btn-success px-5 fw-bold"><i class="bi bi-check-circle me-1"></i>Generate Draft Document</button>
+      </div>
+    </div>
+
+    <!-- Hidden form serialization elements -->
+    <input type="hidden" name="template_json" id="hidden_template_json">
+    <input type="hidden" name="custom_table_json" id="hidden_custom_table_json">
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const eligiblePurchases = {{ queue|tojson|safe }};
+  const templateList = {{ templates|tojson|safe }};
+  let currentStep = 1;
+  let activePurchase = null;
+
+  function filterPurchases(supplierId) {
+    const list = document.getElementById("purchasesList");
+    list.innerHTML = "";
+    
+    if (!supplierId) {
+      list.innerHTML = `<tr id="noPurchasesRow"><td colspan="5" class="text-center py-4 text-muted">Please select a supplier to load eligible purchases.</td></tr>`;
+      return;
+    }
+
+    const filtered = eligiblePurchases.filter(p => p.customer_id == supplierId);
+    
+    if (filtered.length === 0) {
+      list.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-warning"><i class="bi bi-exclamation-triangle me-1"></i> No eligible confirmed purchase invoices found for this supplier.</td></tr>`;
+      return;
+    }
+
+    filtered.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.onclick = () => selectPurchase(p);
+      tr.innerHTML = `
+        <td><input type="radio" name="purchase_id" value="${p.id}" class="form-check-input" id="pur_radio_${p.id}"></td>
+        <td><span class="fw-bold">${p.processing_number}</span></td>
+        <td>${p.processing_date}</td>
+        <td>${parseFloat(p.input_weight).toFixed(2)} KG</td>
+        <td><span class="badge bg-${p.readiness_color}-subtle text-${p.readiness_color}">${p.readiness}</span></td>
+      `;
+      list.appendChild(tr);
+    });
+
+    // Auto-select first
+    if (filtered.length > 0) {
+      selectPurchase(filtered[0]);
+    }
+  }
+
+  function selectPurchase(p) {
+    activePurchase = p;
+    const radio = document.getElementById(`pur_radio_${p.id}`);
+    if (radio) {
+      radio.checked = true;
+    }
+    
+    // Auto lookup supplier default template if set
+    fetch(`/party/${p.customer_id}/default-template`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.default_template_key) {
+          document.getElementById("templateKeySelect").value = data.default_template_key;
+          applyDefaultTemplateJson(data.default_template_key);
+        }
+      })
+      .catch(e => console.log("Default template load failed:", e));
+  }
+
+  function applyDefaultTemplateJson(key) {
+    const match = templateList.find(x => x.template_key === key);
+    if (match && match.template_json) {
+      document.getElementById("hidden_template_json").value = match.template_json;
+    } else {
+      document.getElementById("hidden_template_json").value = "";
+    }
+  }
+
+  function toggleInputMode(mode) {
+    const standard = document.getElementById("standardInputBlock");
+    const custom = document.getElementById("customInputBlock");
+    if (mode === "standard") {
+      standard.style.display = "block";
+      custom.style.display = "none";
+      document.getElementById("hidden_custom_table_json").value = "";
+    } else {
+      standard.style.display = "none";
+      custom.style.display = "block";
+    }
+  }
+
+  function processPaste(text) {
+    fetch("/certificates/parse-clipboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tsv_data: text })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.rows) {
+        renderCustomTablePreview(data.rows);
+      }
+    })
+    .catch(e => console.log("Paste parse error:", e));
+  }
+
+  function uploadSpreadsheet(input) {
+    if (!input.files || input.files.length === 0) return;
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+
+    fetch("/certificates/parse-file", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.rows) {
+        renderCustomTablePreview(data.rows);
+      } else {
+        alert("Spreadsheet parse failed: " + data.error);
+      }
+    })
+    .catch(e => console.log("File parse error:", e));
+  }
+
+  function renderCustomTablePreview(rows) {
+    const table = document.getElementById("customPreviewTable");
+    table.innerHTML = "";
+    
+    if (rows.length === 0) {
+      table.innerHTML = `<thead><tr><th>No rows parsed</th></tr></thead>`;
+      return;
+    }
+
+    // Build header row
+    const thead = document.createElement("thead");
+    thead.className = "table-light";
+    const trh = document.createElement("tr");
+    rows[0].forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    table.appendChild(thead);
+
+    // Build body rows
+    const tbody = document.createElement("tbody");
+    const gridData = [];
+    
+    rows.slice(1).forEach(row => {
+      const tr = document.createElement("tr");
+      const obj = {};
+      row.forEach((val, idx) => {
+        const td = document.createElement("td");
+        td.textContent = val;
+        tr.appendChild(td);
+        
+        // Save row mapping
+        const headerName = rows[0][idx] || `col_${idx}`;
+        obj[headerName] = val;
+      });
+      tbody.appendChild(tr);
+      gridData.push(obj);
+    });
+    table.appendChild(tbody);
+
+    // Serialize custom grid as JSON
+    document.getElementById("hidden_custom_table_json").value = JSON.stringify(gridData);
+  }
+
+  function goToStep(step) {
+    if (step === 2 && !activePurchase) {
+      alert("Please select a purchase invoice first.");
+      return;
+    }
+    
+    // Hide current step, show next
+    document.getElementById(`step${currentStep}`).style.display = "none";
+    document.getElementById(`tab_step${currentStep}`).classList.remove("active");
+    
+    currentStep = step;
+    
+    document.getElementById(`step${currentStep}`).style.display = "block";
+    document.getElementById(`tab_step${currentStep}`).classList.add("active");
+
+    // Populate summary in Step 4
+    if (step === 4) {
+      document.getElementById("summary_supplier").textContent = activePurchase ? activePurchase.customer_name : "N/A";
+      document.getElementById("summary_purchase").textContent = activePurchase ? activePurchase.processing_number : "N/A";
+      document.getElementById("summary_type").textContent = document.querySelector('select[name="certificate_type"] option:checked').text;
+      
+      const tKey = document.querySelector('select[name="template_key"]').value;
+      const tMatch = templateList.find(x => x.template_key === tKey);
+      document.getElementById("summary_template").textContent = tMatch ? tMatch.template_name : tKey;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    // Bootstrap initial template selection JSON backer
+    const initialKey = document.getElementById("templateKeySelect").value;
+    applyDefaultTemplateJson(initialKey);
+  });
+</script>
+{% endblock %}

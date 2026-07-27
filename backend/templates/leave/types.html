@@ -1,0 +1,130 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Leave Types Configuration – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #1e293b;">
+        <i class="bi bi-sliders text-primary me-2"></i>Leave Types Configuration
+      </h3>
+      <p class="text-muted small mb-0">Configure default and custom leave policies, annual allocations, and paid/unpaid statuses.</p>
+    </div>
+    <a href="{{ url_for('employees.leave_dashboard') }}" class="btn btn-outline-secondary px-3">
+      <i class="bi bi-arrow-left me-1"></i>Leave Dashboard
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Leave Types Table Card -->
+    <div class="col-12 col-lg-7">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-list-stars text-primary me-2"></i>Configured Leave Types
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+                  <th>Code</th>
+                  <th>Leave Name</th>
+                  <th>Default Days</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for lt in leave_types %}
+                <tr>
+                  <td>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1 fs-6">
+                      {{ lt.leave_code }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong class="text-dark d-block">{{ lt.leave_name }}</strong>
+                    <small class="text-muted">{{ lt.description or '' }}</small>
+                  </td>
+                  <td><strong class="text-dark">{{ lt.default_days }} days/year</strong></td>
+                  <td>
+                    {% if lt.is_paid == 1 %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">Paid Leave</span>
+                    {% else %}
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1">Unpaid Leave</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if lt.is_active == 1 %}
+                      <span class="badge bg-success rounded-circle p-1 me-1" title="Active"></span>Active
+                    {% else %}
+                      <span class="badge bg-secondary rounded-circle p-1 me-1" title="Inactive"></span>Inactive
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Leave Type Form Card -->
+    <div class="col-12 col-lg-5">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-plus-circle text-primary me-2"></i>Add / Update Leave Type
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('employees.leave_types') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Leave Name <span class="text-danger">*</span></label>
+              <input type="text" name="leave_name" class="form-control" required placeholder="e.g. Maternity Leave">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Leave Code <span class="text-danger">*</span></label>
+              <input type="text" name="leave_code" class="form-control font-monospace text-uppercase" required placeholder="e.g. ML" maxlength="10">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Default Annual Days <span class="text-danger">*</span></label>
+              <input type="number" step="0.5" name="default_days" class="form-control" required placeholder="e.g. 12" value="12">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Description</label>
+              <textarea name="description" class="form-control" rows="2" placeholder="Brief description of leave policy..."></textarea>
+            </div>
+
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" name="is_paid" value="1" id="is_paid_switch" checked>
+              <label class="form-check-label fw-semibold text-dark" for="is_paid_switch">Paid Leave</label>
+            </div>
+
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" name="is_active" value="1" id="is_active_switch" checked>
+              <label class="form-check-label fw-semibold text-dark" for="is_active_switch">Active Status</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 shadow-sm py-2">
+              <i class="bi bi-check-circle me-1"></i>Save Leave Type Configuration
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

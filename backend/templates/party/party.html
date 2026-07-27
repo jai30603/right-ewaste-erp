@@ -1,0 +1,212 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Party Management – Right Ewaste ERP{% endblock %}
+{% block page_title %}Party Management{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Party</li>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Party Management",
+    subtitle="Manage supplier and buyer master records — GSTIN, addresses, and ledger entries.",
+    back_url="/",
+    actions=[
+        {'label': 'Add New Party', 'url': '/party/add', 'icon': 'bi-person-plus', 'class': 'btn-primary'}
+    ]
+) }}
+
+<div class="erp-card">
+
+    <!-- Header -->
+    <div class="erp-card-header erp-card-header-accent">
+        <i class="bi bi-people" style="font-size:18px; color:var(--brand-accent);"></i>
+        <h5>Party Master</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            ({{ parties|length }} record{{ 's' if parties|length != 1 }})
+        </span>
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <!-- Search -->
+            <form method="GET" action="/party" class="d-flex gap-2">
+                <div class="input-group" style="width:280px;">
+                    <span class="input-group-text" style="background:#f4f7f5; border-color:#dde8e2; border-right:none;">
+                        <i class="bi bi-search" style="font-size:13px; color:#6c7a75;"></i>
+                    </span>
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ q }}"
+                        class="form-control"
+                        placeholder="Search code, name, phone…"
+                        style="border-left:none; font-size:13px;">
+                    {% if q %}
+                    <a href="/party" class="btn btn-outline-secondary" style="font-size:12px; padding:6px 10px;" title="Clear search">
+                        <i class="bi bi-x"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+            <a href="/party/add" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i> Add Party
+            </a>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="erp-card-body p-0">
+
+        {% if q %}
+        <div style="padding:10px 20px; background:#f8faf9; border-bottom:1px solid #eef2ef; font-size:12.5px; color:#6c7a75;">
+            Showing results for <strong>"{{ q }}"</strong>
+        </div>
+        {% endif %}
+
+        {% if parties %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Company Name</th>
+                    <th>Contact Person</th>
+                    <th>Type</th>
+                    <th>Phone</th>
+                    <th>GSTIN</th>
+                    <th>City</th>
+                    <th>State</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in parties %}
+                <tr>
+                    <td><code class="code-cell">{{ p.party_code }}</code></td>
+                    <td class="fw-semibold">{{ p.company_name }}</td>
+                    <td class="text-muted">{{ p.contact_person or '—' }}</td>
+                    <td>
+                        {% if p.party_type == 'CUSTOMER' %}
+                            <span class="badge-type badge-customer">Customer</span>
+                        {% elif p.party_type == 'SUPPLIER' %}
+                            <span class="badge-type badge-supplier">Supplier</span>
+                        {% else %}
+                            <span class="badge-type badge-both">Both</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ p.phone }}</td>
+                    <td><span style="font-family:monospace; font-size:12px;">{{ p.gstin or '—' }}</span></td>
+                    <td>{{ p.city }}</td>
+                    <td>{{ p.state }}</td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        {% if p.party_type == 'CUSTOMER' %}
+                        <a href="/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-success"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px;"
+                           title="Customer Ledger">
+                            <i class="bi bi-journal-text"></i> Customer Ledger
+                        </a>
+                        {% elif p.party_type == 'SUPPLIER' %}
+                        <a href="/purchase/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-info"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px; color: #0891b2; border-color: #0891b2;"
+                           title="Supplier Ledger">
+                            <i class="bi bi-journal-text"></i> Supplier Ledger
+                        </a>
+                        {% elif p.party_type == 'BOTH' %}
+                        <a href="/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-success"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px;"
+                           title="Customer Ledger">
+                            <i class="bi bi-journal-text"></i> Cust Ledger
+                        </a>
+                        <a href="/purchase/party/{{ p.id }}/ledger"
+                           class="btn btn-sm btn-outline-info"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px; color: #0891b2; border-color: #0891b2;"
+                           title="Supplier Ledger">
+                            <i class="bi bi-journal-text"></i> Supp Ledger
+                        </a>
+                        {% endif %}
+                        <a href="/party/{{ p.id }}/edit"
+                           class="btn btn-sm btn-outline-warning"
+                           style="font-size:12px; padding:4px 10px; border-radius:6px;">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <!-- Delete confirmation -->
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            style="font-size:12px; padding:4px 10px; border-radius:6px; margin-left:4px;"
+                            onclick="confirmDelete({{ p.id }}, '{{ p.company_name | replace("'", "\\'") }}')">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if total_pages > 1 %}
+        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
+            <div class="text-muted small" style="font-size:12.5px;">
+                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">{% if q %}🔍{% else %}👥{% endif %}</div>
+            <p>
+                {% if q %}
+                    No parties match <strong>"{{ q }}"</strong>.
+                    <a href="/party" class="text-decoration-none" style="color:#3cb371;">Clear search →</a>
+                {% else %}
+                    No parties yet.
+                    <a href="/party/add" class="text-decoration-none" style="color:#3cb371;">Add the first one →</a>
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- Hidden delete form -->
+<form id="delete-form" method="POST" style="display:none;">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="_method" value="DELETE">
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(partyId, partyName) {
+    if (confirm(`Are you sure you want to delete "${partyName}"?\n\nThis action cannot be undone.`)) {
+        const form = document.getElementById("delete-form");
+        form.action = `/party/${partyId}/delete`;
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

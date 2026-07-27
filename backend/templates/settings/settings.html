@@ -1,0 +1,440 @@
+{% extends "shared/base.html" %}
+
+{% block title %}System Settings Center – Right Ewaste ERP{% endblock %}
+{% block page_title %}Enterprise Settings Center{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Settings</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2" style="font-family: 'Inter', sans-serif;">
+    <div class="row g-4">
+        <!-- Sidebar Navigation -->
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3">
+                <h6 class="text-uppercase text-secondary fw-bold small px-3 mb-3">Settings Menu</h6>
+                <div class="nav flex-column nav-pills gap-1" id="settingsMenu" role="tablist">
+                    <button class="nav-link active text-start rounded-3 px-3 py-2 small fw-bold" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                        <i class="bi bi-sliders me-2"></i>General Settings
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="numbering-tab" data-bs-toggle="tab" data-bs-target="#numbering" type="button" role="tab">
+                        <i class="bi bi-hash me-2"></i>Number Series
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab">
+                        <i class="bi bi-tags me-2"></i>Material Categories
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="units-tab" data-bs-toggle="tab" data-bs-target="#units" type="button" role="tab">
+                        <i class="bi bi-rulers me-2"></i>Measurement Units
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="tax-tab" data-bs-toggle="tab" data-bs-target="#tax" type="button" role="tab">
+                        <i class="bi bi-percent me-2"></i>Tax &amp; GST
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="cert-tab" data-bs-toggle="tab" data-bs-target="#cert" type="button" role="tab">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Certificate Defaults
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="theme-tab" data-bs-toggle="tab" data-bs-target="#theme" type="button" role="tab">
+                        <i class="bi bi-palette me-2"></i>Theme Settings
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button" role="tab">
+                        <i class="bi bi-bell me-2"></i>Notifications
+                    </button>
+                    <button class="nav-link text-start rounded-3 px-3 py-2 small fw-bold" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+                        <i class="bi bi-cpu me-2"></i>System Variables
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Panel Content -->
+        <div class="col-12 col-md-9">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <div class="tab-content" id="settingsContent">
+                    
+                    <!-- ── GENERAL SETTINGS ── -->
+                    <div class="tab-pane fade show active" id="general" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-sliders fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">General System Configurations</h5>
+                        </div>
+                        <form method="POST" action="/settings/general">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">ERP Name</label>
+                                    <input type="text" class="form-control rounded-3" name="ERP_NAME" value="{{ settings.get('ERP_NAME', '') }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Company Legal Name</label>
+                                    <input type="text" class="form-control rounded-3" name="COMPANY_NAME" value="{{ settings.get('COMPANY_NAME', '') }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Current Financial Year</label>
+                                    <input type="text" class="form-control rounded-3" name="CURRENT_FINANCIAL_YEAR" value="{{ settings.get('CURRENT_FINANCIAL_YEAR', '') }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Time Zone</label>
+                                    <select class="form-select rounded-3" name="TIMEZONE">
+                                        <option value="Asia/Kolkata" {% if settings.get('TIMEZONE') == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (IST)</option>
+                                        <option value="UTC" {% if settings.get('TIMEZONE') == 'UTC' %}selected{% endif %}>UTC / GMT</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Date Format Pattern</label>
+                                    <input type="text" class="form-control rounded-3" name="DATE_FORMAT" value="{{ settings.get('DATE_FORMAT', '') }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Time Format Pattern</label>
+                                    <input type="text" class="form-control rounded-3" name="TIME_FORMAT" value="{{ settings.get('TIME_FORMAT', '') }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-secondary">Primary Currency Symbol</label>
+                                    <input type="text" class="form-control rounded-3" name="CURRENCY" value="{{ settings.get('CURRENCY', '') }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-secondary">Decimal Precision</label>
+                                    <input type="number" class="form-control rounded-3" name="DECIMAL_PRECISION" value="{{ settings.get('DECIMAL_PRECISION', '2') }}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-secondary">Weight Precision</label>
+                                    <input type="number" class="form-control rounded-3" name="WEIGHT_PRECISION" value="{{ settings.get('WEIGHT_PRECISION', '2') }}" required>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Save General Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── NUMBER SERIES ── -->
+                    <div class="tab-pane fade" id="numbering" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-hash fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Document Numbering Series</h5>
+                        </div>
+                        <form method="POST" action="/settings/numbering">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover small">
+                                    <thead class="table-light text-secondary small text-uppercase">
+                                        <tr>
+                                            <th>Series Identifier</th>
+                                            <th>Prefix</th>
+                                            <th>Suffix</th>
+                                            <th>Start No.</th>
+                                            <th>Current No.</th>
+                                            <th>Padding</th>
+                                            <th>Reset Yearly</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for s in series %}
+                                        <tr>
+                                            <td class="fw-bold">{{ s.series_key }}</td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm rounded-2 font-monospace" name="prefix_{{ s.series_key.lower() }}" value="{{ s.prefix }}" style="width: 100px;">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm rounded-2 font-monospace" name="suffix_{{ s.series_key.lower() }}" value="{{ s.suffix or '' }}" style="width: 80px;">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm rounded-2 text-center" name="start_{{ s.series_key.lower() }}" value="{{ s.starting_number }}" style="width: 70px;">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm rounded-2 text-center" name="current_{{ s.series_key.lower() }}" value="{{ s.current_number }}" style="width: 70px;">
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm rounded-2 text-center" name="pad_{{ s.series_key.lower() }}" value="{{ s.padding_length }}" style="width: 70px;">
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check form-switch d-inline-block">
+                                                    <input class="form-check-input" type="checkbox" name="reset_{{ s.series_key.lower() }}" {% if s.reset_yearly == 1 %}checked{% endif %} value="1">
+                                                </div>
+                                                <input type="hidden" name="year_{{ s.series_key.lower() }}" value="{{ s.last_reset_year }}">
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Save Sequences
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── MATERIAL CATEGORIES ── -->
+                    <div class="tab-pane fade" id="categories" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-tags fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Material Categories</h5>
+                        </div>
+                        
+                        <!-- Add Category Form -->
+                        <form method="POST" action="/settings/categories/add" class="row g-2 mb-4 align-items-end">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="col-md-8 col-sm-9">
+                                <label class="form-label small fw-bold text-secondary">New Category Name</label>
+                                <input type="text" class="form-control rounded-3" name="category_name" placeholder="e.g. Copper Scrap" required>
+                            </div>
+                            <div class="col-md-4 col-sm-3">
+                                <button type="submit" class="btn btn-success rounded-pill px-3 w-100">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Category
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Categories List -->
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover small">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                    <tr>
+                                        <th># ID</th>
+                                        <th>Category Name</th>
+                                        <th>Created Date</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cat in categories %}
+                                    <tr>
+                                        <td class="font-monospace text-muted">{{ cat.id }}</td>
+                                        <td class="fw-bold text-dark">{{ cat.name }}</td>
+                                        <td class="text-muted">{{ cat.created_at }}</td>
+                                        <td class="text-end">
+                                            <form method="POST" action="/settings/categories/delete/{{ cat.id }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-link text-danger p-0 border-0">
+                                                    <i class="bi bi-trash fs-6"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ── UNITS OF MEASURE ── -->
+                    <div class="tab-pane fade" id="units" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-rulers fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Measurement Units (UOM)</h5>
+                        </div>
+
+                        <!-- Add Unit Form -->
+                        <form method="POST" action="/settings/units/add" class="row g-2 mb-4 align-items-end">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="col-md-8 col-sm-9">
+                                <label class="form-label small fw-bold text-secondary">New Unit Symbol</label>
+                                <input type="text" class="form-control rounded-3 font-monospace" name="unit_name" placeholder="e.g. BNDL" required style="text-transform: uppercase;">
+                            </div>
+                            <div class="col-md-4 col-sm-3">
+                                <button type="submit" class="btn btn-success rounded-pill px-3 w-100">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Unit
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Units List -->
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover small">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                    <tr>
+                                        <th># ID</th>
+                                        <th>Unit Symbol</th>
+                                        <th>Created Date</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for u in units %}
+                                    <tr>
+                                        <td class="font-monospace text-muted">{{ u.id }}</td>
+                                        <td class="fw-bold text-dark font-monospace">{{ u.name }}</td>
+                                        <td class="text-muted">{{ u.created_at }}</td>
+                                        <td class="text-end">
+                                            <form method="POST" action="/settings/units/delete/{{ u.id }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unit?');">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-link text-danger p-0 border-0">
+                                                    <i class="bi bi-trash fs-6"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ── TAX & GST ── -->
+                    <div class="tab-pane fade" id="tax" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-percent fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Tax &amp; GST Configuration</h5>
+                        </div>
+                        <form method="POST" action="/settings/tax">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Default GST Rate (%)</label>
+                                    <select class="form-select rounded-3" name="DEFAULT_GST">
+                                        <option value="0" {% if settings.get('DEFAULT_GST') == '0' %}selected{% endif %}>0% (Exempt)</option>
+                                        <option value="5" {% if settings.get('DEFAULT_GST') == '5' %}selected{% endif %}>5%</option>
+                                        <option value="12" {% if settings.get('DEFAULT_GST') == '12' %}selected{% endif %}>12%</option>
+                                        <option value="18" {% if settings.get('DEFAULT_GST') == '18' %}selected{% endif %}>18%</option>
+                                        <option value="28" {% if settings.get('DEFAULT_GST') == '28' %}selected{% endif %}>28%</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Tax Rounding Mode</label>
+                                    <select class="form-select rounded-3" name="TAX_ROUNDING">
+                                        <option value="ROUND_HALF_UP" {% if settings.get('TAX_ROUNDING') == 'ROUND_HALF_UP' %}selected{% endif %}>Round Half Up (Default)</option>
+                                        <option value="ROUND_DOWN" {% if settings.get('TAX_ROUNDING') == 'ROUND_DOWN' %}selected{% endif %}>Truncate / Round Down</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Save Tax Defaults
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── CERTIFICATE DEFAULTS ── -->
+                    <div class="tab-pane fade" id="cert" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-file-earmark-pdf fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Certificate Engine Settings</h5>
+                        </div>
+                        <form method="POST" action="/settings/certificate">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Company Logo Path</label>
+                                    <input type="text" class="form-control rounded-3" name="CERT_LOGO" value="{{ settings.get('CERT_LOGO', '') }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Authorized Signatory Title</label>
+                                    <input type="text" class="form-control rounded-3" name="CERT_SIGNATURE_TITLE" value="{{ settings.get('CERT_SIGNATURE_TITLE', '') }}" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-secondary">Declaration Text</label>
+                                    <textarea class="form-control rounded-3" name="CERT_DECLARATION" rows="3" required>{{ settings.get('CERT_DECLARATION', '') }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Default Draft Watermark</label>
+                                    <input type="text" class="form-control rounded-3" name="CERT_WATERMARK" value="{{ settings.get('CERT_WATERMARK', '') }}" required>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Save Defaults
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── THEME SETTINGS ── -->
+                    <div class="tab-pane fade" id="theme" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-palette fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Sidebar Theme Configurations</h5>
+                        </div>
+                        <form method="POST" action="/settings/theme">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Theme Mode</label>
+                                    <select class="form-select rounded-3" name="THEME_MODE">
+                                        <option value="light" {% if settings.get('THEME_MODE') == 'light' %}selected{% endif %}>Standard Light Mode</option>
+                                        <option value="dark" {% if settings.get('THEME_MODE') == 'dark' %}selected{% endif %}>Standard Dark Mode (Disabled)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <label class="form-label small fw-bold text-secondary">Sidebar Hex Color</label>
+                                    <input type="color" class="form-control form-control-color w-100 rounded-3" name="THEME_SIDEBAR" value="{{ settings.get('THEME_SIDEBAR', '#1e293b') }}">
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <label class="form-label small fw-bold text-secondary">Accent Hex Color</label>
+                                    <input type="color" class="form-control form-control-color w-100 rounded-3" name="THEME_ACCENT" value="{{ settings.get('THEME_ACCENT', '#2563eb') }}">
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Save Theme Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── NOTIFICATIONS ── -->
+                    <div class="tab-pane fade" id="notifications" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-bell fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">System Notifications Defaults</h5>
+                        </div>
+                        <form method="POST" action="/settings/notifications">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">SMTP Relay Host</label>
+                                    <input type="text" class="form-control rounded-3" name="NOTIFICATION_EMAIL_HOST" value="{{ settings.get('NOTIFICATION_EMAIL_HOST', 'smtp.gmail.com') }}">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="emailNotif" name="NOTIFICATION_ENABLE_EMAIL" {% if settings.get('NOTIFICATION_ENABLE_EMAIL') == '1' %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold text-dark" for="emailNotif">Enable Automated Email Alerts</label>
+                                        <div class="form-text text-muted small">Dispatch transaction receipts and summaries automatically to counterparties.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Save Configuration
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ── SYSTEM VARIABLE LOG ── -->
+                    <div class="tab-pane fade" id="system" role="tabpanel">
+                        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+                            <i class="bi bi-cpu fs-4 text-primary me-2"></i>
+                            <h5 class="fw-bold mb-0">Global Registry Keys</h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover small">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                    <tr>
+                                        <th>Config Registry Key</th>
+                                        <th>Value Parameter</th>
+                                        <th>Last System Synchronization</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for k, v in settings.items() %}
+                                    <tr>
+                                        <td class="font-monospace fw-bold text-secondary">{{ k }}</td>
+                                        <td class="font-monospace text-dark">{{ v }}</td>
+                                        <td class="text-muted small">Automatic</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

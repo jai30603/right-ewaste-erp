@@ -1,0 +1,161 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Payroll Dashboard – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Payroll Dashboard",
+    subtitle="Monthly salary processing, salary structure revisions, payslips, and disburse management.",
+    back_url="/employees/dashboard",
+    actions=[
+        {'label': 'Payroll Records', 'url': url_for('employees.payroll_records'), 'icon': 'bi-journal-text', 'class': 'btn-outline-info'},
+        {'label': 'Salary Structure', 'url': url_for('employees.payroll_structure'), 'icon': 'bi-diagram-3', 'class': 'btn-outline-secondary'},
+        {'label': 'Generate Payroll', 'url': url_for('employees.payroll_generate'), 'icon': 'bi-play-circle', 'class': 'btn-primary'}
+    ]
+) }}
+
+  <!-- KPI Metrics Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Processed Payroll -->
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-blue">
+        <i class="bi bi-people-fill kpi-icon"></i>
+        <div class="kpi-value">{{ stats.employees_processed }}</div>
+        <div class="kpi-label">Processed Employees</div>
+        <div class="kpi-sub">Month {{ stats.month }}/{{ stats.year }}</div>
+      </div>
+    </div>
+
+    <!-- Pending Payroll -->
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-amber">
+        <i class="bi bi-clock-history kpi-icon"></i>
+        <div class="kpi-value">{{ stats.pending_payroll }}</div>
+        <div class="kpi-label">Pending Approval</div>
+        <div class="kpi-sub">Awaiting Disbursement</div>
+      </div>
+    </div>
+
+    <!-- Total Monthly Payroll -->
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-green">
+        <i class="bi bi-wallet2 kpi-icon"></i>
+        <div class="kpi-value">₹{{ "{:,.0f}".format(stats.total_monthly_payroll) }}</div>
+        <div class="kpi-label">Total Monthly Net</div>
+        <div class="kpi-sub">Net Liability</div>
+      </div>
+    </div>
+
+    <!-- Salary Structure Mastered -->
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-teal">
+        <i class="bi bi-diagram-3-fill kpi-icon"></i>
+        <div class="kpi-value">{{ stats.salary_structures }}</div>
+        <div class="kpi-label">Configured Structures</div>
+        <div class="kpi-sub">Master Salary Models</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="row g-4">
+    <!-- Recent Payroll Runs Table -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-journal-text text-primary me-2"></i>Recent Payroll Runs
+          </h5>
+          <a href="{{ url_for('employees.payroll_records') }}" class="btn btn-sm btn-link text-decoration-none">View All →</a>
+        </div>
+        <div class="card-body p-0">
+          {% if stats.recent_runs %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+                  <th>Employee</th>
+                  <th>Month/Year</th>
+                  <th>Gross Salary</th>
+                  <th>Deductions</th>
+                  <th>Net Payable</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pr in stats.recent_runs %}
+                <tr>
+                  <td>
+                    <strong class="text-dark d-block">{{ pr.full_name }}</strong>
+                    <small class="text-muted font-monospace">{{ pr.employee_code }}</small>
+                  </td>
+                  <td><span class="badge bg-light text-dark border">{{ pr.payroll_month }}/{{ pr.payroll_year }}</span></td>
+                  <td>₹{{ "{:,.2f}".format(pr.gross_salary) }}</td>
+                  <td class="text-danger">₹{{ "{:,.2f}".format(pr.total_deductions) }}</td>
+                  <td class="fw-bold text-success">₹{{ "{:,.2f}".format(pr.net_salary) }}</td>
+                  <td>
+                    {% if pr.payroll_status == 'Paid' %}
+                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">Paid</span>
+                    {% elif pr.payroll_status == 'Generated' %}
+                      <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">Generated</span>
+                    {% else %}
+                      <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1">Draft</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-calculator fs-1 d-block mb-2"></i>
+            No monthly payroll generated yet.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Shortcuts Panel -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-lightning-charge text-warning me-2"></i>Quick Actions
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-3">
+            <a href="{{ url_for('employees.payroll_generate') }}" class="btn btn-outline-primary p-3 text-start rounded-3 d-flex align-items-center">
+              <i class="bi bi-play-circle-fill fs-3 me-3"></i>
+              <div>
+                <strong class="d-block text-dark">Run Monthly Payroll</strong>
+                <small class="text-muted">Auto-calculate salary based on attendance & leave</small>
+              </div>
+            </a>
+            <a href="{{ url_for('employees.payroll_structure') }}" class="btn btn-outline-secondary p-3 text-start rounded-3 d-flex align-items-center">
+              <i class="bi bi-diagram-3-fill fs-3 me-3"></i>
+              <div>
+                <strong class="d-block text-dark">Manage Salary Structures</strong>
+                <small class="text-muted">Configure basic pay, allowances & deductions</small>
+              </div>
+            </a>
+            <a href="{{ url_for('employees.payroll_reports') }}" class="btn btn-outline-info p-3 text-start rounded-3 d-flex align-items-center">
+              <i class="bi bi-file-earmark-excel-fill fs-3 me-3"></i>
+              <div>
+                <strong class="d-block text-dark">Payroll Reports & Exports</strong>
+                <small class="text-muted">Export monthly registers in Excel, CSV, PDF</small>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

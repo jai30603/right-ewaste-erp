@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS material (
 
     is_active INTEGER NOT NULL DEFAULT 1,
 
-    tracking_type TEXT NOT NULL DEFAULT 'BOTH' CHECK(tracking_type IN ('WEIGHT_ONLY', 'PIECES_ONLY', 'BOTH')),
+    tracking_type TEXT NOT NULL DEFAULT 'BOTH' CHECK(tracking_type IN ('WEIGHT_ONLY', 'QUANTITY_ONLY', 'BOTH')),
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 

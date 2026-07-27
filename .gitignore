@@ -19,7 +19,14 @@ env/
 
 # SQLite temporary files
 *.db-journal
+database/*.db.bak
+database/*.db.pre-uat.bak
+database/erp-pre-uat-*.db
 
 # OS files
 Thumbs.db
 .DS_Store
+
+# EDMS Storage fallback / simulated uploads
+backend/storage/
+storage/

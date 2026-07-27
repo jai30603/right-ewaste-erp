@@ -10,32 +10,14 @@ except ModuleNotFoundError:
     from services.invoice_service import calculate_gst
 
 
-def generate_purchase_invoice_number():
+def generate_purchase_invoice_number(conn=None):
     """
     Service layer wrapper to generate the PUR-YYYY-000001 format
     """
-    year = datetime.now().year
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT purchase_invoice_number FROM purchase_invoice WHERE purchase_invoice_number LIKE ?",
-        (f"PUR-{year}-%",)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    
-    max_num = 0
-    for r in rows:
-        val = r[0]
-        try:
-            num = int(val.split("-")[2])
-            if num > max_num:
-                max_num = num
-        except (IndexError, ValueError):
-            continue
-            
-    return f"PUR-{year}-{(max_num + 1):06d}"
+    if not conn:
+        conn = get_connection()
+    from repositories import settings_repository
+    return settings_repository.increment_and_get_number("PURCHASE", conn)
 
 
 def build_purchase_totals(items, company_state_code, supplier_state_code):
@@ -66,19 +48,25 @@ def validate_purchase_items(items, errors_dict):
         qty = float(item["qty"] or 0)
         rate = float(item["rate"] or 0)
         w = float(item["weight"] or 0)
-        p = int(item["pieces"] or 0)
         
-        if qty <= 0:
-            errors_dict[f"row_{idx}_qty"] = "Quantity must be greater than zero."
         if rate <= 0:
             errors_dict[f"row_{idx}_rate"] = "Rate is required."
             
-        if tracking_type == "WEIGHT_ONLY" and w <= 0:
-            errors_dict[f"row_{idx}_weight"] = f"Weight is required for weight-only material '{mat['material_name']}'."
-        elif tracking_type == "PIECES_ONLY" and p <= 0:
-            errors_dict[f"row_{idx}_pieces"] = f"Pieces quantity is required for pieces-only material '{mat['material_name']}'."
-        elif tracking_type == "BOTH" and (w <= 0 or p <= 0):
-            errors_dict[f"row_{idx}_both"] = f"Both Weight and Pieces are required for material '{mat['material_name']}'."
+        if tracking_type == "WEIGHT_ONLY":
+            item["qty"] = 0.0
+            item["amount"] = round(w * rate, 2)
+            if w <= 0:
+                errors_dict[f"row_{idx}_weight"] = f"Weight is required for weight-only material '{mat['material_name']}'."
+        elif tracking_type == "QUANTITY_ONLY":
+            item["weight"] = 0.0
+            item["amount"] = round(qty * rate, 2)
+            if qty <= 0:
+                errors_dict[f"row_{idx}_qty"] = f"Quantity is required for quantity-only material '{mat['material_name']}'."
+        else:
+            if qty <= 0:
+                errors_dict[f"row_{idx}_qty"] = f"Quantity is required for material '{mat['material_name']}'."
+            if w <= 0:
+                errors_dict[f"row_{idx}_weight"] = f"Weight is required for material '{mat['material_name']}'."
             
     return errors_dict
 

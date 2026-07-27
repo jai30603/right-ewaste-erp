@@ -1,0 +1,48 @@
+{# 
+  Standardized Page Header Macro
+  Usage:
+    {% from "shared/_page_header.html" import page_header %}
+    {{ page_header(
+        title="Purchase Invoices",
+        subtitle="Manage inward purchase entries and supplier invoices.",
+        back_url="/purchase",
+        actions=[
+            {'label': 'New Purchase', 'url': '/purchase/add', 'icon': 'bi-plus-lg', 'class': 'btn-primary'},
+            {'label': 'View Register', 'url': '/purchase/register', 'icon': 'bi-file-earmark-bar-graph', 'class': 'btn-outline-secondary'}
+        ]
+    ) }}
+#}
+{% macro page_header(title, subtitle=None, back_url=None, actions=None) %}
+<div class="page-header">
+    <div class="page-header-left">
+        <div class="d-flex align-items-center gap-2">
+            {% if back_url %}
+            <a href="javascript:void(0)" onclick="navigateBack('{{ back_url }}')" class="btn-back" title="Go back">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            {% endif %}
+            <h1 class="page-title">{{ title }}</h1>
+        </div>
+        {% if subtitle %}
+        <p class="page-subtitle mt-1 mb-0">{{ subtitle }}</p>
+        {% endif %}
+    </div>
+    {% if actions %}
+    <div class="page-header-actions">
+        {% for action in actions %}
+        {% if action.onclick %}
+        <button type="button" class="btn {{ action.class or 'btn-outline-secondary' }}" onclick="{{ action.onclick }}" {% if action.id %}id="{{ action.id }}"{% endif %}>
+            {% if action.icon %}<i class="bi {{ action.icon }} me-1"></i>{% endif %}
+            <span>{{ action.label }}</span>
+        </button>
+        {% else %}
+        <a href="{{ action.url or '#' }}" class="btn {{ action.class or 'btn-outline-secondary' }}" {% if action.id %}id="{{ action.id }}"{% endif %}>
+            {% if action.icon %}<i class="bi {{ action.icon }} me-1"></i>{% endif %}
+            <span>{{ action.label }}</span>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}

@@ -1,0 +1,296 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Purchase Invoices – Right Ewaste ERP{% endblock %}
+{% block page_title %}Purchase Management{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Purchase Invoice</li>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Purchase Invoices",
+    subtitle="Inward purchase entries, supplier gate passes, and material receipts.",
+    back_url="/",
+    actions=[
+        {'label': 'View Register', 'url': '/purchase/register', 'icon': 'bi-file-earmark-bar-graph', 'class': 'btn-outline-secondary'},
+        {'label': 'New Purchase', 'url': '/purchase/add', 'icon': 'bi-plus-lg', 'class': 'btn-primary'}
+    ]
+) }}
+
+<div class="erp-card">
+    <div class="erp-card-header erp-card-header-accent">
+        <i class="bi bi-cart-check" style="font-size:18px; color:var(--brand-accent);"></i>
+        <h5>Purchase Invoice Records</h5>
+        <span class="text-muted ms-2" style="font-size:12px;">
+            ({{ invoices|length }} invoice{{ 's' if invoices|length != 1 }})
+        </span>
+    </div>
+
+    <div class="erp-card-body p-0">
+
+        <!-- ── Filter & Search Bar ────────────────────────────────────── -->
+        <div class="filter-bar">
+            <form method="GET" action="/purchase" class="row g-2 align-items-end" id="filter-form">
+                <!-- Search bar -->
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label mb-1">Search</label>
+                    <input type="text" name="q" class="form-control form-control-sm" value="{{ q or '' }}" placeholder="Purchase No, Source Party, GSTIN, Material...">
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1">Source Party</label>
+                    <select name="supplier_id" class="form-select form-select-sm">
+                        <option value="all">All Source Parties</option>
+                        {% for p in parties %}
+                        <option value="{{ p.id }}" {% if supplier_id == p.id|string %}selected{% endif %}>{{ p.company_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#1e40af;">Material</label>
+                    <select name="material_id" class="form-select form-select-sm">
+                        <option value="all">All Materials</option>
+                        {% for m in materials %}
+                        <option value="{{ m.id }}" {% if material_id == m.id|string %}selected{% endif %}>{{ m.material_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1">State</label>
+                    <select name="state" class="form-select form-select-sm">
+                        <option value="all">All States</option>
+                        {% for s in states %}
+                        <option value="{{ s }}" {% if state == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label mb-1">GST Type</label>
+                    <select name="gst_type" class="form-select form-select-sm">
+                        <option value="all" {% if gst_type == 'all' %}selected{% endif %}>All Types</option>
+                        <option value="INTRA" {% if gst_type == 'INTRA' %}selected{% endif %}>Intra-State (CGST + SGST)</option>
+                        <option value="INTER" {% if gst_type == 'INTER' %}selected{% endif %}>Inter-State (IGST)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1">Invoice Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="all">All Statuses</option>
+                        <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                        <option value="CONFIRMED" {% if status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                        <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                        <option value="RECEIVED" {% if status == 'RECEIVED' %}selected{% endif %}>Received</option>
+                        <option value="PAID" {% if status == 'PAID' %}selected{% endif %}>Paid</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1">Payment Mode</label>
+                    <select name="payment_mode" class="form-select form-select-sm">
+                        <option value="all">All Modes</option>
+                        <option value="Cash" {% if payment_mode == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="NEFT" {% if payment_mode == 'NEFT' %}selected{% endif %}>NEFT</option>
+                        <option value="RTGS" {% if payment_mode == 'RTGS' %}selected{% endif %}>RTGS</option>
+                        <option value="UPI" {% if payment_mode == 'UPI' %}selected{% endif %}>UPI</option>
+                        <option value="Cheque" {% if payment_mode == 'Cheque' %}selected{% endif %}>Cheque</option>
+                        <option value="Credit" {% if payment_mode == 'Credit' %}selected{% endif %}>Credit</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1">Sort By</label>
+                    <select name="sort_by" class="form-select form-select-sm">
+                        <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Newest First</option>
+                        <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                        <option value="purchase_number" {% if sort_by == 'purchase_number' %}selected{% endif %}>Purchase Number</option>
+                        <option value="supplier" {% if sort_by == 'supplier' %}selected{% endif %}>Supplier Name</option>
+                        <option value="amount" {% if sort_by == 'amount' %}selected{% endif %}>Grand Total</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1">Date Preset</label>
+                    <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
+                        <option value="all" {% if date_filter == 'all' or not date_filter %}selected{% endif %}>All Time</option>
+                        <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                        <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+                        <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_6_months" {% if date_filter == 'last_6_months' %}selected{% endif %}>Last 6 Months</option>
+                        <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
+                    <label class="form-label mb-1">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+                </div>
+
+                <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
+                    <label class="form-label mb-1">End Date</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+                </div>
+
+                <div class="col-md-2 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary px-3 py-2 w-100" style="font-size:12.5px;">
+                        <i class="bi bi-filter"></i> Apply
+                    </button>
+                    <a href="/purchase" class="btn btn-sm btn-outline-secondary px-3 py-2 w-100" style="font-size:12.5px;">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── Invoices Table ────────────────────────────────────────── -->
+        {% if invoices %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Invoice No.</th>
+                    <th>Date</th>
+                    <th>Intake Type</th>
+                    <th>Party Name</th>
+                    <th>Party GSTIN</th>
+                    <th>State</th>
+                    <th style="text-align:center;">Items</th>
+                    <th style="text-align:right;">Taxable Value</th>
+                    <th style="text-align:right;">CGST</th>
+                    <th style="text-align:right;">SGST</th>
+                    <th style="text-align:right;">IGST</th>
+                    <th style="text-align:right;">Round Off</th>
+                    <th style="text-align:right;">Grand Total</th>
+                    <th>Status</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td>
+                        <a href="/purchase/{{ inv.id }}/view" class="fw-semibold text-decoration-none">
+                            <code>{{ inv.purchase_invoice_number }}</code>
+                        </a>
+                    </td>
+                    <td style="white-space:nowrap;">{{ inv.invoice_date }}</td>
+                    <td>
+                        <span class="badge bg-secondary-subtle text-secondary" style="font-size: 11px;">{{ inv.intake_type or 'Purchase' }}</span>
+                    </td>
+                    <td style="font-weight:500;">{{ inv.company_name }}</td>
+                    <td><span style="font-family:monospace; font-size:12px;">{{ inv.gstin or '—' }}</span></td>
+                    <td>{{ inv.state }}</td>
+                    <td style="text-align:center;">
+                        <span class="badge-type" style="background:#eff6ff; color:#1e40af;">{{ inv.item_count }}</span>
+                    </td>
+                    <td style="text-align:right; font-family:monospace;">{{ "%.2f"|format(inv.subtotal) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#666;">{{ "%.2f"|format(inv.cgst) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#666;">{{ "%.2f"|format(inv.sgst) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#666;">{{ "%.2f"|format(inv.igst) }}</td>
+                    <td style="text-align:right; font-family:monospace; color:#999;">{{ "%.2f"|format(inv.round_off) }}</td>
+                    <td style="text-align:right; font-weight:600; font-family:monospace; white-space:nowrap;">
+                        ₹ {{ "%.2f"|format(inv.grand_total) }}
+                    </td>
+                    <td>
+                        {% if inv.status == 'CONFIRMED' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size:10px;">Confirmed</span>
+                        {% elif inv.status == 'DRAFT' %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-0.5" style="font-size:10px;">Draft</span>
+                        {% elif inv.status == 'CANCELLED' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-0.5" style="font-size:10px;">Cancelled</span>
+                        {% elif inv.status == 'RECEIVED' %}
+                            <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-0.5" style="font-size:10px;">Received</span>
+                        {% elif inv.status == 'PAID' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-0.5" style="font-size:10px;">Paid</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-0.5" style="font-size:10px;">{{ inv.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <a href="/purchase/{{ inv.id }}/view" title="Preview / Print" style="color:#2563eb; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-eye"></i></a>
+                        <a href="/purchase/{{ inv.id }}/pdf" title="Download PDF" style="color:#dc3545; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-file-earmark-pdf"></i></a>
+                        <a href="/purchase/{{ inv.id }}/duplicate" title="Duplicate Invoice" style="color:#0d6efd; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-files"></i></a>
+                        <a href="/purchase/{{ inv.id }}/edit" title="Edit" style="color:#3cb371; margin:0 4px; font-size:15px; text-decoration:none;"><i class="bi bi-pencil"></i></a>
+                        <form method="POST" action="/purchase/{{ inv.id }}/delete" style="display:inline;" onsubmit="return confirm('Soft delete this purchase invoice?');">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" title="Delete" style="background:none; border:none; color:#dc3545; margin:0 4px; font-size:15px;" class="p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if total_pages > 1 %}
+        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
+            <div class="text-muted small" style="font-size:12.5px;">
+                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+        
+        <!-- Export Excel and PDF buttons -->
+        <div class="p-3 bg-light border-top d-flex justify-content-start gap-2">
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-spreadsheet" style="color:#2563eb; font-size:15px;"></i> Export to Excel
+            </button>
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportPDF()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-pdf" style="color:#dc3545; font-size:15px;"></i> Export to PDF
+            </button>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">🧾</div>
+            <p>No purchase invoices matched this query. <a href="/purchase/add" class="text-decoration-none" style="color:#2563eb;">Create a new purchase invoice →</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCustomDates() {
+    const select = document.getElementById('date_filter');
+    const customFields = document.querySelectorAll('.custom-date-field');
+    customFields.forEach(field => {
+        field.style.display = select.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+function exportExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/purchase/export?" + params.toString();
+}
+
+function exportPDF() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/purchase/export/pdf?" + params.toString();
+}
+</script>
+{% endblock %}

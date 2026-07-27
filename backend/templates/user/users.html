@@ -1,0 +1,215 @@
+{% extends "shared/base.html" %}
+
+{% block title %}User Directory – Right Ewaste ERP{% endblock %}
+{% block page_title %}Security &amp; User Directory{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Users</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2" style="font-family: 'Inter', sans-serif;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="fw-bold mb-0">System Users</h5>
+            <p class="text-muted small mb-0">Create accounts, update roles, toggle locking status, and manage system access levels.</p>
+        </div>
+        <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="bi bi-person-plus me-1"></i> Add New User
+        </button>
+    </div>
+
+    <!-- Users Grid -->
+    <div class="row g-4">
+        {% for u in users %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 position-relative">
+                <!-- Status Badge -->
+                <div class="position-absolute" style="top: 20px; right: 20px;">
+                    {% if u.status == 'ACTIVE' %}
+                    <span class="badge bg-success rounded-pill px-3 py-1">Active</span>
+                    {% elif u.status == 'LOCKED' %}
+                    <span class="badge bg-danger rounded-pill px-3 py-1">Locked</span>
+                    {% else %}
+                    <span class="badge bg-secondary rounded-pill px-3 py-1">{{ u.status }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- User Bio -->
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-light p-3 text-primary me-3 d-flex align-items-center justify-content-center fw-bold fs-4 text-uppercase" style="width: 60px; height: 60px; background-color: #f3f4f6;">
+                        {{ u.username[:2] }}
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">{{ u.full_name }}</h6>
+                        <small class="text-muted">@{{ u.username }} | {{ u.erp_role }}</small>
+                    </div>
+                </div>
+
+                <!-- User Details -->
+                <div class="border-top pt-3 mt-2 small text-secondary">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Employee ID:</span>
+                        <span class="fw-bold text-dark font-monospace">{{ u.employee_id or '—' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Department:</span>
+                        <span class="text-dark">{{ u.department or '—' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Email:</span>
+                        <span class="text-dark">{{ u.email or '—' }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Active Sessions:</span>
+                        <span class="badge bg-primary rounded-pill">{{ online_sessions.get(u.id, 0) }} Online</span>
+                    </div>
+                </div>
+
+                <!-- Action Toolbar -->
+                <div class="border-top pt-3 mt-3 d-flex justify-content-end gap-2">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </button>
+                    <form method="POST" action="/users/lock/{{ u.id }}" class="d-inline">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm {% if u.status == 'LOCKED' %}btn-outline-success{% else %}btn-outline-danger{% endif %} rounded-pill px-3">
+                            <i class="bi {% if u.status == 'LOCKED' %}bi-unlock{% else %}bi-lock{% endif %} me-1"></i>
+                            {% if u.status == 'LOCKED' %}Unlock{% else %}Lock{% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" action="/users/delete/{{ u.id }}" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this user? This will revoke active sessions.');">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0 border-0" title="Delete/Archive">
+                            <i class="bi bi-trash fs-5 ms-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit User Modal -->
+        <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <form method="POST" action="/users/edit/{{ u.id }}">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header border-bottom-0 pb-0">
+                            <h5 class="fw-bold">Modify Account: {{ u.username }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body py-3">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-secondary">Full Name</label>
+                                    <input type="text" class="form-control rounded-3" name="full_name" value="{{ u.full_name }}" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-secondary">Email</label>
+                                    <input type="email" class="form-control rounded-3" name="email" value="{{ u.email or '' }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-secondary">Phone</label>
+                                    <input type="text" class="form-control rounded-3" name="phone" value="{{ u.phone or '' }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-secondary">Department</label>
+                                    <input type="text" class="form-control rounded-3" name="department" value="{{ u.department or '' }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-secondary">Designation</label>
+                                    <input type="text" class="form-control rounded-3" name="designation" value="{{ u.designation or '' }}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-secondary">ERP Role</label>
+                                    <select class="form-select rounded-3" name="erp_role">
+                                        {% for role in roles %}
+                                        <option value="{{ role.role_code }}" {% if u.erp_role == role.role_code %}selected{% endif %}>{{ role.role_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold text-secondary">Status</label>
+                                    <select class="form-select rounded-3" name="status">
+                                        <option value="ACTIVE" {% if u.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                                        <option value="SUSPENDED" {% if u.status == 'SUSPENDED' %}selected{% endif %}>Suspended</option>
+                                        <option value="LOCKED" {% if u.status == 'LOCKED' %}selected{% endif %}>Locked</option>
+                                        <option value="INACTIVE" {% if u.status == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">Update Details</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form method="POST" action="/users/add">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="fw-bold">Create User Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3" name="username" placeholder="e.g. rahul_ewaste" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Employee ID</label>
+                            <input type="text" class="form-control rounded-3 font-monospace" name="employee_id" placeholder="e.g. EMP-023">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control rounded-3" name="full_name" placeholder="e.g. Rahul Sharma" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">Temporary Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control rounded-3" name="password" placeholder="••••••••" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Email Address</label>
+                            <input type="email" class="form-control rounded-3" name="email" placeholder="e.g. rahul@rightewaste.com">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Phone Number</label>
+                            <input type="text" class="form-control rounded-3" name="phone" placeholder="e.g. +91 99999 88888">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Department</label>
+                            <input type="text" class="form-control rounded-3" name="department" placeholder="e.g. Inventory">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-secondary">Designation</label>
+                            <input type="text" class="form-control rounded-3" name="designation" placeholder="e.g. Store Executive">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-secondary">ERP System Role</label>
+                            <select class="form-select rounded-3" name="erp_role">
+                                {% for role in roles %}
+                                <option value="{{ role.role_code }}">{{ role.role_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Register User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

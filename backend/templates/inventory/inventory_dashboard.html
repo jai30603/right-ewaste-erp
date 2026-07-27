@@ -1,0 +1,273 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Inventory Dashboard – Right Ewaste ERP{% endblock %}
+{% block page_title %}Inventory Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Inventory</li>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Inventory Control Centre",
+    subtitle="Real-time, movement-backed stock position across all materials and warehouses.",
+    back_url="/",
+    actions=[
+        {'label': 'Stock Movements', 'url': '/inventory/movements', 'icon': 'bi-arrow-left-right', 'class': 'btn-outline-secondary'},
+        {'label': 'View All Stock', 'url': '/inventory', 'icon': 'bi-box-seam', 'class': 'btn-primary'}
+    ]
+) }}
+
+{# ── KPI Cards ──────────────────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+
+    {# Total Inventory Items #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left:4.5px solid #0d9488 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Inventory Items</p>
+                        <h3 class="mb-0 fw-bold font-monospace" style="color:#0f766e;">{{ snapshot.total_items }}</h3>
+                        <small class="text-muted" style="font-size:11px;">active materials in stock</small>
+                    </div>
+                    <div style="color:#0d9488; font-size:28px; opacity:.8;"><i class="bi bi-box-seam"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Raw Materials #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left:4.5px solid #6366f1 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Raw Materials</p>
+                        <h3 class="mb-0 fw-bold font-monospace" style="color:#4f46e5;">{{ snapshot.raw_items }}</h3>
+                        <small class="text-muted" style="font-size:11px;">awaiting processing</small>
+                    </div>
+                    <div style="color:#6366f1; font-size:28px; opacity:.8;"><i class="bi bi-layers"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Finished / Recovered #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left:4.5px solid #16a34a !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Finished / Recovered</p>
+                        <h3 class="mb-0 fw-bold font-monospace" style="color:#15803d;">{{ snapshot.finished_items }}</h3>
+                        <small class="text-muted" style="font-size:11px;">ready for sale</small>
+                    </div>
+                    <div style="color:#16a34a; font-size:28px; opacity:.8;"><i class="bi bi-check2-circle"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Low Stock Alerts #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left:4.5px solid #dc2626 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Low Stock Alerts</p>
+                        <h3 class="mb-0 fw-bold font-monospace" style="color:{% if snapshot.low_stock > 0 %}#dc2626{% else %}#6b7280{% endif %};">
+                            {{ snapshot.low_stock }}
+                        </h3>
+                        <small class="text-muted" style="font-size:11px;">items below threshold</small>
+                    </div>
+                    <div style="color:#dc2626; font-size:28px; opacity:.8;"><i class="bi bi-exclamation-triangle"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Stock in Hand + Lifecycle State ────────────────────────────── #}
+<div class="row g-3 mb-4">
+
+    {# Stock Quantities #}
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-weight" style="color:#0d9488; font-size:18px;"></i>
+                    <h2 class="h6 mb-0 fw-semibold">Stock in Hand</h2>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="p-3 rounded-3" style="background:#f0fdfa;">
+                            <div class="text-muted" style="font-size:11px; font-weight:600; text-transform:uppercase;">Total Weight</div>
+                            <div class="fw-bold font-monospace" style="font-size:20px; color:#0f766e;">
+                                {{ '%.2f'|format(snapshot.total_weight) }}
+                            </div>
+                            <div class="text-muted" style="font-size:11px;">kilograms</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('inventory.inventory') }}"
+                       class="btn btn-sm w-100"
+                       style="background:#f0fdfa; color:#0f766e; border:1px solid #99f6e4; border-radius:8px; font-weight:600; font-size:12px;">
+                        <i class="bi bi-table me-1"></i> View Detailed Stock
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Lifecycle State Breakdown #}
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-arrow-repeat" style="color:#0d9488; font-size:18px;"></i>
+                    <h2 class="h6 mb-0 fw-semibold">Stock by Lifecycle State</h2>
+                </div>
+                {% set state_colors = {'RAW':'#6366f1','PROCESSING':'#d97706','RECOVERED':'#16a34a','FINISHED':'#0d9488','RESERVED':'#2563eb','REJECTED':'#dc2626','DISPOSED':'#6b7280'} %}
+                {% if states %}
+                    {% for state in states %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="width:8px; height:8px; border-radius:50%; background:{{ state_colors.get(state.label, '#6b7280') }}; display:inline-block;"></span>
+                            <span style="font-size:13px; font-weight:500; color:#374151;">{{ state.label|title }}</span>
+                        </div>
+                        <strong class="font-monospace" style="font-size:13px; color:{{ state_colors.get(state.label, '#374151') }};">
+                            {{ '%.2f'|format(state.value) }}
+                        </strong>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted" style="font-size:13px;">
+                        <i class="bi bi-inbox" style="font-size:32px; display:block; margin-bottom:8px; opacity:.4;"></i>
+                        No stock movements recorded yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Category Breakdown #}
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-tags" style="color:#0d9488; font-size:18px;"></i>
+                    <h2 class="h6 mb-0 fw-semibold">Stock by Category</h2>
+                </div>
+                {% if categories %}
+                    {% for cat in categories %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span style="font-size:13px; font-weight:500; color:#374151;">{{ cat.label }}</span>
+                        <span class="badge" style="background:#f0fdfa; color:#0f766e; font-family:monospace; font-size:11px; font-weight:700; padding:4px 8px;">
+                            {{ '%.2f'|format(cat.value) }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted" style="font-size:13px;">
+                        <i class="bi bi-tags" style="font-size:32px; display:block; margin-bottom:8px; opacity:.4;"></i>
+                        No categorized stock available.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Recent Stock Movements Table ───────────────────────────────── #}
+<div class="erp-card">
+    <div class="erp-card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-clock-history" style="font-size:18px; color:#0d9488;"></i>
+            <h2 class="h5 mb-0">Recent Stock Movements</h2>
+        </div>
+        <a href="{{ url_for('inventory.movement_history') }}" class="btn btn-sm btn-outline-secondary" style="border-radius:7px; font-size:12px; font-weight:600;">
+            View All <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="erp-card-body p-0">
+        {% if recent_movements %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Material</th>
+                    <th>Operation</th>
+                    <th>Reference</th>
+                    <th>State</th>
+                    <th style="text-align:right;">Qty Change</th>
+                    <th style="text-align:right;">Wt Change</th>
+                    <th>Performed By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set type_colors = {
+                    'PURCHASE':  ('bg-light text-primary border border-primary', 'Purchase'),
+                    'SALE':      ('bg-light text-success border border-success', 'Sale'),
+                    'MANUAL_ADJUSTMENT': ('bg-light text-warning border border-warning', 'Adjustment'),
+                    'WEIGHT_ADJUSTMENT': ('bg-light text-warning border border-warning', 'Wt. Adjust'),
+                    'PROCESSING': ('bg-light text-info border border-info', 'Processing'),
+                    'REFURBISHMENT': ('bg-light text-info border border-info', 'Refurbishment'),
+                    'DISMANTLING': ('bg-light text-secondary border border-secondary', 'Dismantling'),
+                    'SORTING': ('bg-light text-secondary border border-secondary', 'Sorting'),
+                    'INTERNAL_CONSUMPTION': ('bg-light text-danger border border-danger', 'Internal Use')
+                } %}
+                {% for row in recent_movements %}
+                <tr>
+                    <td style="white-space:nowrap; font-size:12px; color:#6b7280;">
+                        {{ row.created_at[:19] if row.created_at else '—' }}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('inventory.inventory_details', material_id=row.material_id) }}"
+                           style="color:#0f766e; font-weight:600; text-decoration:none; font-size:13px;">
+                            {{ row.material_name }}
+                        </a>
+                        <div style="font-family:monospace; font-size:10px; color:#9ca3af;">{{ row.material_code }}</div>
+                    </td>
+                    <td>
+                        {% set cls, lbl = type_colors.get(row.movement_type, ('bg-light text-secondary', row.movement_type|replace('_',' ')|title)) %}
+                        <span class="badge {{ cls }}" style="font-size:9.5px; padding:3px 7px;">{{ lbl }}</span>
+                    </td>
+                    <td style="font-family:monospace; font-size:12px; color:#475569;">
+                        {{ row.reference_number or '—' }}
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-secondary border" style="font-size:9.5px;">
+                            {{ row.inventory_state|title if row.inventory_state else '—' }}
+                        </span>
+                    </td>
+                    <td style="text-align:right; font-family:monospace; font-weight:700;
+                                color:{% if row.quantity_change > 0 %}#16a34a{% elif row.quantity_change < 0 %}#dc2626{% else %}#6b7280{% endif %};">
+                        {{ '%+.2f'|format(row.quantity_change) }}
+                    </td>
+                    <td style="text-align:right; font-family:monospace; font-size:12px;
+                                color:{% if row.weight_change > 0 %}#0d9488{% elif row.weight_change < 0 %}#b45309{% else %}#9ca3af{% endif %};">
+                        {{ '%+.2f'|format(row.weight_change) }} kg
+                    </td>
+                    <td style="font-size:12px; color:#6b7280;">{{ row.performed_by or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <p>No stock movements recorded yet. Stock movements will appear here once purchases or sales are confirmed.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

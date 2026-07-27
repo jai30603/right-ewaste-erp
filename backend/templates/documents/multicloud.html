@@ -1,0 +1,339 @@
+{% extends "shared/base.html" %}
+{% from "shared/_page_header.html" import page_header %}
+
+{% block title %}Multi-Cloud & Migration Platform | Right Ewaste ERP{% endblock %}
+
+{% block page_title %}Multi-Cloud Storage & Migration Platform{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="#">EDMS</a></li>
+<li class="breadcrumb-item active">Multi-Cloud Platform</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+
+  <!-- Page Header -->
+  {{ page_header(
+      title="Multi-Cloud & Migration Platform",
+      subtitle="Cloud storage provider management, AWS S3 integration, policy routing, and zero-downtime provider migration",
+      back_url="/",
+      actions=[
+          {'label': 'New Migration Job', 'icon': 'bi-cloud-arrow-up', 'class': 'btn-primary', 'onclick': 'openNewMigrationModal()'},
+          {'label': 'Test Connections', 'icon': 'bi-cpu', 'class': 'btn-outline-secondary', 'onclick': 'testAllProviders()'}
+      ]
+  ) }}
+
+  <!-- Storage Provider Grid -->
+  <div class="row g-3 mb-4" id="providersGridContainer">
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card bg-surface border h-100 shadow-xs">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark"><i class="bi bi-hdd-network text-primary me-2"></i>Local Storage</span>
+            <span class="badge bg-success-subtle text-success border">ONLINE / DEFAULT</span>
+          </div>
+          <p class="text-muted small mb-2">Primary server local storage provider engine</p>
+          <div class="d-flex justify-content-between text-muted small border-top pt-2">
+            <span>Documents: <strong id="provider1Docs">0</strong></span>
+            <span>Used: <strong id="provider1MB">0.0 MB</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card bg-surface border h-100 shadow-xs">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark"><i class="bi bi-cloud-arrow-up text-info me-2"></i>AWS S3 Bucket</span>
+            <span class="badge bg-primary-subtle text-primary border" id="s3StatusBadge">SIMULATED S3</span>
+          </div>
+          <p class="text-muted small mb-2">AWS S3 / S3-Compatible Object Storage</p>
+          <div class="d-flex justify-content-between text-muted small border-top pt-2">
+            <span>Documents: <strong id="provider2Docs">0</strong></span>
+            <span>Used: <strong id="provider2MB">0.0 MB</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card bg-surface border h-100 opacity-75">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark"><i class="bi bi-cloud text-secondary me-2"></i>Azure Blob</span>
+            <span class="badge bg-secondary">EXTENSIBLE</span>
+          </div>
+          <p class="text-muted small mb-2">Microsoft Azure Blob Storage Interface</p>
+          <div class="text-muted small border-top pt-2">Ready for Part 7+ extension</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card bg-surface border h-100 opacity-75">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark"><i class="bi bi-google text-danger me-2"></i>Google Cloud</span>
+            <span class="badge bg-secondary">EXTENSIBLE</span>
+          </div>
+          <p class="text-muted small mb-2">Google Cloud Storage (GCS) Interface</p>
+          <div class="text-muted small border-top pt-2">Ready for Part 7+ extension</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Storage Policy Routing Engine -->
+    <div class="col-12 col-lg-5">
+      <div class="card bg-surface border h-100">
+        <div class="card-header py-2.5 bg-surface-raised border-bottom">
+          <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-diagram-2 me-1"></i>Storage Policy Routing Engine</h6>
+        </div>
+        <div class="card-body p-3">
+          <p class="text-muted small mb-3">Configure automatic destination provider routing per document scope without modifying ERP logic</p>
+          <div class="table-responsive">
+            <table class="table erp-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Scope</th>
+                  <th>Target Provider</th>
+                  <th class="text-end" style="width: 90px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="policiesTbody">
+                <tr><td colspan="3" class="text-center py-3 text-muted small"><div class="spinner-border spinner-border-sm text-primary"></div> Loading policies...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage Migration Execution Console -->
+    <div class="col-12 col-lg-7">
+      <div class="card bg-surface border h-100">
+        <div class="card-header py-2.5 bg-surface-raised border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-cloud-download me-1"></i>Zero-Downtime Migration Jobs</h6>
+          <button class="btn btn-xs btn-primary" onclick="openNewMigrationModal()"><i class="bi bi-plus-lg"></i> Create Migration</button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table erp-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Job Name</th>
+                  <th>Source -> Target</th>
+                  <th>Progress</th>
+                  <th>Status</th>
+                  <th class="text-end" style="width: 100px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="migrationsTbody">
+                <tr><td colspan="5" class="text-center py-3 text-muted small">No migration jobs executed yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- New Migration Job Modal -->
+<div class="modal fade" id="newMigrationModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-cloud-arrow-up text-primary me-2"></i>Create Provider Migration Job</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Job Title</label>
+          <input type="text" id="migJobName" class="form-control" value="Local to AWS S3 Migration">
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-semibold">Source Provider</label>
+            <select id="migSourceProvider" class="form-select">
+              <option value="1">Local Storage (#1)</option>
+              <option value="2">AWS S3 Bucket (#2)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-semibold">Destination Provider</label>
+            <select id="migDestProvider" class="form-select">
+              <option value="2">AWS S3 Bucket (#2)</option>
+              <option value="1">Local Storage (#1)</option>
+            </select>
+          </div>
+        </div>
+        <div class="alert alert-info py-2 small mb-0">
+          <i class="bi bi-shield-check me-1"></i> Migration executes with live SHA-256 checksum integrity verification and zero downtime.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitCreateMigration()">Create & Start Job</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  loadProviders();
+  loadPolicies();
+  loadMigrationJobs();
+});
+
+function loadProviders() {
+  fetch('/api/v1/documents/admin/providers')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      data.providers.forEach(p => {
+        if (p.id === 1) {
+          document.getElementById('provider1Docs').innerText = p.documents_count;
+          document.getElementById('provider1MB').innerText = p.storage_used_mb + ' MB';
+        } else if (p.id === 2) {
+          document.getElementById('provider2Docs').innerText = p.documents_count;
+          document.getElementById('provider2MB').innerText = p.storage_used_mb + ' MB';
+          if (p.health && p.health.mode) {
+            document.getElementById('s3StatusBadge').innerText = p.health.mode;
+          }
+        }
+      });
+    });
+}
+
+function loadPolicies() {
+  const tbody = document.getElementById('policiesTbody');
+  fetch('/api/v1/documents/admin/policies')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      tbody.innerHTML = '';
+      data.policies.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold small font-monospace">${escapeHtml(p.scope)}</td>
+          <td><span class="badge bg-primary-subtle text-primary border">${escapeHtml(p.provider_name)}</span></td>
+          <td class="text-end">
+            <button class="btn btn-xs btn-outline-secondary" onclick="changePolicyProvider('${p.scope}', ${p.target_provider_id === 1 ? 2 : 1})">
+              Switch to ${p.target_provider_id === 1 ? 'S3' : 'Local'}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function changePolicyProvider(scope, newProviderId) {
+  fetch('/api/v1/documents/admin/policies', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ scope: scope, target_provider_id: newProviderId })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) loadPolicies();
+    else alert(data.error);
+  });
+}
+
+function loadMigrationJobs() {
+  const tbody = document.getElementById('migrationsTbody');
+  fetch('/api/v1/documents/admin/migrations')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      tbody.innerHTML = '';
+      if (!data.jobs || data.jobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted small">No migration jobs executed yet.</td></tr>';
+        return;
+      }
+      data.jobs.forEach(j => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold small">${escapeHtml(j.job_name)}</td>
+          <td class="small text-muted">${escapeHtml(j.source_provider_name)} -> ${escapeHtml(j.destination_provider_name)}</td>
+          <td style="width: 140px;">
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-success" style="width: ${j.progress_percent}%"></div>
+            </div>
+            <small class="text-muted" style="font-size: 10px;">${j.processed_files}/${j.total_files} files (${j.progress_percent}%)</small>
+          </td>
+          <td><span class="badge ${j.status === 'COMPLETED' ? 'bg-success' : 'bg-warning'}">${j.status}</span></td>
+          <td class="text-end">
+            ${j.status === 'PENDING' ? `<button class="btn btn-xs btn-primary" onclick="executeMigration(${j.id})">Execute</button>` : `<span class="small text-muted">Done</span>`}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function openNewMigrationModal() {
+  new bootstrap.Modal(document.getElementById('newMigrationModal')).show();
+}
+
+function submitCreateMigration() {
+  const name = document.getElementById('migJobName').value.trim();
+  const src = document.getElementById('migSourceProvider').value;
+  const dst = document.getElementById('migDestProvider').value;
+
+  fetch('/api/v1/documents/admin/migrations', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ job_name: name, source_provider_id: src, destination_provider_id: dst })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('newMigrationModal')).hide();
+      loadMigrationJobs();
+      executeMigration(data.job.id);
+    } else alert(data.error);
+  });
+}
+
+function executeMigration(jobId) {
+  fetch(`/api/v1/documents/admin/migrations/${jobId}/execute`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('Migration Completed Successfully with SHA-256 Checksum Verification!');
+        loadMigrationJobs();
+        loadProviders();
+      } else alert(data.error);
+    });
+}
+
+function testAllProviders() {
+  fetch('/api/v1/documents/admin/providers/test', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ provider_id: 2 })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) alert(`Provider Test Success:\n${JSON.stringify(data.health, null, 2)}`);
+    else alert(data.error);
+  });
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m]));
+}
+</script>
+{% endblock %}

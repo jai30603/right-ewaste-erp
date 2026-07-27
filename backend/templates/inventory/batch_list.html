@@ -1,0 +1,116 @@
+{% extends "shared/base.html" %}
+{% block title %}Material Batches – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Material Batches",
+    subtitle="Every purchase creates a unique batch – trace its complete lifecycle from receipt to final sale or disposal.",
+    back_url="/inventory/dashboard",
+    actions=[
+        {'label': 'Material Flow Dashboard', 'url': '/inventory/material-flow-dashboard', 'icon': 'bi-graph-up-arrow', 'class': 'btn-outline-secondary'},
+        {'label': 'Timeline Search', 'url': '/inventory/timeline', 'icon': 'bi-diagram-3', 'class': 'btn-primary'}
+    ]
+) }}
+
+<!-- Search & Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label">Search Batch / Material / Supplier</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="BATCH-2026-00001, Desktop, ABC Corp..." value="{{ query }}">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-select">
+          <option value="all" {% if status == 'all' %}selected{% endif %}>All Statuses</option>
+          <option value="IN_STORE" {% if status == 'IN_STORE' %}selected{% endif %}>In Store</option>
+          <option value="IN_PROCESSING" {% if status == 'IN_PROCESSING' %}selected{% endif %}>In Processing</option>
+          <option value="PROCESSED" {% if status == 'PROCESSED' %}selected{% endif %}>Processed</option>
+          <option value="SOLD" {% if status == 'SOLD' %}selected{% endif %}>Sold</option>
+          <option value="DISPOSED" {% if status == 'DISPOSED' %}selected{% endif %}>Disposed</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+      </div>
+      <div class="col-md-2">
+        <a href="/inventory/batches" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle me-1"></i>Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Batch Table -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0"><i class="bi bi-boxes me-2 text-primary"></i>Material Batches <span class="badge bg-primary ms-2">{{ batches|length }}</span></h5>
+    <a href="/inventory/timeline" class="btn btn-sm btn-outline-info"><i class="bi bi-diagram-3 me-1"></i>Material Timeline</a>
+  </div>
+  <div class="card-body p-0">
+    {% if batches %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Batch Number</th>
+            <th>Material</th>
+            <th>Supplier</th>
+            <th>Purchase Invoice</th>
+            <th>Purchase Date</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Weight (KG)</th>
+            <th class="text-end">Remaining (KG)</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in batches %}
+          <tr>
+            <td><a href="/inventory/batch/{{ b.batch_number }}" class="fw-semibold text-primary font-monospace">{{ b.batch_number }}</a></td>
+            <td>{{ b.material_name }}</td>
+            <td>{{ b.supplier_name or '—' }}</td>
+            <td>
+              {% if b.purchase_invoice_id %}
+              <a href="/purchase/{{ b.purchase_invoice_id }}/view" class="text-secondary">{{ b.purchase_invoice_number or '—' }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ b.purchase_date }}</td>
+            <td class="text-end">{{ b.quantity|round(2) }}</td>
+            <td class="text-end">{{ b.weight|round(3) }}</td>
+            <td class="text-end">{{ b.remaining_weight|round(3) }}</td>
+            <td>
+              {% if b.status == 'IN_STORE' %}<span class="badge bg-success">In Store</span>
+              {% elif b.status == 'IN_PROCESSING' %}<span class="badge bg-warning text-dark">In Processing</span>
+              {% elif b.status == 'PROCESSED' %}<span class="badge bg-info">Processed</span>
+              {% elif b.status == 'SOLD' %}<span class="badge bg-secondary">Sold</span>
+              {% elif b.status == 'DISPOSED' %}<span class="badge bg-danger">Disposed</span>
+              {% else %}<span class="badge bg-light text-dark">{{ b.status }}</span>{% endif %}
+            </td>
+            <td>
+              <a href="/inventory/batch/{{ b.batch_number }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-diagram-3 me-1"></i>Trace
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-boxes fs-1 mb-3 d-block"></i>
+      <p>No material batches found{% if query %} for "{{ query }}"{% endif %}.</p>
+      <small>Batches are created automatically when purchase invoices are confirmed.</small>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

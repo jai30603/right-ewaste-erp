@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for
 import sqlite3
 
 from repositories.party_repository import (
@@ -8,9 +8,11 @@ from repositories.party_repository import (
     add_party,
     update_party,
     delete_party,
+    get_customer_top_materials,
 )
 from data.states import STATES
 from repositories.activity_log_repository import log_activity
+from backend.common.utils.flash_helpers import flash_success, flash_error, flash_warning, flash_info
 
 party_bp = Blueprint("party", __name__)
 
@@ -30,7 +32,7 @@ def party():
     paginated_parties = parties[offset : offset + per_page]
     
     return render_template(
-        "party.html",
+        "party/party.html",
         parties=paginated_parties,
         q=q,
         page=page,
@@ -46,9 +48,9 @@ def add_party_page():
     if request.method == "POST":
         errors = _validate(request.form)
         if errors:
-            flash("Please fix the errors below.", "danger")
+            flash_error("Please fix the errors below.")
             return render_template(
-                "party_form.html",
+                "party/party_form.html",
                 mode="add",
                 party=request.form,
                 states=STATES,
@@ -73,14 +75,19 @@ def add_party_page():
                 request.form.get("pincode"),
                 request.form.get("remarks"),
             )
-            log_activity("System User", "Party Added", f"Added party {request.form['company_name']} ({request.form['party_type']})")
-            flash("Party added successfully.", "success")
+            log_activity(
+                "System User", "Party Added", 
+                details=f"Added party {request.form['company_name']}",
+                module="Party", reference_number=request.form['company_name'],
+                remarks=f"Type: {request.form['party_type']}"
+            )
+            flash_success("Party added successfully.")
             return redirect(url_for("party.party"))
         except sqlite3.IntegrityError as e:
-            flash(f"Database error: {e}. Check if GSTIN or Party Code is duplicated.", "danger")
+            flash_error(f"Database error: {e}. Check if GSTIN or Party Code is duplicated.")
             errors = {"db_error": str(e)}
             return render_template(
-                "party_form.html",
+                "party/party_form.html",
                 mode="add",
                 party=request.form,
                 states=STATES,
@@ -88,7 +95,7 @@ def add_party_page():
             )
 
     return render_template(
-        "party_form.html",
+        "party/party_form.html",
         mode="add",
         party=None,
         states=STATES,
@@ -102,15 +109,15 @@ def add_party_page():
 def edit_party_page(party_id):
     existing = get_party_by_id(party_id)
     if not existing:
-        flash("Party not found.", "danger")
+        flash_error("Party not found.")
         return redirect(url_for("party.party"))
 
     if request.method == "POST":
         errors = _validate(request.form)
         if errors:
-            flash("Please fix the errors below.", "danger")
+            flash_error("Please fix the errors below.")
             return render_template(
-                "party_form.html",
+                "party/party_form.html",
                 mode="edit",
                 party=request.form,
                 party_id=party_id,
@@ -137,14 +144,18 @@ def edit_party_page(party_id):
                 request.form.get("pincode"),
                 request.form.get("remarks"),
             )
-            log_activity("System User", "Party Updated", f"Updated party {request.form['company_name']}")
-            flash("Party updated successfully.", "success")
+            log_activity(
+                "System User", "Party Updated", 
+                details=f"Updated party {request.form['company_name']}",
+                module="Party", reference_number=request.form['company_name']
+            )
+            flash_success("Party updated successfully.")
             return redirect(url_for("party.party"))
         except sqlite3.IntegrityError as e:
-            flash(f"Database error: {e}. Check if GSTIN is duplicated.", "danger")
+            flash_error(f"Database error: {e}. Check if GSTIN is duplicated.")
             errors = {"db_error": str(e)}
             return render_template(
-                "party_form.html",
+                "party/party_form.html",
                 mode="edit",
                 party=request.form,
                 party_id=party_id,
@@ -153,7 +164,7 @@ def edit_party_page(party_id):
             )
 
     return render_template(
-        "party_form.html",
+        "party/party_form.html",
         mode="edit",
         party=existing,
         party_id=party_id,
@@ -168,7 +179,7 @@ def edit_party_page(party_id):
 def customer_ledger(party_id):
     party = get_party_by_id(party_id)
     if not party:
-        flash("Party not found.", "danger")
+        flash_error("Party not found.")
         return redirect(url_for("party.party"))
         
     from repositories.sales_repository import get_all_invoices
@@ -179,30 +190,20 @@ def customer_ledger(party_id):
     total_purchase_val = sum(float(inv["grand_total"] or 0) for inv in invoices)
     last_purchase_date = invoices[0]["invoice_date"] if invoices else "—"
     
-    from database import get_connection
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT m.material_name, SUM(sii.quantity) as total_qty, m.uom
-        FROM sales_invoice_item sii
-        JOIN sales_invoice si ON sii.sales_invoice_id = si.id
-        JOIN material m ON sii.material_id = m.id
-        WHERE si.party_id = ? AND si.is_active = 1
-        GROUP BY sii.material_id
-        ORDER BY total_qty DESC
-        LIMIT 5
-    """, (party_id,))
-    top_materials = [dict(r) for r in cursor.fetchall()]
-    conn.close()
+    top_materials = get_customer_top_materials(party_id)
+    
+    from repositories.certificate_repository import get_customer_certificates
+    certificates = get_customer_certificates(party_id)
     
     return render_template(
-        "customer_ledger.html",
+        "party/customer_ledger.html",
         party=party,
         invoices=invoices,
         total_invoices=total_invoices,
         total_purchase_val=total_purchase_val,
         last_purchase_date=last_purchase_date,
-        top_materials=top_materials
+        top_materials=top_materials,
+        certificates=certificates
     )
 
 
@@ -212,12 +213,16 @@ def customer_ledger(party_id):
 def delete_party_page(party_id):
     existing = get_party_by_id(party_id)
     if not existing:
-        flash("Party not found.", "danger")
+        flash_error("Party not found.")
         return redirect(url_for("party.party"))
 
     delete_party(party_id)
-    log_activity("System User", "Party Deleted", f"Deleted party {existing['company_name']}")
-    flash(f"Party '{existing['company_name']}' deleted.", "warning")
+    log_activity(
+        "System User", "Party Deleted", 
+        details=f"Deleted party {existing['company_name']}",
+        module="Party", reference_number=existing['company_name']
+    )
+    flash_warning(f"Party '{existing['company_name']}' deleted.")
     return redirect(url_for("party.party"))
 
 

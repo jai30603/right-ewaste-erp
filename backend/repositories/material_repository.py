@@ -1,15 +1,9 @@
 from database import get_connection
 
 
-def generate_material_code():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT MAX(CAST(SUBSTR(material_code, 5) AS INTEGER)) FROM material"
-    )
-    max_num = cursor.fetchone()[0] or 0
-    conn.close()
-    return f"MAT-{(max_num + 1):05d}"
+def generate_material_code(conn=None):
+    from repositories import settings_repository
+    return settings_repository.increment_and_get_number("MATERIAL", conn)
 
 
 def get_all_materials():

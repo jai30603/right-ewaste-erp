@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS purchase_invoice_item (
     material_id INTEGER NOT NULL,
     quantity REAL NOT NULL,
     weight REAL DEFAULT 0,
-    pieces INTEGER DEFAULT 0,
     rate REAL NOT NULL,
     amount REAL NOT NULL,
     FOREIGN KEY (purchase_invoice_id) REFERENCES purchase_invoice(id),

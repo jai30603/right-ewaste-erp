@@ -1,0 +1,84 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Permission Matrix – Right Ewaste ERP{% endblock %}
+{% block page_title %}Role Permissions Matrix{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/users" class="text-decoration-none text-muted">Users</a></li>
+<li class="breadcrumb-item active">Permissions</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2" style="font-family: 'Inter', sans-serif;">
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-shield-lock fs-4 text-primary me-2"></i>
+                <div>
+                    <h5 class="fw-bold mb-0">Role Permission Grid</h5>
+                    <p class="text-muted small mb-0">Link module permissions to specific roles (ADMIN role is granted absolute permissions and cannot be modified).</p>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" action="/users/permissions/update">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <div class="table-responsive">
+                <table class="table align-middle table-hover border">
+                    <thead class="table-light text-secondary small text-uppercase">
+                        <tr>
+                            <th>Module Name</th>
+                            <th>Permission Capability</th>
+                            <th>Permission Key</th>
+                            {% for role in roles %}
+                            <th class="text-center font-monospace">{{ role.role_code }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set current_mod = namespace(val='') %}
+                        {% for perm in permissions %}
+                        <!-- Visual divider for modules -->
+                        {% if current_mod.val != perm.module_name %}
+                            {% set current_mod.val = perm.module_name %}
+                            <tr class="table-secondary">
+                                <td colspan="{{ 3 + (roles|length) }}" class="fw-bold text-uppercase py-2" style="background-color: #f3f4f6; letter-spacing: 0.5px; font-size: 11px;">
+                                    {{ perm.module_name }} Module
+                                </td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="ps-3 text-muted small fw-bold">{{ perm.module_name }}</td>
+                            <td>{{ perm.permission_name }}</td>
+                            <td class="font-monospace text-secondary small">{{ perm.permission_code }}</td>
+                            {% for role in roles %}
+                            <td class="text-center">
+                                {% if role.role_code == 'ADMIN' %}
+                                <div class="form-check d-inline-block">
+                                    <input class="form-check-input" type="checkbox" checked disabled title="ADMIN has absolute access">
+                                </div>
+                                {% else %}
+                                <div class="form-check d-inline-block">
+                                    <input class="form-check-input" type="checkbox" name="perm_{{ role.role_code }}_{{ perm.permission_code }}" 
+                                           {% if perm.permission_code in mapping.get(role.role_code, []) %}checked{% endif %}>
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                <a href="/users" class="btn btn-outline-secondary rounded-pill px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-check-circle me-1"></i> Save Permissions Matrix
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

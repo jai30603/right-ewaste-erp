@@ -13,14 +13,8 @@ def _generate_invoice_number(cursor):
     subsequent INSERT are atomic — prevents duplicate numbers under concurrent
     requests.
     """
-    year = datetime.now().year
-    cursor.execute(
-        "SELECT MAX(CAST(SUBSTR(invoice_number, 10) AS INTEGER)) "
-        "FROM sales_invoice WHERE invoice_number LIKE ?",
-        (f"INV-{year}-%",)
-    )
-    max_num = cursor.fetchone()[0] or 0
-    return f"INV-{year}-{(max_num + 1):06d}"
+    from repositories import settings_repository
+    return settings_repository.increment_and_get_number("SALES", cursor.connection)
 
 
 from services.invoice_service import calculate_gst as _calculate_gst
@@ -192,7 +186,7 @@ def get_invoice_items(invoice_id):
 def create_sales_invoice(
     party_id, invoice_date, payment_mode,
     transporter, vehicle_number, remarks,
-    items,               # list of dicts: material_id, qty, weight, pieces, rate, amount, gst_percentage
+    items,               # list of dicts: material_id, qty, weight, rate, amount, gst_percentage
     company_state_code,
     party_state_code,
     eway_bill_number=None,
@@ -254,14 +248,13 @@ def create_sales_invoice(
             cursor.execute("""
                 INSERT INTO sales_invoice_item
                     (sales_invoice_id, material_id,
-                     quantity, weight, pieces, rate, amount)
-                VALUES (?,?,?,?,?,?,?)
+                     quantity, weight, rate, amount)
+                VALUES (?,?,?,?,?,?)
             """, (
                 invoice_id,
                 item["material_id"],
                 item["qty"],
                 item["weight"],
-                item["pieces"],
                 item["rate"],
                 item["amount"],
             ))
@@ -332,14 +325,13 @@ def update_sales_invoice(
         for item in items:
             cursor.execute("""
                 INSERT INTO sales_invoice_item (
-                    sales_invoice_id, material_id, quantity, weight, pieces, rate, amount
-                ) VALUES (?,?,?,?,?,?,?)
+                    sales_invoice_id, material_id, quantity, weight, rate, amount
+                ) VALUES (?,?,?,?,?,?)
             """, (
                 invoice_id,
                 item["material_id"],
                 item["qty"],
                 item["weight"],
-                item["pieces"],
                 item["rate"],
                 item["amount"],
             ))

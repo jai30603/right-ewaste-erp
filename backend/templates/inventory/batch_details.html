@@ -1,0 +1,235 @@
+{% extends "shared/base.html" %}
+{% block title %}Batch {{ batch_number }} – Genealogy – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+{% set batch = genealogy.batch %}
+{% set purchase = genealogy.purchase %}
+{% set movements = genealogy.movements %}
+{% set jobs = genealogy.processing_jobs %}
+{% set outputs = genealogy.classified_outputs %}
+{% set disposals = genealogy.disposal_items %}
+{% set sales = genealogy.sales_dispatches %}
+
+{{ page_header(
+    title="Batch Genealogy: " ~ batch_number,
+    subtitle="End-to-end traceability tree for batch " ~ batch_number ~ " from inward receipt to processing and sales.",
+    back_url="/inventory/batches",
+    actions=[
+        {'label': 'API JSON View', 'url': '/platform/api/traceability/batch/' ~ batch_number, 'icon': 'bi-braces', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+
+<!-- Batch Header Card -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-2 text-center">
+        <div class="batch-icon-circle">
+          <i class="bi bi-boxes"></i>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th style="width:45%">Batch Number</th><td class="font-monospace fw-bold text-primary">{{ batch.batch_number }}</td></tr>
+          <tr><th>Material</th><td>{{ batch.material_name }}</td></tr>
+          <tr><th>Supplier</th><td>{{ batch.supplier_name or '—' }}</td></tr>
+          <tr><th>Purchase Invoice</th><td>
+            {% if batch.purchase_invoice_id %}<a href="/purchase/{{ batch.purchase_invoice_id }}/view">{{ batch.purchase_invoice_number }}</a>{% else %}—{% endif %}
+          </td></tr>
+          <tr><th>Purchase Date</th><td>{{ batch.purchase_date }}</td></tr>
+        </table>
+      </div>
+      <div class="col-md-5">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><th style="width:45%">Original Qty</th><td>{{ batch.quantity|round(2) }}</td></tr>
+          <tr><th>Original Weight</th><td>{{ batch.weight|round(3) }} KG</td></tr>
+          <tr><th>Remaining Weight</th><td>{{ batch.remaining_weight|round(3) }} KG</td></tr>
+          <tr><th>Status</th><td>
+            {% if batch.status == 'IN_STORE' %}<span class="badge bg-success">In Store</span>
+            {% elif batch.status == 'IN_PROCESSING' %}<span class="badge bg-warning text-dark">In Processing</span>
+            {% elif batch.status == 'PROCESSED' %}<span class="badge bg-info">Processed</span>
+            {% elif batch.status == 'SOLD' %}<span class="badge bg-secondary">Sold</span>
+            {% else %}<span class="badge bg-danger">{{ batch.status }}</span>{% endif %}
+          </td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lifecycle Timeline -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Complete Lifecycle Timeline</h5></div>
+  <div class="card-body">
+    <div class="timeline">
+
+      <!-- Stage 1: Purchase -->
+      <div class="timeline-item timeline-purchase">
+        <div class="timeline-marker bg-primary"><i class="bi bi-inbox-fill text-white"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">📦 Purchased</div>
+          {% if purchase %}
+          <div class="timeline-body">
+            <span class="badge bg-primary me-1">{{ purchase.purchase_invoice_number }}</span>
+            from <strong>{{ purchase.supplier_name }}</strong>
+            on <strong>{{ batch.purchase_date }}</strong>
+            &mdash; <strong>{{ batch.weight|round(3) }} KG</strong>
+            {% if purchase.grand_total %} | ₹{{ "%.2f"|format(purchase.grand_total) }}{% endif %}
+          </div>
+          {% else %}
+          <div class="timeline-body text-muted">No purchase invoice linked.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Stage 2: Inventory Receipt -->
+      <div class="timeline-item timeline-inventory">
+        <div class="timeline-marker bg-success"><i class="bi bi-boxes text-white"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">🏭 Stored in Inventory</div>
+          <div class="timeline-body">
+            <strong>{{ batch.weight|round(3) }} KG</strong> of <strong>{{ batch.material_name }}</strong> received into Main Warehouse (RAW stock).
+            {% if movements %}
+            <br><small class="text-muted">{{ movements|length }} movement ledger entries recorded.</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 3: Processing Jobs -->
+      {% if jobs %}
+      <div class="timeline-item timeline-processing">
+        <div class="timeline-marker bg-warning"><i class="bi bi-gear-fill text-dark"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">⚙️ Processing Jobs</div>
+          <div class="timeline-body">
+            {% for job in jobs %}
+            <div class="mb-2">
+              <span class="badge bg-warning text-dark me-1">{{ job.processing_number }}</span>
+              <a href="/processing/jobs/{{ job.id }}/view">{{ job.job_title or job.processing_number }}</a>
+              &mdash; Status: <strong>{{ job.status }}</strong> | Date: <strong>{{ job.processing_date }}</strong>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Stage 4: Classified Outputs -->
+      {% if outputs %}
+      <div class="timeline-item timeline-outputs">
+        <div class="timeline-marker bg-info"><i class="bi bi-diagram-3 text-white"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">🔀 Output Classification</div>
+          <div class="timeline-body">
+            <div class="row g-2">
+              {% for out in outputs %}
+              <div class="col-md-4">
+                <div class="p-2 rounded border border-{% if out.output_category == 'RECOVERABLE' %}success{% elif out.output_category == 'REFURBISHABLE' %}info{% else %}danger{% endif %} text-center">
+                  <span class="badge bg-{% if out.output_category == 'RECOVERABLE' %}success{% elif out.output_category == 'REFURBISHABLE' %}info{% else %}danger{% endif %} mb-1">{{ out.output_category }}</span>
+                  <div class="fw-semibold small">{{ out.material_name }}</div>
+                  <div class="text-muted small">{{ out.weight|round(3) }} KG</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Stage 5: Disposal Items -->
+      {% if disposals %}
+      <div class="timeline-item timeline-disposal">
+        <div class="timeline-marker bg-danger"><i class="bi bi-trash3 text-white"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">♻️ Disposal Queue</div>
+          <div class="timeline-body">
+            {% for d in disposals %}
+            <div class="mb-1">
+              <span class="badge bg-{% if d.status == 'Disposed' %}success{% else %}warning text-dark{% endif %} me-1">{{ d.status }}</span>
+              <strong>{{ d.material_name }}</strong> — {{ d.weight|round(3) }} KG
+              {% if d.disposal_type %}| Method: {{ d.disposal_type }}{% endif %}
+              {% if d.disposed_at %}| Disposed: {{ d.disposed_at[:10] }}{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Stage 6: Sales Dispatch -->
+      {% if sales %}
+      <div class="timeline-item timeline-sales">
+        <div class="timeline-marker bg-teal"><i class="bi bi-box-arrow-up-right text-white"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">🚚 Sales Dispatch</div>
+          <div class="timeline-body">
+            {% for s in sales %}
+            <div class="mb-1">
+              <span class="badge bg-teal me-1">{{ s.invoice_number }}</span>
+              to <strong>{{ s.buyer_name }}</strong> — {{ s.material_name }} — {{ s.weight|round(3) }} KG on {{ s.invoice_date }}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Status: Conclusion -->
+      <div class="timeline-item">
+        <div class="timeline-marker bg-secondary"><i class="bi bi-flag-fill text-white"></i></div>
+        <div class="timeline-content">
+          <div class="timeline-title">📋 Current Status: {{ batch.status }}</div>
+          <div class="timeline-body text-muted">Remaining: <strong>{{ batch.remaining_weight|round(3) }} KG</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Movement Ledger -->
+{% if movements %}
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0"><i class="bi bi-journal-text me-2 text-info"></i>Movement Ledger</h5>
+    <span class="badge bg-secondary">{{ movements|length }} entries</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0 align-middle">
+        <thead><tr>
+          <th>Date</th><th>Movement Type</th><th>Reference</th><th class="text-end">Qty Change</th><th class="text-end">Wt Change (KG)</th><th>State</th><th>By</th>
+        </tr></thead>
+        <tbody>
+          {% for m in movements %}
+          <tr>
+            <td class="text-muted small">{{ m.created_at[:16] if m.created_at else '—' }}</td>
+            <td><span class="badge bg-secondary">{{ m.movement_type }}</span></td>
+            <td><small>{{ m.reference_type }} / {{ m.reference_number or '—' }}</small></td>
+            <td class="text-end {% if m.quantity_change > 0 %}text-success{% else %}text-danger{% endif %}">{{ "%.2f"|format(m.quantity_change) }}</td>
+            <td class="text-end {% if m.weight_change > 0 %}text-success{% else %}text-danger{% endif %}">{{ "%.3f"|format(m.weight_change) }}</td>
+            <td><span class="badge bg-light text-dark">{{ m.inventory_state }}</span></td>
+            <td class="text-muted small">{{ m.performed_by }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<style>
+.batch-icon-circle { width:80px; height:80px; background:linear-gradient(135deg, #4a9eff22, #4a9eff44); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:#4a9eff; margin:auto; }
+.timeline { position:relative; padding-left:2.5rem; }
+.timeline::before { content:''; position:absolute; left:18px; top:0; bottom:0; width:2px; background:var(--border-color); }
+.timeline-item { position:relative; margin-bottom:1.5rem; }
+.timeline-marker { position:absolute; left:-2.4rem; top:2px; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.9rem; z-index:2; }
+.timeline-title { font-weight:600; margin-bottom:0.3rem; }
+.timeline-body { color:var(--text-secondary); font-size:0.9rem; }
+.bg-teal { background-color:#009688!important; }
+</style>
+{% endblock %}

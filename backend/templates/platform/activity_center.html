@@ -1,0 +1,259 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Activity Center – Right Ewaste ERP{% endblock %}
+
+{% block styles %}
+<style>
+  /* ── Activity Center Styles ──────────────────────────────── */
+  .ac-header {
+    background: linear-gradient(135deg, #0f2318 0%, #1c3d2b 100%);
+    border-radius: 14px;
+    padding: 24px 28px;
+    color: #fff;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .ac-header h1 { font-size: 1.35rem; font-weight: 700; margin: 0; }
+  .ac-header p  { font-size: 0.82rem; opacity: .7; margin: 4px 0 0; }
+
+  /* Filter Bar */
+  .filter-bar {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+    margin-bottom: 20px;
+  }
+  .filter-bar .form-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+  .filter-bar .form-control,
+  .filter-bar .form-select { font-size: 0.84rem; border-radius: 8px; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 11px; top: 0; bottom: 0;
+    width: 2px; background: linear-gradient(to bottom, var(--accent), transparent);
+  }
+  .tl-item {
+    position: relative; margin-bottom: 8px;
+    background: #fff; border: 1px solid var(--card-border); border-radius: 12px;
+    padding: 12px 16px;
+    transition: box-shadow .15s, border-color .15s;
+  }
+  .tl-item:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.07); border-color: var(--accent-light); }
+  .tl-dot {
+    position: absolute; left: -28px; top: 14px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); border: 3px solid #f4f7f5;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tl-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tl-action { font-weight: 600; font-size: 0.88rem; }
+  .tl-meta  { font-size: 0.76rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tl-details { font-size: 0.8rem; color: #4a5e54; margin-top: 4px; }
+
+  /* Severity badges */
+  .sev { padding: 2px 9px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+  .sev-INFO     { background: #dbeafe; color: #1e40af; }
+  .sev-SUCCESS  { background: #d1fae5; color: #065f46; }
+  .sev-WARNING  { background: #fef3c7; color: #92400e; }
+  .sev-ERROR    { background: #fee2e2; color: #991b1b; }
+  .sev-CRITICAL { background: #fce7f3; color: #9d174d; }
+
+  /* Module tag */
+  .mod-tag { background: #f0fdf4; color: #166534; border-radius: 6px; padding: 2px 7px; font-size: 0.72rem; font-weight: 600; }
+
+  /* Stats chips */
+  .stat-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stat-chip-sm { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--card-border); border-radius: 10px; padding: 8px 14px; font-size: 0.82rem; }
+  .stat-chip-sm strong { color: var(--accent); }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .empty-state i { font-size: 3rem; opacity: .3; }
+
+  /* Dark mode */
+  [data-theme="dark"] .filter-bar,
+  [data-theme="dark"] .tl-item,
+  [data-theme="dark"] .stat-chip-sm { background: #1e2d26; border-color: #2d4538; }
+  [data-theme="dark"] .tl-details  { color: #9bb8a9; }
+  [data-theme="dark"] .mod-tag     { background: rgba(60,179,113,0.12); color: #6ee7b7; }
+  [data-theme="dark"] .tl-dot      { border-color: #1e2d26; }
+  [data-theme="dark"] .ac-header   { background: linear-gradient(135deg, #0a1a10 0%, #112d1e 100%); }
+</style>
+{% endblock %}
+
+{% block page_title %}Activity Center{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="/platform/">Platform</a></li>
+<li class="breadcrumb-item active">Activity Center</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="ac-header">
+  <div>
+    <h1><i class="bi bi-activity me-2"></i>Activity Center</h1>
+    <p>Complete audit timeline of all user actions across every ERP module</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/platform/api/activities/export" class="btn btn-sm btn-outline-light">
+      <i class="bi bi-download me-1"></i>Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-chips">
+  <div class="stat-chip-sm"><i class="bi bi-calendar-day text-success"></i><div><div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Today</div><strong>{{ stats.today }}</strong></div></div>
+  <div class="stat-chip-sm"><i class="bi bi-database text-primary"></i><div><div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Total</div><strong>{{ stats.total }}</strong></div></div>
+  <div class="stat-chip-sm"><i class="bi bi-collection text-info"></i><div><div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">Showing</div><strong>{{ activities | length }}</strong></div></div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <div>
+    <div class="form-label">Module</div>
+    <select class="form-select form-select-sm" id="filterModule" onchange="applyFilters()" style="min-width:140px;">
+      <option value="">All Modules</option>
+      {% for m in modules %}
+      <option value="{{ m }}">{{ m }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="form-label">Severity</div>
+    <select class="form-select form-select-sm" id="filterSeverity" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="INFO">Info</option>
+      <option value="SUCCESS">Success</option>
+      <option value="WARNING">Warning</option>
+      <option value="ERROR">Error</option>
+      <option value="CRITICAL">Critical</option>
+    </select>
+  </div>
+  <div>
+    <div class="form-label">Search User / Action</div>
+    <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Type to filter…" oninput="filterLocal()">
+  </div>
+  <div>
+    <div class="form-label">Limit</div>
+    <select class="form-select form-select-sm" id="filterLimit" onchange="applyFilters()">
+      <option value="50">50</option>
+      <option value="100">100</option>
+      <option value="200" selected>200</option>
+      <option value="500">500</option>
+    </select>
+  </div>
+  <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">
+    <i class="bi bi-x-circle me-1"></i>Reset
+  </button>
+</div>
+
+<!-- Timeline -->
+<div class="timeline" id="activityTimeline">
+  {% if activities %}
+    {% for a in activities %}
+    <div class="tl-item" data-action="{{ a.action | lower }}" data-user="{{ (a.user_name or '') | lower }}">
+      <div class="tl-dot"></div>
+      <div class="tl-top">
+        <span class="tl-action">{{ a.action }}</span>
+        {% if a.get('severity') %}
+        <span class="sev sev-{{ a.severity }}">{{ a.severity }}</span>
+        {% endif %}
+        {% if a.get('module') %}
+        <span class="mod-tag">{{ a.module }}</span>
+        {% endif %}
+        {% if a.get('reference_number') %}
+        <span style="font-size:.75rem; color:var(--text-muted);">#{{ a.reference_number }}</span>
+        {% endif %}
+        <span class="ms-auto text-muted" style="font-size:.73rem;">{{ a.created_at or '' }}</span>
+      </div>
+      <div class="tl-meta">
+        {% if a.get('user_name') %}
+        <span><i class="bi bi-person-circle"></i> {{ a.user_name }}</span>
+        {% endif %}
+        {% if a.get('ip_address') %}
+        <span><i class="bi bi-globe"></i> {{ a.ip_address }}</span>
+        {% endif %}
+        {% if a.get('record_id') %}
+        <span><i class="bi bi-hash"></i> {{ a.record_id }}</span>
+        {% endif %}
+      </div>
+      {% if a.get('details') %}
+      <div class="tl-details">{{ a.details }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-inbox"></i>
+    <p class="mt-3">No activities recorded yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyFilters() {
+  const mod = document.getElementById('filterModule').value;
+  const sev = document.getElementById('filterSeverity').value;
+  const limit = document.getElementById('filterLimit').value;
+  const params = new URLSearchParams();
+  if (mod) params.set('module', mod);
+  if (sev) params.set('severity', sev);
+  params.set('limit', limit);
+
+  fetch('/platform/api/activities?' + params.toString())
+    .then(r => r.json())
+    .then(data => renderTimeline(data));
+}
+
+function filterLocal() {
+  const q = document.getElementById('filterSearch').value.toLowerCase();
+  document.querySelectorAll('#activityTimeline .tl-item').forEach(el => {
+    const text = el.textContent.toLowerCase();
+    el.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+
+function resetFilters() {
+  document.getElementById('filterModule').value = '';
+  document.getElementById('filterSeverity').value = '';
+  document.getElementById('filterSearch').value = '';
+  document.getElementById('filterLimit').value = '200';
+  document.querySelectorAll('#activityTimeline .tl-item').forEach(el => el.style.display = '');
+}
+
+function renderTimeline(data) {
+  const container = document.getElementById('activityTimeline');
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p class="mt-3">No activities match the filter.</p></div>`;
+    return;
+  }
+  const sevClass = {INFO:'sev-INFO', SUCCESS:'sev-SUCCESS', WARNING:'sev-WARNING', ERROR:'sev-ERROR', CRITICAL:'sev-CRITICAL'};
+  container.innerHTML = data.map(a => `
+    <div class="tl-item">
+      <div class="tl-dot"></div>
+      <div class="tl-top">
+        <span class="tl-action">${a.action || ''}</span>
+        ${a.severity ? `<span class="sev ${sevClass[a.severity]||''}">${a.severity}</span>` : ''}
+        ${a.module ? `<span class="mod-tag">${a.module}</span>` : ''}
+        ${a.reference_number ? `<span style="font-size:.75rem;color:var(--text-muted)">#${a.reference_number}</span>` : ''}
+        <span class="ms-auto text-muted" style="font-size:.73rem">${a.created_at || ''}</span>
+      </div>
+      <div class="tl-meta">
+        ${a.user_name ? `<span><i class="bi bi-person-circle"></i> ${a.user_name}</span>` : ''}
+        ${a.ip_address ? `<span><i class="bi bi-globe"></i> ${a.ip_address}</span>` : ''}
+      </div>
+      ${a.details ? `<div class="tl-details">${a.details}</div>` : ''}
+    </div>
+  `).join('');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Factory Report Generator – Government Compliance – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #1e293b;">
+        <i class="bi bi-file-earmark-excel-fill text-success me-2"></i>Factory Report Generation System
+      </h3>
+      <p class="text-muted small mb-0">Template-driven document engine generating official government-compliant Factory Daily Report workbooks.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+        <i class="bi bi-patch-check-fill me-1"></i>Template Engine v1.0 Active
+      </span>
+    </div>
+  </div>
+
+  <!-- System Readiness & Configuration Status Banner -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+      <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+        <i class="bi bi-cpu-fill text-primary me-2"></i>Generation Engine Readiness
+      </h5>
+      {% if is_system_ready %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+          <i class="bi bi-check-circle me-1"></i>Engine Ready
+        </span>
+      {% else %}
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">
+          <i class="bi bi-exclamation-triangle me-1"></i>Configuration Issues
+        </span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <div class="row g-3 text-muted small">
+        <div class="col-12 col-md-4">
+          <div class="p-2 border rounded-3 bg-light">
+            <small class="d-block text-muted">Master Template</small>
+            <strong class="text-dark"><i class="bi bi-file-earmark-spreadsheet text-success me-1"></i>factory_report_template.xlsx</strong>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="p-2 border rounded-3 bg-light">
+            <small class="d-block text-muted">Cell Mapping Config</small>
+            <strong class="text-dark"><i class="bi bi-code-square text-primary me-1"></i>factory_report_mapping.json</strong>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="p-2 border rounded-3 bg-light">
+            <small class="d-block text-muted">Worksheet Preservation</small>
+            <strong class="text-dark"><i class="bi bi-layers text-info me-1"></i>5 Sheets (Ewaste, Disposal, Scrap, In, Out)</strong>
+          </div>
+        </div>
+      </div>
+
+      {% if system_errors %}
+      <div class="alert alert-danger mt-3 mb-0 py-2 small">
+        <strong class="d-block mb-1">Validation Errors:</strong>
+        <ul class="mb-0 ps-3">
+          {% for err in system_errors %}
+            <li>{{ err }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Report Generator Card -->
+    <div class="col-12 col-lg-5">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-gear-wide-connected text-primary me-2"></i>Generate Factory Daily Report
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('factory_report.generate') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Target Reporting Date <span class="text-danger">*</span></label>
+              <input type="date" name="report_date" class="form-control form-control-lg" value="{{ today_str }}" required>
+              <small class="text-muted d-block mt-1">Select the factory operating date to pull ERP data and populate the official workbook.</small>
+            </div>
+
+            <div class="p-3 bg-light rounded-3 mb-4 border">
+              <small class="fw-bold text-dark d-block mb-1"><i class="bi bi-info-circle text-primary me-1"></i>Automated Data Aggregation:</small>
+              <ul class="mb-0 ps-3 small text-muted">
+                <li>Company & Branch Name</li>
+                <li>Staff Worked/Leave & Casual Labourers</li>
+                <li>E-waste & Disposal Materials Stock</li>
+                <li>Inward Purchase Invoices (Incoming)</li>
+                <li>Outward Sales Dispatch (Outgoing)</li>
+              </ul>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm py-2" {{ 'disabled' if not is_system_ready }}>
+              <i class="bi bi-file-earmark-arrow-down me-2"></i>Generate Factory Report
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report History Card -->
+    <div class="col-12 col-lg-7">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-clock-history text-primary me-2"></i>Report History & Downloads
+          </h5>
+          <span class="badge bg-light text-dark border">{{ history|length }} Generated Reports</span>
+        </div>
+        <div class="card-body p-0">
+          {% if history %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+              <thead class="table-light">
+                <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+                  <th>Report Date</th>
+                  <th>Version</th>
+                  <th>Generated By</th>
+                  <th>Generated On</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for rep in history %}
+                <tr>
+                  <td>
+                    <strong class="text-dark font-monospace">{{ rep.report_date }}</strong>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border font-monospace">{{ rep.template_version }}</span>
+                  </td>
+                  <td>
+                    <small class="text-muted"><i class="bi bi-person me-1"></i>{{ rep.generated_by }}</small>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ rep.generated_at[:16] }}</small>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{{ url_for('factory_report.download', report_id=rep.id) }}" class="btn btn-outline-success" title="Download Excel Workbook">
+                        <i class="bi bi-download me-1"></i>Download
+                      </a>
+                      <form method="POST" action="{{ url_for('factory_report.regenerate', report_id=rep.id) }}" class="d-inline" onsubmit="return confirm('Regenerate report workbook for date {{ rep.report_date }}?');">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-primary" title="Regenerate">
+                          <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted text-center py-5">
+            <i class="bi bi-folder-x display-4 d-block mb-2 text-muted"></i>
+            No factory report workbooks generated yet.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

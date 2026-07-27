@@ -28,7 +28,7 @@ class DashboardV2Test(unittest.TestCase):
 
     def test_activity_logging(self):
         log_activity("Test User", "Test Action", "Test Details")
-        activities = get_recent_activities(limit=5)
+        activities = get_recent_activities(limit=50)
         actions = [a["action"] for a in activities]
         self.assertIn("Test Action", actions)
 

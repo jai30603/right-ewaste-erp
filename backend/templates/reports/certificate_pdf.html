@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ cert.certificate_number }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    color: #1a1a1a;
+    background: #fff;
+    padding: {{ template.margin_top }}pt {{ template.margin_right }}pt {{ template.margin_bottom }}pt {{ template.margin_left }}pt;
+  }
+  .header {
+    border-bottom: 2.5px solid #2563eb;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .header-table td {
+    vertical-align: top;
+    padding: 0;
+  }
+  .company-name {
+    font-size: 18px;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+  }
+  .company-details {
+    font-size: 10px;
+    color: #475569;
+    line-height: 1.6;
+    margin-top: 4px;
+  }
+  .cert-meta-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #2563eb;
+    text-align: right;
+    letter-spacing: 1px;
+  }
+  .cert-meta-details {
+    text-align: right;
+    font-size: 10.5px;
+    color: #334155;
+    line-height: 1.6;
+    margin-top: 6px;
+  }
+  .cert-title-main {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e3a8a;
+    text-align: center;
+    margin: 32px 0 20px 0;
+    letter-spacing: 1px;
+  }
+  .customer-panel {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 24px;
+  }
+  .panel-title {
+    font-size: 9px;
+    font-weight: 700;
+    color: #2563eb;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .customer-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .customer-info {
+    font-size: 10.5px;
+    color: #475569;
+    line-height: 1.6;
+    margin-top: 4px;
+  }
+  .declaration-box {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #1e293b;
+    text-align: justify;
+    margin-bottom: 30px;
+  }
+  table.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5px;
+    margin-bottom: 30px;
+  }
+  table.items-table thead tr {
+    background: #1e3a8a;
+    color: #fff;
+  }
+  table.items-table th {
+    padding: 8px 10px;
+    font-weight: 600;
+    text-align: left;
+  }
+  table.items-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  table.items-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  .footer-row {
+    margin-top: 40px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 14px;
+  }
+  .footer-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .footer-table td {
+    vertical-align: bottom;
+    padding: 0;
+  }
+  .security-hash {
+    font-size: 8.5px;
+    color: #94a3b8;
+    font-family: monospace;
+    line-height: 1.4;
+  }
+  .signature-area {
+    text-align: right;
+  }
+  .sig-line {
+    display: inline-block;
+    border-top: 1px solid #475569;
+    padding-top: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e293b;
+    min-width: 160px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div class="header">
+    <table class="header-table">
+      <tr>
+        <td>
+          <div class="company-name">{{ company.company_name }}</div>
+          <div class="company-details">
+            {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
+            {{ company.city }}, {{ company.state }} – {{ company.pincode }}<br>
+            {% if template.show_gst and company.gstin %}<strong>GSTIN:</strong> {{ company.gstin }} &nbsp;|&nbsp;{% endif %}
+            {% if template.show_pan and company.pan %}<strong>PAN:</strong> {{ company.pan }}<br>{% endif %}
+            {% if template.show_cin and company.cin %}<strong>CIN:</strong> {{ company.cin }} &nbsp;|&nbsp;{% endif %}
+            <strong>Ph:</strong> {{ company.phone }}
+          </div>
+        </td>
+        <td style="text-align: right;">
+          <div class="cert-meta-title">COMPLIANCE CERTIFICATE</div>
+          <div class="cert-meta-details">
+            <strong>Certificate No:</strong> {{ cert.certificate_number }}<br>
+            <strong>Date of Issue:</strong> {{ generation_date }}<br>
+            <strong>Status:</strong> LOCKED (OFFICIAL)
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Certificate Title -->
+  <div class="cert-title-main">{{ template.title }}</div>
+
+  <!-- Customer Panel -->
+  {% if template.show_customer_details %}
+  <div class="customer-panel">
+    <div class="panel-title">Certified To</div>
+    <div class="customer-name">{{ cert.customer_name }}</div>
+    <div class="customer-info">
+      {% if cert.customer_address %}{{ cert.customer_address }}<br>{% endif %}
+      {% if template.show_gst and cert.customer_gstin %}<strong>GSTIN:</strong> {{ cert.customer_gstin }} &nbsp;|&nbsp;{% endif %}
+      {% if template.show_pan and cert.customer_pan %}<strong>PAN:</strong> {{ cert.customer_pan }}{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Declaration Wording text -->
+  <div class="declaration-box">
+    {{ template.declaration_text }}
+  </div>
+
+  <!-- Materials table -->
+  {% if template.show_processing_summary and cert.materials %}
+  <div class="panel-title">Certified Processing Materials Summary</div>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Material Name / Description</th>
+        <th>Quantity</th>
+        <th>Certified Weight</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in cert.materials %}
+      <tr>
+        <td style="font-weight: 700;">{{ m.material_name }}</td>
+        <td>{{ m.quantity }} {{ m.unit }}</td>
+        <td>{{ "%.2f"|format(m.weight) }} KG</td>
+      </tr>
+      {% endfor %}
+      <tr style="background-color: #f1f5f9; font-weight: bold;">
+        <td>Total Certified Yield</td>
+        <td>—</td>
+        <td>{{ "%.2f"|format(total_weight) }} KG</td>
+        <td>{{ total_quantity }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Footer signature & hashes -->
+  <div class="footer-row">
+    <table class="footer-table">
+      <tr>
+        <td>
+          <div class="security-hash">
+            Verification ID: {{ cert.verification_uuid }}<br>
+            Digital Seal Integrity Code:<br>
+            {{ cert.digital_signature_hash or 'AUTOMATED_SECURE_ERP_HASH_VALIDATED_2026' }}<br>
+            {% if template.show_pcb %}Pollution Control Board Auth Code: PCB/AUTH/EW/2026/894{% endif %}
+          </div>
+        </td>
+        <td style="text-align: right;">
+          <div class="signature-area">
+            <div class="sig-line">{{ template.signature_title }}</div>
+            <div style="font-size: 9px; color: #64748b; margin-top: 3px;">{{ company.company_name }}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

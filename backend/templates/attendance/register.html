@@ -1,0 +1,149 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Monthly Attendance Register – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Monthly Attendance Register",
+    subtitle="Complete monthly matrix grid showing attendance status for every day of the month.",
+    back_url="/employees/attendance/dashboard",
+    actions=[
+        {'label': 'Export', 'url': url_for('employees.attendance_reports'), 'icon': 'bi-file-earmark-excel', 'class': 'btn-outline-success'},
+        {'label': 'Mark Attendance', 'url': url_for('employees.daily_attendance'), 'icon': 'bi-calendar-check', 'class': 'btn-primary'}
+    ]
+) }}
+
+  <!-- Filter Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <form method="GET" action="{{ url_for('employees.attendance_register') }}" class="row g-2 align-items-center">
+        <!-- Month Filter -->
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Month</label>
+          <select name="month" class="form-select" onchange="this.form.submit()">
+            {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+            {% for m in range(1, 13) %}
+              <option value="{{ m }}" {{ 'selected' if selected_month == m }}>{{ months[m-1] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Year Filter -->
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Year</label>
+          <select name="year" class="form-select" onchange="this.form.submit()">
+            {% for y in range(current_year - 2, current_year + 2) %}
+              <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Department</label>
+          <select name="department" class="form-select" onchange="this.form.submit()">
+            <option value="">All Departments</option>
+            {% for dept in filter_options.departments %}
+              <option value="{{ dept }}" {{ 'selected' if selected_department == dept }}>{{ dept }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Search Filter -->
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Search Employee</label>
+          <input type="text" name="search" class="form-control" placeholder="Search Code, Name..." value="{{ search }}">
+        </div>
+
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Legend Bar Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-3 bg-light">
+    <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-center gap-3" style="font-size: 0.8rem;">
+      <span class="badge bg-success px-2 py-1">P = Present</span>
+      <span class="badge bg-danger px-2 py-1">A = Absent</span>
+      <span class="badge bg-warning text-dark px-2 py-1">HD = Half Day</span>
+      <span class="badge bg-primary px-2 py-1">L = Leave</span>
+      <span class="badge bg-purple px-2 py-1" style="background: #7e22ce; color: #fff;">H = Holiday</span>
+      <span class="badge bg-secondary px-2 py-1">- = Unmarked</span>
+    </div>
+  </div>
+
+  <!-- Matrix Table Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-0">
+      {% if register_data.register %}
+      <div class="table-responsive" style="max-height: 600px;">
+        <table class="table table-bordered table-hover align-middle mb-0 text-center" style="font-size: 0.8rem;">
+          <thead class="table-dark sticky-top">
+            <tr>
+              <th class="text-start" style="min-width: 90px;">Code</th>
+              <th class="text-start" style="min-width: 140px;">Employee</th>
+              <th style="min-width: 100px;">Department</th>
+              {% for day in register_data.days_list %}
+                <th style="width: 28px; padding: 4px 2px;">{{ day }}</th>
+              {% endfor %}
+              <th class="bg-success text-white" style="width: 40px;">P</th>
+              <th class="bg-danger text-white" style="width: 40px;">A</th>
+              <th class="bg-warning text-dark" style="width: 40px;">HD</th>
+              <th class="bg-primary text-white" style="width: 40px;">L</th>
+              <th style="background: #7e22ce; color: #fff; width: 40px;">H</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for emp in register_data.register %}
+            <tr>
+              <td class="text-start fw-bold">
+                <a href="{{ url_for('employees.attendance_calendar', emp_id=emp.employee_id) }}" class="text-decoration-none font-monospace">
+                  {{ emp.employee_code }}
+                </a>
+              </td>
+              <td class="text-start fw-semibold text-dark">{{ emp.full_name }}</td>
+              <td><span class="badge bg-light text-dark border">{{ emp.department or 'N/A' }}</span></td>
+              {% for day in register_data.days_list %}
+                {% set st = emp.days[day] %}
+                <td class="p-1">
+                  {% if st == 'P' %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle p-1 d-block">P</span>
+                  {% elif st == 'A' %}
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle p-1 d-block">A</span>
+                  {% elif st == 'HD' %}
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle p-1 d-block">HD</span>
+                  {% elif st == 'L' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-1 d-block">L</span>
+                  {% elif st == 'H' %}
+                    <span class="badge p-1 d-block" style="background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">H</span>
+                  {% else %}
+                    <span class="text-muted small">-</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+              <td class="fw-bold text-success bg-success-subtle">{{ emp.present_count }}</td>
+              <td class="fw-bold text-danger bg-danger-subtle">{{ emp.absent_count }}</td>
+              <td class="fw-bold text-warning-emphasis bg-warning-subtle">{{ emp.half_day_count }}</td>
+              <td class="fw-bold text-primary bg-primary-subtle">{{ emp.leave_count }}</td>
+              <td class="fw-bold" style="background: #f3e8ff; color: #7e22ce;">{{ emp.holiday_count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-grid-3x3 fs-1 d-block mb-2"></i>
+        No active employee attendance records found for this month.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -22,20 +22,11 @@ def round_int(n):
 
 
 
-def generate_invoice_number():
-
-    year = datetime.now().year
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM sales_invoice")
-
-    count = cursor.fetchone()[0] + 1
-
-    conn.close()
-
-    return f"INV-{year}-{count:05d}"
+def generate_invoice_number(conn=None):
+    if not conn:
+        conn = get_connection()
+    from repositories import settings_repository
+    return settings_repository.increment_and_get_number("SALES", conn)
 
 def get_company():
 

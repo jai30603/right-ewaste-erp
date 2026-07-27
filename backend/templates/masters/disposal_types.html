@@ -1,0 +1,88 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Disposal Types Master{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/material">Masters</a></li>
+<li class="breadcrumb-item active">Disposal Types</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold"><i class="bi bi-diagram-3 text-info me-2"></i>Disposal Types Master</h4>
+            <p class="text-muted small mb-0">Configure authorized methods for disposing processed e-waste materials</p>
+        </div>
+        <button class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addTypeModal">
+            <i class="bi bi-plus-lg me-1"></i>Add Disposal Type
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Type Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if types %}
+                        {% for t in types %}
+                        <tr>
+                            <td class="ps-3 fw-bold text-dark"><i class="bi bi-box-arrow-right text-info me-2"></i>{{ t.type_name }}</td>
+                            <td class="text-muted">{{ t.description or '—' }}</td>
+                            <td>
+                                {% if t.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">No disposal types defined.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ADD TYPE MODAL -->
+<div class="modal fade" id="addTypeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Add Disposal Type</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Disposal Type Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="type_name" placeholder="e.g. Authorized Recycler" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Description of compliance requirement..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold">Save Disposal Type</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

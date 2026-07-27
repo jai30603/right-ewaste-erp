@@ -1,0 +1,145 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Leave Reports Center – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #1e293b;">
+        <i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Leave Reports Center
+      </h3>
+      <p class="text-muted small mb-0">Generate comprehensive leave registers, balance reports, and department leave summaries.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('employees.leave_dashboard') }}" class="btn btn-outline-secondary px-3">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+      </a>
+      <a href="{{ url_for('employees.leave_requests') }}" class="btn btn-outline-primary px-3">
+        <i class="bi bi-list-check me-1"></i>Requests
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Main Export Form Card -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-download text-success me-2"></i>Export Leave Data
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="GET" action="{{ url_for('employees.export_leave') }}">
+
+            <div class="row g-3 mb-4">
+              <!-- Report Type -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Report Type</label>
+                <select name="report_type" class="form-select">
+                  <option value="register">Leave Register Report</option>
+                  <option value="balance">Leave Balance Summary</option>
+                  <option value="monthly">Monthly Leave Summary</option>
+                  <option value="department">Department Leave Breakdown</option>
+                </select>
+              </div>
+
+              <!-- Export Format -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Export Format</label>
+                <div class="d-flex gap-3 mt-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="l_fmt_excel" value="excel" checked>
+                    <label class="form-check-label fw-semibold text-success" for="l_fmt_excel">
+                      <i class="bi bi-file-earmark-excel me-1"></i>Excel (.xlsx)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="l_fmt_csv" value="csv">
+                    <label class="form-check-label fw-semibold text-primary" for="l_fmt_csv">
+                      <i class="bi bi-file-earmark-text me-1"></i>CSV (.csv)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="l_fmt_pdf" value="pdf">
+                    <label class="form-check-label fw-semibold text-danger" for="l_fmt_pdf">
+                      <i class="bi bi-file-earmark-pdf me-1"></i>PDF (.pdf)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Date Range -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="2026-01-01">
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ today_str }}">
+              </div>
+
+              <!-- Department Filter -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Department Filter (Optional)</label>
+                <select name="department" class="form-select">
+                  <option value="">All Departments</option>
+                  {% for dept in filter_options.departments %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Employee Filter -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Specific Employee (Optional)</label>
+                <select name="employee_id" class="form-select">
+                  <option value="">All Employees</option>
+                  {% for emp in employees %}
+                    <option value="{{ emp.id }}">{{ emp.employee_code }} - {{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-success px-5 py-2 shadow-sm">
+                <i class="bi bi-file-earmark-arrow-down me-2"></i>Generate & Download Report
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-info-circle text-primary me-2"></i>Leave Audit & Sync
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">All approved leave requests automatically synchronize with daily attendance records. Cancelling an approved leave automatically restores employee attendance and leave balances.</p>
+          <div class="p-3 bg-light rounded-3">
+            <small class="fw-bold d-block text-dark mb-1">Supported Report Types:</small>
+            <ul class="mb-0 ps-3 small text-muted">
+              <li>Leave Register (Full Audit Log)</li>
+              <li>Leave Balance Matrix</li>
+              <li>Department Leave Breakdown</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

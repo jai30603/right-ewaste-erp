@@ -1,0 +1,216 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Certificate Center Dashboard{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/certificate.css') }}">
+<style>
+  .kpi-title { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+  .kpi-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+  .kpi-icon-container { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+</style>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Certificates Center",
+    subtitle="Generate, track, and manage recycling certificates and government compliance documents.",
+    back_url="/",
+    actions=[
+        {'label': 'Certificate History', 'url': '/certificates/history', 'icon': 'bi-clock-history', 'class': 'btn-outline-secondary'},
+        {'label': 'New Certificate', 'url': '/certificates/new', 'icon': 'bi-patch-check', 'class': 'btn-primary'}
+    ]
+) }}
+  <!-- KPI Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="kpi-card kpi-blue">
+        <i class="bi bi-file-earmark-check kpi-icon"></i>
+        <div class="kpi-value">{{ summary.generated_today }}</div>
+        <div class="kpi-label">Generated Today</div>
+        <div class="kpi-sub">Daily Certificates</div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="kpi-card kpi-green">
+        <i class="bi bi-shield-check kpi-icon"></i>
+        <div class="kpi-value">{{ summary.locked_certs }}</div>
+        <div class="kpi-label">Active Certificates</div>
+        <div class="kpi-sub">Locked Records</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="kpi-card kpi-amber">
+        <i class="bi bi-pencil-square kpi-icon"></i>
+        <div class="kpi-value">{{ summary.draft_certs }}</div>
+        <div class="kpi-label">Draft Proposals</div>
+        <div class="kpi-sub">Pending Review</div>
+      </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-md-3">
+      <div class="kpi-card kpi-teal">
+        <i class="bi bi-graph-up-arrow kpi-icon"></i>
+        <div class="kpi-value">{{ "%.2f"|format(summary.certified_weight) }} KG</div>
+        <div class="kpi-label">Total Certified Weight</div>
+        <div class="kpi-sub">Cumulative Mass</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Left Panel: Eligible Queue & Batch Actions -->
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+          <h5 class="m-0 fw-bold"><i class="bi bi-activity text-primary me-2"></i>Eligible for Certification</h5>
+          <button type="submit" form="batchGenForm" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-layers-half me-1"></i>Batch Process Selected
+          </button>
+        </div>
+        
+        <div class="card-body p-0">
+          {% if queue %}
+          <form id="batchGenForm" action="{{ url_for('certificates.batch_generate') }}" method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="bg-light p-3 border-bottom d-flex align-items-center justify-content-between gap-3">
+              <div class="d-flex align-items-center gap-2">
+                <span class="small fw-bold">Batch Mode:</span>
+                <select name="mode" class="form-select form-select-sm" style="width: auto;">
+                  <option value="CONSOLIDATED">One Consolidated Certificate</option>
+                  <option value="INDIVIDUAL">Separate Certificates</option>
+                </select>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="small fw-bold">Template:</span>
+                <select name="template_key" class="form-select form-select-sm" style="width: auto;">
+                  <option value="STANDARD">Standard Recycling</option>
+                  <option value="CORPORATE">Corporate Client</option>
+                  <option value="GOVERNMENT">Government</option>
+                  <option value="REFURBISHMENT">Refurbishment</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 40px;"></th>
+                    <th>Processing Job</th>
+                    <th>Customer Name</th>
+                    <th>Weight</th>
+                    <th>Readiness Status</th>
+                    <th class="text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for job in queue %}
+                  <tr>
+                    <td>
+                      {% if job.readiness == 'Ready for Certificate' %}
+                      <input type="checkbox" name="processing_job_ids" value="{{ job.id }}" class="form-check-input">
+                      {% else %}
+                      <input type="checkbox" class="form-check-input" disabled>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <span class="fw-bold text-dark">{{ job.processing_number }}</span><br>
+                      <small class="text-muted">{{ job.processing_date }}</small>
+                    </td>
+                    <td>{{ job.customer_name }}</td>
+                    <td>{{ "%.2f"|format(job.input_weight) }} KG</td>
+                    <td>
+                      <span class="badge bg-{{ job.readiness_color }}-subtle text-{{ job.readiness_color }}">
+                        {{ job.readiness }}
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      {% if job.readiness == 'Ready for Certificate' %}
+                        <a href="{{ url_for('certificates.create_certificate') }}?pre_job_id={{ job.id }}" class="btn btn-primary btn-sm">
+                          Generate
+                        </a>
+                      {% elif job.readiness == 'Already Certified' %}
+                        <span class="text-muted small">Certified ({{ job.certificate_number }})</span>
+                      {% else %}
+                        <span class="text-muted small">—</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </form>
+          {% else %}
+          <div class="empty-state py-5 text-center text-muted">
+            <div class="empty-icon fs-1 mb-2"><i class="bi bi-emoji-smile"></i></div>
+            <p>All completed Processing Jobs have been certified! No items waiting in queue.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Recent activity & quick links -->
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h5 class="m-0 fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Recent Certificates</h5>
+        </div>
+        <div class="card-body p-0">
+          {% if summary.recent_certs %}
+          <div class="list-group list-group-flush">
+            {% for cert in summary.recent_certs %}
+            <a href="{{ url_for('certificates.job_details', cert_id=cert.id) }}" class="list-group-item list-group-item-action p-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold text-primary">{{ cert.certificate_number }}</span>
+                <small class="text-muted">{{ cert.generation_date or 'Draft' }}</small>
+              </div>
+              <div class="d-flex justify-content-between text-secondary" style="font-size:12.5px;">
+                <span>{{ cert.customer_name }}</span>
+                <span>{{ "%.2f"|format(cert.weight) }} KG</span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No certificates generated yet.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="fw-bold mb-3"><i class="bi bi-lightning-fill text-warning me-2"></i>Quick Actions</h5>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('certificates.create_certificate') }}" class="btn btn-outline-primary py-2 text-start">
+              <i class="bi bi-file-earmark-plus-fill me-2 text-primary"></i>
+              <strong>Manual Certificate Draft</strong>
+            </a>
+            <a href="{{ url_for('certificates.templates') }}" class="btn btn-outline-secondary py-2 text-start">
+              <i class="bi bi-palette-fill me-2 text-secondary"></i>
+              <strong>Template Designer</strong>
+            </a>
+            <a href="{{ url_for('certificates.analytics') }}" class="btn btn-outline-info py-2 text-start">
+              <i class="bi bi-bar-chart-line-fill me-2 text-info"></i>
+              <strong>Analytics & KPIs</strong>
+            </a>
+            <a href="{{ url_for('certificates.archive') }}" class="btn btn-outline-dark py-2 text-start">
+              <i class="bi bi-archive-fill me-2 text-dark"></i>
+              <strong>Archive Repository</strong>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

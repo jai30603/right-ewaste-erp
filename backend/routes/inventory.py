@@ -3,17 +3,34 @@ import os
 from datetime import date, timedelta
 import calendar
 from flask import Blueprint, render_template, request, Response, abort
-from xhtml2pdf import pisa
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
-from repositories.inventory_repository import get_stock_summary, get_material_ledger, get_all_categories
+from repositories.inventory_repository import (
+    get_stock_summary, get_material_ledger, get_all_categories,
+    get_inventory, get_dashboard_summary, get_stock_movements
+)
 from repositories.material_repository import get_material_by_id
-from services.inventory_service import calculate_running_balance
-from routes.sales import get_filter_date_range, get_report_filename, _fetch_pdf_resource
+from services.inventory_service import calculate_running_balance, adjust_stock, InventoryError
+from backend.common.utils.date_utils import get_filter_date_range
+from backend.common.utils.format_utils import get_report_filename
+from backend.common.utils.flash_helpers import flash_success, flash_error, flash_warning, flash_info
+from backend.services.pdf_service import render_to_pdf, send_pdf_response
 
 inventory_bp = Blueprint("inventory", __name__)
+
+
+@inventory_bp.route("/inventory/dashboard")
+def inventory_dashboard():
+    data = get_dashboard_summary()
+    return render_template(
+        "inventory/inventory_dashboard.html",
+        snapshot=data["snapshot"],
+        categories=data["categories"],
+        states=data["states"],
+        recent_movements=get_stock_movements(limit=8),
+    )
 
 
 @inventory_bp.route("/inventory")
@@ -45,7 +62,7 @@ def inventory():
     paginated_summary = summary[offset : offset + per_page]
 
     return render_template(
-        "inventory.html",
+        "inventory/inventory.html",
         summary=paginated_summary,
         categories=categories,
         q=q,
@@ -64,6 +81,56 @@ def inventory():
         total_pages=total_pages,
         total_items=total_items
     )
+
+
+
+@inventory_bp.route("/inventory/<int:material_id>")
+def inventory_details(material_id):
+    material = get_material_by_id(material_id)
+    if not material:
+        abort(404)
+    states = get_inventory(inventory_state="all")
+    stock_rows = [row for row in states if row["id"] == material_id]
+    stock = stock_rows[0] if stock_rows else {"current_stock": 0, "current_weight": 0, "inventory_states": ""}
+    movements = get_stock_movements(material_id=material_id, limit=50)
+    return render_template("inventory/inventory_details.html", material=material, stock=stock, movements=movements)
+
+
+@inventory_bp.route("/inventory/movements")
+def movement_history():
+    material_id = request.args.get("material_id", type=int)
+    movement_type = request.args.get("movement_type", "all")
+    materials = get_inventory()
+    return render_template(
+        "inventory/inventory_movements.html",
+        movements=get_stock_movements(material_id, movement_type, limit=250),
+        materials=materials,
+        material_id=material_id,
+        movement_type=movement_type,
+    )
+
+
+@inventory_bp.route("/inventory/adjust", methods=["GET", "POST"])
+def stock_adjustment():
+    user = session.get("user")
+    if not user or user.get("role") != "admin":
+        abort(403)
+    materials = get_inventory()
+    if request.method == "POST":
+        try:
+            adjust_stock(
+                material_id=int(request.form.get("material_id", 0)),
+                direction=request.form.get("direction", ""),
+                quantity=request.form.get("quantity", 0),
+                weight=request.form.get("weight", 0),
+                reason=request.form.get("reason", ""),
+                performed_by=user["username"],
+            )
+            flash_success("Stock adjustment recorded successfully.")
+            return redirect(url_for("inventory.inventory"))
+        except (ValueError, InventoryError) as exc:
+            flash_error(str(exc))
+    return render_template("inventory/inventory_adjustment.html", materials=materials)
 
 
 @inventory_bp.route("/inventory/<int:material_id>/ledger")
@@ -94,7 +161,7 @@ def material_ledger(material_id):
     paginated_ledger = ledger[offset : offset + per_page]
 
     return render_template(
-        "inventory_ledger.html",
+        "inventory/inventory_ledger.html",
         material=material,
         ledger=paginated_ledger,
         current_stock=current_stock,
@@ -233,32 +300,23 @@ def export_inventory_pdf():
     total_stock_value = sum(item["current_stock"] * item["rate"] for item in summary)
     today_str = date.today().strftime("%d-%b-%Y")
 
-    html = render_template(
-        "inventory_report_pdf.html",
-        summary=summary,
-        total_stock_value=total_stock_value,
-        today_str=today_str,
-        category=category,
-        date_filter=date_filter,
-        year=year,
-        month=month,
-        start_date=start_date,
-        end_date=end_date
+    pdf_bytes = render_to_pdf(
+        "reports/inventory_report_pdf.html",
+        {
+            "summary": summary,
+            "total_stock_value": total_stock_value,
+            "today_str": today_str,
+            "category": category,
+            "date_filter": date_filter,
+            "year": year,
+            "month": month,
+            "start_date": start_date,
+            "end_date": end_date
+        }
     )
-
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    pdf_bytes = buf.getvalue()
 
     filename = get_report_filename("stock_summary_report", "pdf", date_filter, year, month, start_date, end_date)
-    return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": len(pdf_bytes),
-        },
-    )
+    return send_pdf_response(pdf_bytes, filename)
 
 
 @inventory_bp.route("/inventory/<int:material_id>/ledger/export")
@@ -392,31 +450,22 @@ def export_ledger_pdf(material_id):
     rates = [item["rate"] for item in raw_ledger if item["type"] == "Purchase"]
     avg_rate = sum(rates) / len(rates) if rates else 0.0
 
-    html = render_template(
-        "inventory_ledger_pdf.html",
-        material=material,
-        ledger=ledger,
-        current_stock=current_stock,
-        rate=avg_rate,
-        today_str=today_str,
-        date_filter=date_filter,
-        year=year,
-        month=month,
-        start_date=start_date,
-        end_date=end_date
+    pdf_bytes = render_to_pdf(
+        "reports/inventory_ledger_pdf.html",
+        {
+            "material": material,
+            "ledger": ledger,
+            "current_stock": current_stock,
+            "rate": avg_rate,
+            "today_str": today_str,
+            "date_filter": date_filter,
+            "year": year,
+            "month": month,
+            "start_date": start_date,
+            "end_date": end_date
+        }
     )
-
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    pdf_bytes = buf.getvalue()
 
     base_filename = f"ledger_{material['material_code']}_report"
     filename = get_report_filename(base_filename, "pdf", date_filter, year, month, start_date, end_date)
-    return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": len(pdf_bytes),
-        },
-    )
+    return send_pdf_response(pdf_bytes, filename)

@@ -12,14 +12,8 @@ def _generate_purchase_invoice_number(cursor):
     """
     Called inside transaction context to prevent duplicate purchase invoice numbers.
     """
-    year = datetime.now().year
-    cursor.execute(
-        "SELECT MAX(CAST(SUBSTR(purchase_invoice_number, 10) AS INTEGER)) "
-        "FROM purchase_invoice WHERE purchase_invoice_number LIKE ?",
-        (f"PUR-{year}-%",)
-    )
-    max_num = cursor.fetchone()[0] or 0
-    return f"PUR-{year}-{(max_num + 1):06d}"
+    from repositories import settings_repository
+    return settings_repository.increment_and_get_number("PURCHASE", cursor.connection)
 
 
 # ── Read queries ──────────────────────────────────────────────────────────────
@@ -216,14 +210,13 @@ def create_purchase_invoice(
         for item in items:
             cursor.execute("""
                 INSERT INTO purchase_invoice_item (
-                    purchase_invoice_id, material_id, quantity, weight, pieces, rate, amount
-                ) VALUES (?,?,?,?,?,?,?)
+                    purchase_invoice_id, material_id, quantity, weight, rate, amount
+                ) VALUES (?,?,?,?,?,?)
             """, (
                 invoice_id,
                 item["material_id"],
                 item["qty"],
                 item["weight"],
-                item["pieces"],
                 item["rate"],
                 item["amount"],
             ))
@@ -288,14 +281,13 @@ def update_purchase_invoice(
         for item in items:
             cursor.execute("""
                 INSERT INTO purchase_invoice_item (
-                    purchase_invoice_id, material_id, quantity, weight, pieces, rate, amount
-                ) VALUES (?,?,?,?,?,?,?)
+                    purchase_invoice_id, material_id, quantity, weight, rate, amount
+                ) VALUES (?,?,?,?,?,?)
             """, (
                 invoice_id,
                 item["material_id"],
                 item["qty"],
                 item["weight"],
-                item["pieces"],
                 item["rate"],
                 item["amount"],
             ))
@@ -515,15 +507,7 @@ def get_purchase_dashboard_stats():
         WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
     """)
     total_weight = cursor.fetchone()[0] or 0.0
-    
-    # Total Pieces
-    cursor.execute("""
-        SELECT SUM(pii.pieces) FROM purchase_invoice_item pii
-        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
-        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
-    """)
-    total_pieces = cursor.fetchone()[0] or 0
-    
+
     # Invoice Count
     cursor.execute("""
         SELECT COUNT(id) FROM purchase_invoice 
@@ -573,27 +557,17 @@ def get_purchase_dashboard_stats():
     """, (today_str,))
     today_weight = cursor.fetchone()[0] or 0.0
 
-    # Today's Pieces Received
-    cursor.execute("""
-        SELECT SUM(pii.pieces) FROM purchase_invoice_item pii
-        JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
-        WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED') AND pi.invoice_date = ?
-    """, (today_str,))
-    today_pieces = cursor.fetchone()[0] or 0
-
     conn.close()
 
     return {
         "today_purchases": today_purchases,
         "monthly_purchases": monthly_purchases,
         "total_weight": total_weight,
-        "total_pieces": total_pieces,
         "invoice_count": invoice_count,
         "gst_paid": gst_paid,
         "top_supplier": top_supplier,
         "top_material": top_material,
         "today_weight": today_weight,
-        "today_pieces": today_pieces,
         "pending_processing": 0  # Placeholder for future Factory module integration
     }
 
@@ -695,15 +669,14 @@ def get_source_party_ledger_stats(party_id):
     total_purchases = amt_cnt[0] or 0.0
     total_invoices = amt_cnt[1] or 0
     
-    # Total Weight and Pieces
+    # Total Weight
     cursor.execute("""
-        SELECT SUM(pii.weight), SUM(pii.pieces) FROM purchase_invoice_item pii
+        SELECT SUM(pii.weight) FROM purchase_invoice_item pii
         JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
         WHERE pi.supplier_id = ? AND pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
     """, (party_id,))
     wp = cursor.fetchone()
     total_weight = wp[0] or 0.0
-    total_pieces = wp[1] or 0
     
     # Last purchase date
     cursor.execute("""
@@ -731,7 +704,6 @@ def get_source_party_ledger_stats(party_id):
         "total_purchases": total_purchases,
         "total_invoices": total_invoices,
         "total_weight": total_weight,
-        "total_pieces": total_pieces,
         "last_purchase_date": last_purchase_date,
         "frequent_materials": frequent_materials
     }

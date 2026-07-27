@@ -3,11 +3,15 @@ import os
 from datetime import date, timedelta
 import calendar
 from urllib.parse import urlparse
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, abort
-from xhtml2pdf import pisa
+from flask import Blueprint, render_template, request, redirect, url_for, Response, abort, session
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+
+from backend.common.utils.date_utils import get_filter_date_range
+from backend.common.utils.format_utils import get_report_filename
+from backend.common.utils.flash_helpers import flash_success, flash_error, flash_warning, flash_info
+from backend.services.pdf_service import render_to_pdf, send_pdf_response
 
 from repositories.purchase_repository import (
     get_all_purchase_invoices,
@@ -54,50 +58,7 @@ def _invoice_context(invoice_id):
     )
 
 
-def get_filter_date_range(date_filter, year, month, start_date, end_date):
-    """
-    Translates dropdown selection + start/end dates into ISO date strings.
-    """
-    today = date.today()
-    parsed_start, parsed_end = None, None
 
-    if date_filter == "today":
-        parsed_start = today.isoformat()
-        parsed_end = today.isoformat()
-    elif date_filter == "this_week":
-        start_of_week = today - timedelta(days=today.weekday())
-        parsed_start = start_of_week.isoformat()
-        parsed_end = today.isoformat()
-    elif date_filter == "this_month":
-        parsed_start = today.replace(day=1).isoformat()
-        parsed_end = today.isoformat()
-    elif date_filter == "last_6_months":
-        six_months_ago = today - timedelta(days=6*30)
-        parsed_start = six_months_ago.isoformat()
-        parsed_end = today.isoformat()
-    elif date_filter == "custom":
-        if start_date:
-            parsed_start = start_date
-        if end_date:
-            parsed_end = end_date
-    elif year and year != "all":
-        y = int(year)
-        if month and month != "all":
-            m = int(month)
-            last_day = calendar.monthrange(y, m)[1]
-            parsed_start = f"{y:04d}-{m:02d}-01"
-            parsed_end = f"{y:04d}-{m:02d}-{last_day:02d}"
-        else:
-            parsed_start = f"{y:04d}-01-01"
-            parsed_end = f"{y:04d}-12-31"
-    elif month and month != "all":
-        m = int(month)
-        y = today.year
-        last_day = calendar.monthrange(y, m)[1]
-        parsed_start = f"{y:04d}-{m:02d}-01"
-        parsed_end = f"{y:04d}-{m:02d}-{last_day:02d}"
-
-    return parsed_start, parsed_end
 
 
 def get_report_filename(base_name, extension, date_filter, year, month, start_date, end_date):
@@ -176,7 +137,7 @@ def purchase():
     paginated_invoices = invoices[offset : offset + per_page]
 
     return render_template(
-        "purchase.html",
+        "purchase/purchase.html",
         invoices=paginated_invoices,
         parties=supplier_parties,
         materials=materials,
@@ -364,33 +325,24 @@ def export_purchase_pdf():
     total_amount = sum(float(inv["grand_total"] or 0) for inv in invoices)
     today_str = date.today().strftime("%d-%b-%Y")
 
-    html = render_template(
-        "purchase_report_pdf.html",
-        invoices=invoices,
-        q=q,
-        total_amount=total_amount,
-        today_str=today_str,
-        date_filter=date_filter,
-        year=year,
-        financial_year=financial_year,
-        month=month,
-        start_date=start_date,
-        end_date=end_date
-    )
-
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    pdf_bytes = buf.getvalue()
-
-    filename = get_report_filename("purchase_report", "pdf", date_filter, year, month, start_date, end_date)
-    return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": len(pdf_bytes),
+    pdf_bytes = render_to_pdf(
+        "reports/purchase_report_pdf.html",
+        {
+            "invoices": invoices,
+            "q": q,
+            "total_amount": total_amount,
+            "today_str": today_str,
+            "date_filter": date_filter,
+            "year": year,
+            "financial_year": financial_year,
+            "month": month,
+            "start_date": start_date,
+            "end_date": end_date
         }
     )
+
+    filename = get_report_filename("purchase_report", "pdf", date_filter, year, month, start_date, end_date)
+    return send_pdf_response(pdf_bytes, filename)
 
 
 # ── Add & Edit & View & Print ─────────────────────────────────────────────────
@@ -408,7 +360,6 @@ def add_purchase_invoice():
         material_ids = request.form.getlist("material_id[]")
         qtys = request.form.getlist("qty[]")
         weights = request.form.getlist("weight[]")
-        pieces_list = request.form.getlist("pieces[]")
         rates = request.form.getlist("rate[]")
         amounts = request.form.getlist("amount[]")
         gst_percentages = request.form.getlist("gst_percentage[]")
@@ -421,13 +372,11 @@ def add_purchase_invoice():
             qty_val = float(qtys[i] or 0)
             rate_val = float(rates[i] or 0)
             w_val = float(weights[i] or 0)
-            p_val = int(pieces_list[i] or 0)
 
             items.append({
                 "material_id": int(mid),
                 "qty": qty_val,
                 "weight": w_val,
-                "pieces": p_val,
                 "rate": rate_val,
                 "amount": float(amounts[i] or 0),
                 "gst_percentage": float(gst_percentages[i] or 0),
@@ -440,9 +389,9 @@ def add_purchase_invoice():
             errors["items"] = "Add at least one item."
 
         if errors:
-            flash("Please fix the errors below.", "danger")
+            flash_error("Please fix the errors below.")
             return render_template(
-                "purchase_form.html",
+                "purchase/purchase_form.html",
                 form=request.form,
                 suppliers=suppliers,
                 materials=materials,
@@ -483,13 +432,21 @@ def add_purchase_invoice():
                 weight_slip_number=weight_slip_number,
                 ready_for_processing=ready_for_processing
             )
+            from services.inventory_service import sync_document
+            sync_document("PURCHASE", invoice_id, session.get("user", {}).get("username", "System User"))
             # Log action
-            inv_number = request.form.get("purchase_invoice_number", f"ID {invoice_id}")
-            log_activity("System User", "Create Purchase Invoice", f"Created purchase {inv_number} from party {supplier['company_name']} via {intake_type}")
+            created_invoice = get_purchase_invoice_by_id(invoice_id)
+            inv_number = created_invoice["purchase_invoice_number"] if created_invoice else f"ID {invoice_id}"
+            supplier_reference = request.form.get("supplier_invoice_number", "").strip()
+            log_activity(
+                "System User",
+                "Create Purchase Invoice",
+                f"Created purchase {inv_number} ({supplier_reference}) from party {supplier['company_name']} via {intake_type}",
+            )
         except Exception as exc:
-            flash(str(exc), "danger")
+            flash_error(str(exc))
             return render_template(
-                "purchase_form.html",
+                "purchase/purchase_form.html",
                 form=request.form,
                 suppliers=suppliers,
                 materials=materials,
@@ -499,11 +456,11 @@ def add_purchase_invoice():
                 today=date.today().isoformat(),
             )
 
-        flash("Purchase invoice created successfully.", "success")
+        flash_success("Purchase invoice created successfully.")
         return redirect(url_for("purchase.view_purchase_invoice", invoice_id=invoice_id))
 
     return render_template(
-        "purchase_form.html",
+        "purchase/purchase_form.html",
         form=None,
         suppliers=suppliers,
         materials=materials,
@@ -520,7 +477,7 @@ def view_purchase_invoice(invoice_id):
     ctx = _invoice_context(invoice_id)
     from repositories.activity_log_repository import log_activity
     log_activity("System User", "Print Purchase Invoice", f"Viewed/Printed purchase invoice {ctx['invoice']['purchase_invoice_number']}")
-    return render_template("purchase_invoice.html", **ctx)
+    return render_template("purchase/purchase_invoice.html", **ctx)
 
 
 @purchase_bp.route("/purchase/<int:invoice_id>/pdf")
@@ -529,26 +486,16 @@ def download_purchase_pdf(invoice_id):
     ctx = _invoice_context(invoice_id)
     from repositories.activity_log_repository import log_activity
     log_activity("System User", "Generate PDF", f"Downloaded PDF for purchase invoice {ctx['invoice']['purchase_invoice_number']}")
-    html = render_template("purchase_invoice_pdf.html", **ctx)
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    pdf_bytes = buf.getvalue()
+    pdf_bytes = render_to_pdf("reports/purchase_invoice_pdf.html", ctx)
     filename = f"{ctx['invoice']['purchase_invoice_number']}.pdf"
-    return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": len(pdf_bytes)
-        }
-    )
+    return send_pdf_response(pdf_bytes, filename)
 
 
 @purchase_bp.route("/purchase/<int:invoice_id>/edit", methods=["GET", "POST"])
 def edit_purchase_invoice(invoice_id):
     existing = get_purchase_invoice_by_id(invoice_id)
     if not existing:
-        flash("Purchase invoice not found.", "danger")
+        flash_error("Purchase invoice not found.")
         return redirect(url_for("purchase.purchase"))
 
     parties = get_all_parties()
@@ -562,7 +509,6 @@ def edit_purchase_invoice(invoice_id):
         material_ids = request.form.getlist("material_id[]")
         qtys = request.form.getlist("qty[]")
         weights = request.form.getlist("weight[]")
-        pieces_list = request.form.getlist("pieces[]")
         rates = request.form.getlist("rate[]")
         amounts = request.form.getlist("amount[]")
         gst_percentages = request.form.getlist("gst_percentage[]")
@@ -575,13 +521,11 @@ def edit_purchase_invoice(invoice_id):
             qty_val = float(qtys[i] or 0)
             rate_val = float(rates[i] or 0)
             w_val = float(weights[i] or 0)
-            p_val = int(pieces_list[i] or 0)
 
             items.append({
                 "material_id": int(mid),
                 "qty": qty_val,
                 "weight": w_val,
-                "pieces": p_val,
                 "rate": rate_val,
                 "amount": float(amounts[i] or 0),
                 "gst_percentage": float(gst_percentages[i] or 0),
@@ -599,9 +543,9 @@ def edit_purchase_invoice(invoice_id):
             errors["items"] = "Add at least one item."
 
         if errors:
-            flash("Please fix the errors below.", "danger")
+            flash_error("Please fix the errors below.")
             return render_template(
-                "purchase_form.html",
+                "purchase/purchase_form.html",
                 form=request.form,
                 suppliers=suppliers,
                 materials=materials,
@@ -644,12 +588,14 @@ def edit_purchase_invoice(invoice_id):
                 weight_slip_number=weight_slip_number,
                 ready_for_processing=ready_for_processing
             )
+            from services.inventory_service import sync_document
+            sync_document("PURCHASE", invoice_id, session.get("user", {}).get("username", "System User"))
             # Log action
             log_activity("System User", "Update Purchase Invoice", f"Updated purchase {existing['purchase_invoice_number']} details & items")
         except Exception as e:
-            flash(str(e), "danger")
+            flash_error(str(e))
             return render_template(
-                "purchase_form.html",
+                "purchase/purchase_form.html",
                 form=request.form,
                 suppliers=suppliers,
                 materials=materials,
@@ -660,7 +606,7 @@ def edit_purchase_invoice(invoice_id):
                 invoice_id=invoice_id,
             )
             
-        flash("Purchase invoice updated successfully.", "success")
+        flash_success("Purchase invoice updated successfully.")
         return redirect(url_for("purchase.view_purchase_invoice", invoice_id=invoice_id))
 
     existing_items = get_purchase_invoice_items(invoice_id)
@@ -682,7 +628,7 @@ def edit_purchase_invoice(invoice_id):
     form_data["ready_for_processing"] = existing["ready_for_processing"] or 0
 
     return render_template(
-        "purchase_form.html",
+        "purchase/purchase_form.html",
         form=form_data,
         suppliers=suppliers,
         materials=materials,
@@ -699,12 +645,12 @@ def edit_purchase_invoice(invoice_id):
 def delete_purchase_invoice_route(invoice_id):
     existing = get_purchase_invoice_by_id(invoice_id)
     if not existing:
-        flash("Purchase invoice not found.", "danger")
+        flash_error("Purchase invoice not found.")
         return redirect(url_for("purchase.purchase"))
     delete_purchase_invoice(invoice_id)
     from repositories.activity_log_repository import log_activity
     log_activity("System User", "Delete Purchase Invoice", f"Deleted purchase invoice {existing['purchase_invoice_number']}")
-    flash("Purchase invoice deleted successfully.", "warning")
+    flash_warning("Purchase invoice deleted successfully.")
     return redirect(url_for("purchase.purchase"))
 
 
@@ -766,7 +712,7 @@ def purchase_register():
     paginated_rows = rows[offset : offset + per_page]
 
     return render_template(
-        "purchase_register.html",
+        "purchase/purchase_register.html",
         rows=paginated_rows,
         parties=supplier_parties,
         materials=materials,
@@ -928,7 +874,7 @@ def export_purchase_register():
 def duplicate_purchase_invoice(invoice_id):
     existing = get_purchase_invoice_by_id(invoice_id)
     if not existing:
-        flash("Purchase invoice not found.", "danger")
+        flash_error("Purchase invoice not found.")
         return redirect(url_for("purchase.purchase"))
         
     items = get_purchase_invoice_items(invoice_id)
@@ -938,7 +884,6 @@ def duplicate_purchase_invoice(invoice_id):
             "material_id": it["material_id"],
             "qty": it["quantity"],
             "weight": it["weight"],
-            "pieces": it["pieces"],
             "rate": it["rate"],
             "amount": it["amount"],
             "gst_percentage": it["gst_percentage"]
@@ -967,10 +912,12 @@ def duplicate_purchase_invoice(invoice_id):
             created_by="System User",
             intake_type=existing["intake_type"] or "Purchase"
         )
-        flash("Invoice duplicated successfully as a DRAFT. Please review and update details.", "success")
+        from services.inventory_service import sync_document
+        sync_document("PURCHASE", new_id, session.get("user", {}).get("username", "System User"))
+        flash_success("Invoice duplicated successfully as a DRAFT. Please review and update details.")
         return redirect(url_for("purchase.edit_purchase_invoice", invoice_id=new_id))
     except Exception as e:
-        flash(f"Failed to duplicate invoice: {e}", "danger")
+        flash_error(f"Failed to duplicate invoice: {e}")
         return redirect(url_for("purchase.purchase"))
 
 
@@ -995,7 +942,7 @@ def source_party_ledger(party_id):
     
     party = get_party_by_id(party_id)
     if not party:
-        flash("Party not found.", "danger")
+        flash_error("Party not found.")
         return redirect(url_for("party.party"))
         
     stats = get_source_party_ledger_stats(party_id)

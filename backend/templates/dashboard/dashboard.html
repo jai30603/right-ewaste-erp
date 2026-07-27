@@ -1,0 +1,519 @@
+{% extends "shared/base.html" %}
+{% block title %}Dashboard – Right Ewaste ERP{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block styles %}
+<link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Home</li>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-v2">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       1. WELCOME BANNER
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4 g-3">
+    <div class="col-12">
+      <div class="erp-card p-0 dash-banner">
+        <div class="erp-card-body d-flex align-items-center gap-4 flex-wrap">
+          <div class="dash-banner-icon">♻️</div>
+          <div class="flex-grow-1">
+            <h5 class="mb-1 dash-banner-title">Welcome to Right Ewaste ERP</h5>
+            <p class="mb-0 dash-banner-sub">
+              Manage e-waste collection, inventory, processing, sales and business operations from one unified platform.
+            </p>
+          </div>
+          <div class="d-flex flex-column align-items-end gap-2 ms-auto flex-shrink-0">
+            <span class="dash-version-badge">⚡ ERP Version 5.0</span>
+            <span class="dash-branch-badge">Super Admin Mode</span>
+            <span class="dash-date">{{ today }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       2. QUICK ACTIONS
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4 g-3">
+    <div class="col-12">
+      <div class="erp-card">
+        <div class="erp-card-header erp-card-header-accent">
+          <i class="bi bi-lightning-charge-fill" style="font-size:18px;color:var(--brand-accent);"></i>
+          <h5>Quick Actions</h5>
+        </div>
+        <div class="erp-card-body">
+          <div class="quick-actions-grid">
+            <a href="/purchase/add" class="qa-btn qa-btn-green" id="qa-new-purchase">
+              <i class="bi bi-cart-plus"></i>
+              <span>+ New Purchase</span>
+            </a>
+            <a href="/sales/add" class="qa-btn qa-btn-blue" id="qa-new-sales">
+              <i class="bi bi-receipt"></i>
+              <span>+ New Sales Invoice</span>
+            </a>
+            <a href="/party/add" class="qa-btn qa-btn-teal" id="qa-add-party">
+              <i class="bi bi-person-plus"></i>
+              <span>+ Add Party</span>
+            </a>
+            <a href="/material/add" class="qa-btn qa-btn-purple" id="qa-add-material">
+              <i class="bi bi-plus-square"></i>
+              <span>+ Add Material</span>
+            </a>
+            <a href="/processing/dashboard" class="qa-btn qa-btn-amber" id="qa-processing">
+              <i class="bi bi-cpu"></i>
+              <span>+ Processing Job</span>
+            </a>
+            <a href="/certificates/new" class="qa-btn qa-btn-teal" id="qa-certificate">
+              <i class="bi bi-patch-check"></i>
+              <span>+ Certificate</span>
+            </a>
+            <a href="/documents/mydrive" class="qa-btn qa-btn-purple" id="qa-edms-mydrive">
+              <i class="bi bi-folder-symlink"></i>
+              <span>+ EDMS Documents</span>
+            </a>
+            <a href="/communication" class="qa-btn qa-btn-blue" id="qa-communication">
+              <i class="bi bi-chat-dots"></i>
+              <span>+ Communication</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       3. BUSINESS SNAPSHOT — KPI CARDS
+  ══════════════════════════════════════════════════════════════ -->
+  <h6 class="dash-section-label mb-3">Today's Operational Snapshot</h6>
+  <div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-green">
+        <div class="kpi-icon"><i class="bi bi-cart-check"></i></div>
+        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.today_purchase_value) }}</div>
+        <div class="kpi-label">Today's Purchases</div>
+        <div class="kpi-sub">{{ snapshot.today_purchase_count }} invoice{{ 's' if snapshot.today_purchase_count != 1 }}</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-icon"><i class="bi bi-bag-check"></i></div>
+        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.today_sales_value) }}</div>
+        <div class="kpi-label">Today's Sales</div>
+        <div class="kpi-sub">{{ snapshot.today_sales_count }} invoice{{ 's' if snapshot.today_sales_count != 1 }}</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-teal">
+        <div class="kpi-icon"><i class="bi bi-boxes"></i></div>
+        <div class="kpi-value">{{ snapshot.inventory_items }}</div>
+        <div class="kpi-label">Current Stock Items</div>
+        <div class="kpi-sub">Active materials</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-value">{{ snapshot.pending_processing }}</div>
+        <div class="kpi-label">Pending Processing</div>
+        <div class="kpi-sub">Queue items</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-indigo">
+        <div class="kpi-icon"><i class="bi bi-calendar-month"></i></div>
+        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.monthly_purchase_value) }}</div>
+        <div class="kpi-label">Monthly Purchase</div>
+        <div class="kpi-sub">Current month</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-rose">
+        <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="kpi-value">₹{{ "%.0f"|format(snapshot.monthly_sales_value) }}</div>
+        <div class="kpi-label">Monthly Sales</div>
+        <div class="kpi-sub">Current month</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       3.5 WORKFORCE SNAPSHOT KPI CARDS
+  ══════════════════════════════════════════════════════════════ -->
+  <h6 class="dash-section-label mb-3">Workforce Snapshot</h6>
+  <div class="row g-3 mb-4">
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-teal">
+        <div class="kpi-icon"><i class="bi bi-person-badge"></i></div>
+        <div class="kpi-value">{{ snapshot.total_employees }}</div>
+        <div class="kpi-label">Active Employees</div>
+        <div class="kpi-sub">Total Master Records</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-green">
+        <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+        <div class="kpi-value">{{ snapshot.present_today }}</div>
+        <div class="kpi-label">Present Today</div>
+        <div class="kpi-sub">Daily Attendance</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-blue">
+        <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
+        <div class="kpi-value">{{ snapshot.employees_on_leave }}</div>
+        <div class="kpi-label">Employees on Leave</div>
+        <div class="kpi-sub">Sanctioned Absences</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-amber">
+        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-value">{{ snapshot.pending_leave_requests }}</div>
+        <div class="kpi-label">Pending Leave Requests</div>
+        <div class="kpi-sub">Awaiting Approval</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       4. MODULES + RECENT ACTIVITY
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4">
+
+    <!-- MODULE GRID -->
+    <div class="col-12 col-lg-8">
+      <div class="erp-card h-100">
+        <div class="erp-card-header erp-card-header-accent">
+          <i class="bi bi-grid-3x3-gap-fill" style="font-size:18px;color:var(--brand-accent);"></i>
+          <h5>Enterprise Modules</h5>
+          <span class="ms-auto text-muted" style="font-size:11px;">Super Admin Control</span>
+        </div>
+        <div class="erp-card-body">
+          <div class="module-grid-v2">
+
+            <a href="/party" class="module-card-v2" id="mod-party">
+              <div class="mcv2-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-people-fill"></i></div>
+              <div>
+                <strong>Party Management</strong>
+                <p>Suppliers & Buyers master</p>
+              </div>
+            </a>
+
+            <a href="/material" class="module-card-v2" id="mod-material">
+              <div class="mcv2-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-box-seam"></i></div>
+              <div>
+                <strong>Material Master</strong>
+                <p>E-waste categories & rates</p>
+              </div>
+            </a>
+
+            <a href="/purchase" class="module-card-v2" id="mod-purchase">
+              <div class="mcv2-icon" style="background:#fef3c7;color:#92400e;"><i class="bi bi-cart-check"></i></div>
+              <div>
+                <strong>Inward Purchase</strong>
+                <p>Gate entry & purchase invoice</p>
+              </div>
+            </a>
+
+            <a href="/inventory/dashboard" class="module-card-v2" id="mod-inventory">
+              <div class="mcv2-icon" style="background:#ccfbf1;color:#0f766e;"><i class="bi bi-boxes"></i></div>
+              <div>
+                <strong>Inventory Stock</strong>
+                <p>Stock balances & Movements</p>
+              </div>
+            </a>
+
+            <a href="/processing/dashboard" class="module-card-v2" id="mod-processing">
+              <div class="mcv2-icon" style="background:#e0e7ff;color:#3730a3;"><i class="bi bi-cpu"></i></div>
+              <div>
+                <strong>Material Processing</strong>
+                <p>Sorting, dismantling & segregation</p>
+              </div>
+            </a>
+
+            <a href="/inventory/material-flow-dashboard" class="module-card-v2" id="mod-flow">
+              <div class="mcv2-icon" style="background:#ede9fe;color:#5b21b6;"><i class="bi bi-diagram-3-fill"></i></div>
+              <div>
+                <strong>Material Flow</strong>
+                <p>Batch genealogy & reconciliation</p>
+              </div>
+            </a>
+
+            <a href="/sales/dashboard" class="module-card-v2" id="mod-sales">
+              <div class="mcv2-icon" style="background:#fce7f3;color:#9d174d;"><i class="bi bi-bag-fill"></i></div>
+              <div>
+                <strong>Sales</strong>
+                <p>Customer sales & invoices</p>
+              </div>
+            </a>
+
+            <a href="/certificates/dashboard" class="module-card-v2" id="mod-certificates">
+              <div class="mcv2-icon" style="background:#dbeafe;color:#1e40af;"><i class="bi bi-patch-check-fill"></i></div>
+              <div>
+                <strong>Certificates</strong>
+                <p>Recycling & disposal certificates</p>
+              </div>
+            </a>
+
+            <a href="/employees/dashboard" class="module-card-v2" id="mod-employee">
+              <div class="mcv2-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-person-badge"></i></div>
+              <div>
+                <strong>Employee Mgmt</strong>
+                <p>Attendance, leave & payroll</p>
+              </div>
+            </a>
+
+            <a href="/audit-log" class="module-card-v2" id="mod-reports">
+              <div class="mcv2-icon" style="background:#ecfdf5;color:#065f46;"><i class="bi bi-bar-chart-fill"></i></div>
+              <div>
+                <strong>Audit & Reports</strong>
+                <p>Business activity & compliance</p>
+              </div>
+            </a>
+
+            <a href="/documents/mydrive" class="module-card-v2" id="mod-edms">
+              <div class="mcv2-icon" style="background:#e0e7ff;color:#3730a3;"><i class="bi bi-folder-symlink-fill"></i></div>
+              <div>
+                <strong>EDMS Documents</strong>
+                <p>Personal Drive, Company Vault & Attachments</p>
+              </div>
+            </a>
+
+            <a href="/communication" class="module-card-v2" id="mod-communication">
+              <div class="mcv2-icon" style="background:#fae8ff;color:#86198f;"><i class="bi bi-chat-dots-fill"></i></div>
+              <div>
+                <strong>Communication</strong>
+                <p>Direct messaging & real-time team chat</p>
+              </div>
+            </a>
+
+            <span class="module-card-v2 mcv2-disabled" id="mod-settings">
+              <div class="mcv2-icon" style="background:#f1f5f9;color:#94a3b8;"><i class="bi bi-sliders"></i></div>
+              <div>
+                <strong>Settings <span class="mcv2-soon">Coming Soon</span></strong>
+                <p>System configuration</p>
+              </div>
+            </span>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT ACTIVITY & WIDGETS -->
+    <div class="col-12 col-lg-4 d-flex flex-column gap-3">
+      
+      <!-- 💬 COMMUNICATION INTEGRATED WIDGET -->
+      <div class="erp-card" style="border-left: 4px solid var(--brand-accent, #0284c7);">
+        <div class="erp-card-header erp-card-header-accent d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-chat-dots-fill" style="font-size:18px;color:#0284c7;"></i>
+            <h5 class="mb-0">Communication Widget</h5>
+          </div>
+          <a href="/communication" class="btn btn-xs btn-primary py-1 px-2.5" style="font-size: 11px;">Open →</a>
+        </div>
+        <div class="erp-card-body py-3">
+          <div class="row g-2 text-center">
+            <div class="col-12">
+              <div class="p-2 border rounded-3 bg-danger bg-opacity-10 text-danger mb-1">
+                <div class="fw-bold fs-4" id="dash-comm-unread">0</div>
+                <div class="small fw-semibold text-uppercase" style="font-size: 9px; letter-spacing: 0.5px;">Unread Messages</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded-3 bg-light text-dark">
+                <div class="fw-bold text-primary fs-5" id="dash-comm-direct">0</div>
+                <div class="text-muted" style="font-size: 9.5px;">Direct Messages</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded-3 bg-light text-dark">
+                <div class="fw-bold text-success fs-5" id="dash-comm-groups">0</div>
+                <div class="text-muted" style="font-size: 9.5px;">Groups & Teams</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded-3 bg-light text-dark">
+                <div class="fw-bold text-warning fs-5" id="dash-comm-mentions">0</div>
+                <div class="text-muted" style="font-size: 9.5px;">Mentions</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded-3 bg-light text-dark">
+                <div class="fw-bold text-info fs-5" id="dash-comm-docs">0</div>
+                <div class="text-muted" style="font-size: 9.5px;">Recent Shared Docs</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="erp-card h-100">
+        <div class="erp-card-header erp-card-header-accent">
+          <i class="bi bi-clock-history" style="font-size:18px;color:var(--brand-accent);"></i>
+          <h5>Recent Activity</h5>
+          <a href="/audit-log" class="ms-auto btn btn-sm btn-outline-secondary" style="font-size:11px;padding:2px 8px;">View all →</a>
+        </div>
+        <div class="erp-card-body p-0">
+          {% if recent_activity %}
+          <ul class="activity-feed">
+            {% for entry in recent_activity %}
+            <li class="activity-item">
+              <div class="activity-dot"></div>
+              <div class="activity-body">
+                <div class="activity-action">{{ entry.action }}</div>
+                {% if entry.details %}
+                <div class="activity-details">{{ entry.details }}</div>
+                {% endif %}
+                <div class="activity-meta">
+                  <i class="bi bi-person me-1"></i>{{ entry.user_name }}
+                  <span class="mx-1">·</span>
+                  <i class="bi bi-clock me-1"></i>{{ entry.formatted_time }}
+                </div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="empty-state py-5">
+            <div class="empty-icon"><i class="bi bi-clock-history"></i></div>
+            <p>No activity recorded yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       5. MASTER DATA SUMMARY + OPERATIONAL ALERTS
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4">
+
+    <!-- Master Data -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="erp-card h-100">
+        <div class="erp-card-header erp-card-header-accent">
+          <i class="bi bi-database-fill" style="font-size:18px;color:var(--brand-accent);"></i>
+          <h5>Master Data Summary</h5>
+        </div>
+        <div class="erp-card-body">
+          <div class="master-stat-row">
+            <span><i class="bi bi-people me-2 text-success"></i>Total Parties</span>
+            <strong>{{ snapshot.total_parties }}</strong>
+          </div>
+          <div class="master-stat-row">
+            <span><i class="bi bi-box-seam me-2 text-primary"></i>Total Materials</span>
+            <strong>{{ snapshot.total_materials }}</strong>
+          </div>
+          <div class="master-stat-row">
+            <span><i class="bi bi-cart me-2 text-warning"></i>Purchase Invoices</span>
+            <strong>{{ snapshot.total_purchase_invoices }}</strong>
+          </div>
+          <div class="master-stat-row">
+            <span><i class="bi bi-receipt me-2 text-danger"></i>Sales Invoices</span>
+            <strong>{{ snapshot.total_sales_invoices }}</strong>
+          </div>
+          <div class="master-stat-row border-0">
+            <span><i class="bi bi-boxes me-2 text-info"></i>Active Stock Items</span>
+            <strong>{{ snapshot.inventory_items }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Stock Health -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="erp-card h-100">
+        <div class="erp-card-header erp-card-header-accent">
+          <i class="bi bi-boxes" style="font-size:18px;color:var(--brand-accent);"></i>
+          <h5>Inventory Stock Health</h5>
+        </div>
+        <div class="erp-card-body">
+          <div class="pending-row">
+            <span><i class="bi bi-box-seam me-2 text-success"></i>Active Stock Categories</span>
+            <span class="pending-val">{{ snapshot.inventory_items }}</span>
+          </div>
+          <div class="pending-row">
+            <span><i class="bi bi-arrow-left-right me-2 text-info"></i>Stock Movement Ledger</span>
+            <span class="pending-val"><span class="badge bg-success-subtle">Active</span></span>
+          </div>
+          <div class="pending-row border-0">
+            <span><i class="bi bi-shield-check me-2 text-primary"></i>Traceability Engine</span>
+            <span class="pending-val"><span class="badge bg-primary-subtle">Online</span></span>
+          </div>
+          <p class="mt-3 mb-0 text-center text-muted" style="font-size:11.5px;">
+            Material movements are synced with ledger balances.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Tasks & Operations -->
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="erp-card h-100">
+        <div class="erp-card-header erp-card-header-accent">
+          <i class="bi bi-hourglass-split" style="font-size:18px;color:var(--warning);"></i>
+          <h5>Pending Operations</h5>
+        </div>
+        <div class="erp-card-body">
+          <div class="pending-row">
+            <span><i class="bi bi-cpu me-2 text-amber"></i>Pending Processing Jobs</span>
+            <span class="pending-val text-warning">{{ snapshot.pending_processing }}</span>
+          </div>
+          <div class="pending-row">
+            <span><div class="bi bi-calendar-event me-2 text-info"></div>Pending Leave Approvals</span>
+            <span class="pending-val text-info">{{ snapshot.pending_leave_requests }}</span>
+          </div>
+          <div class="pending-row border-0">
+            <span><i class="bi bi-check-circle me-2 text-success"></i>System Security</span>
+            <span class="pending-val"><span class="badge bg-success-subtle">Super Admin</span></span>
+          </div>
+          <p class="mt-3 mb-0 text-center text-muted" style="font-size:11.5px;">
+            Full control over factory operations & compliance.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /dashboard-v2 -->
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    fetch('/api/v1/communication/dashboard-stats')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('dash-comm-unread').innerText = data.unread_messages;
+          document.getElementById('dash-comm-direct').innerText = data.unread_direct;
+          document.getElementById('dash-comm-groups').innerText = data.unread_groups;
+          document.getElementById('dash-comm-mentions').innerText = data.mentions;
+          document.getElementById('dash-comm-docs').innerText = data.shared_documents;
+        }
+      });
+  });
+</script>
+{% endblock %}

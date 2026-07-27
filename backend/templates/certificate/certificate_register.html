@@ -1,0 +1,114 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Certificate Register{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+      <h5 class="m-0 fw-bold"><i class="bi bi-file-earmark-check text-primary me-2"></i>Active Certificates Registry</h5>
+      <a href="{{ url_for('certificates.create_certificate') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-circle-fill me-1"></i>New Certificate
+      </a>
+    </div>
+
+    <!-- Filters row -->
+    <div class="bg-light p-3 border-bottom d-flex flex-wrap gap-2">
+      <form method="GET" action="{{ url_for('certificates.register') }}" class="d-flex flex-wrap gap-2 w-100">
+        <div class="input-group input-group-sm flex-grow-1" style="min-width: 250px;">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Search certificates by customer, number..." value="{{ q or '' }}">
+        </div>
+        
+        <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+          <option value="all" {% if status == 'all' %}selected{% endif %}>All Statuses</option>
+          <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>Draft</option>
+          <option value="LOCKED" {% if status == 'LOCKED' %}selected{% endif %}>Locked</option>
+          <option value="SUPERSEDED" {% if status == 'SUPERSEDED' %}selected{% endif %}>Superseded</option>
+          <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+        </select>
+
+        <select name="type" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+          <option value="all" {% if c_type == 'all' %}selected{% endif %}>All Types</option>
+          <option value="RECYCLING" {% if c_type == 'RECYCLING' %}selected{% endif %}>Recycling</option>
+          <option value="DECOMPOSITION" {% if c_type == 'DECOMPOSITION' %}selected{% endif %}>Decomposition</option>
+          <option value="REFURBISHMENT" {% if c_type == 'REFURBISHMENT' %}selected{% endif %}>Refurbishment</option>
+          <option value="COMBINED" {% if c_type == 'COMBINED' %}selected{% endif %}>Combined</option>
+        </select>
+
+        <button type="submit" class="btn btn-dark btn-sm">Filter</button>
+        <a href="{{ url_for('certificates.register') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+      </form>
+    </div>
+
+    <div class="card-body p-0">
+      {% if certs %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Certificate Number</th>
+              <th>Customer</th>
+              <th>Type</th>
+              <th>Generation Date</th>
+              <th>Certified Weight</th>
+              <th>Certified Quantity</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cert in certs %}
+            <tr>
+              <td>
+                <a href="{{ url_for('certificates.job_details', cert_id=cert.id) }}" class="fw-bold text-primary">
+                  {{ cert.certificate_number }}
+                </a>
+              </td>
+              <td>{{ cert.customer_name }}</td>
+              <td><span class="badge bg-secondary">{{ cert.certificate_type }}</span></td>
+              <td>{{ cert.generation_date or '—' }}</td>
+              <td>{{ "%.2f"|format(cert.certified_weight) }} KG</td>
+              <td>{{ cert.certified_quantity }}</td>
+              <td>
+                {% if cert.status == 'LOCKED' %}
+                  <span class="badge bg-success-subtle text-success">Locked</span>
+                {% elif cert.status == 'DRAFT' %}
+                  <span class="badge bg-secondary-subtle text-secondary">Draft</span>
+                {% elif cert.status == 'SUPERSEDED' %}
+                  <span class="badge bg-purple-subtle text-purple">Superseded</span>
+                {% elif cert.status == 'CANCELLED' %}
+                  <span class="badge bg-danger-subtle text-danger">Cancelled</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ cert.status }}</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a href="{{ url_for('certificates.job_details', cert_id=cert.id) }}" class="btn btn-outline-secondary" title="View details">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  {% if cert.status in ('GENERATED', 'LOCKED') %}
+                  <a href="{{ url_for('certificates.download_pdf', cert_id=cert.id) }}" class="btn btn-outline-primary" title="Download PDF">
+                    <i class="bi bi-download"></i>
+                  </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state py-5 text-center text-muted">
+        <div class="empty-icon fs-1 mb-2"><i class="bi bi-file-earmark-x"></i></div>
+        <p>No certificates matching the selected filters found.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

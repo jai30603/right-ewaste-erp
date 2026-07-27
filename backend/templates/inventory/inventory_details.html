@@ -1,0 +1,188 @@
+{% extends "shared/base.html" %}
+
+{% block title %}{{ material.material_name }} – Inventory Details | Right Ewaste ERP{% endblock %}
+{% block page_title %}Material Inventory Details{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('inventory.inventory_dashboard') }}" class="text-decoration-none text-muted">Inventory</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('inventory.inventory') }}" class="text-decoration-none text-muted">Stock</a></li>
+<li class="breadcrumb-item active">{{ material.material_name }}</li>
+{% endblock %}
+
+{% block content %}
+
+{# ── Material Identity Card ───────────────────────────────────── #}
+<div class="card border-0 shadow-sm mb-4"
+     style="border-radius:14px; background:linear-gradient(135deg,#0d9488,#0f766e); color:white;">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="mb-1">
+                    <span class="badge" style="background:rgba(255,255,255,.2); font-size:11px; letter-spacing:.5px;">
+                        {{ material.material_code }}
+                    </span>
+                    {% if material.category %}
+                    <span class="badge ms-1" style="background:rgba(255,255,255,.15); font-size:11px;">
+                        {{ material.category }}
+                    </span>
+                    {% endif %}
+                    {% if material.hsn_code %}
+                    <span class="badge ms-1" style="background:rgba(255,255,255,.12); font-size:11px;">
+                        HSN: {{ material.hsn_code }}
+                    </span>
+                    {% endif %}
+                </div>
+                <h1 class="h3 fw-bold mb-1">{{ material.material_name }}</h1>
+                <p style="opacity:.8; font-size:13.5px; margin-bottom:0;">
+                    Unit of Measure: <strong>{{ material.uom }}</strong>
+                    &nbsp;·&nbsp; Tracking: <strong>{{ material.tracking_type|title if material.tracking_type else 'Standard' }}</strong>
+                </p>
+            </div>
+            <div class="text-end">
+                <div style="opacity:.8; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Current Balance</div>
+                <div class="fw-bold font-monospace" style="font-size:32px; line-height:1.1;">
+                    {{ '%.2f'|format(stock.current_stock) }}
+                </div>
+                <div style="opacity:.8; font-size:13px;">{{ material.uom }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Stock Position KPIs ──────────────────────────────────────── #}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px; border-left:4.5px solid #0d9488 !important;">
+            <div class="card-body py-3">
+                <p class="text-muted mb-1" style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Current Quantity</p>
+                <h2 class="fw-bold font-monospace mb-0" style="color:#0f766e;">
+                    {{ '%.2f'|format(stock.current_stock) }}
+                    <span style="font-size:14px; font-weight:500; color:#6b7280;">{{ material.uom }}</span>
+                </h2>
+                <span class="badge mt-1
+                    {% if stock.current_stock <= 0 %}bg-danger
+                    {% elif stock.current_stock < 10 %}bg-warning text-dark
+                    {% else %}bg-success
+                    {% endif %}"
+                    style="font-size:10px;">
+                    {% if stock.current_stock <= 0 %}Out of Stock
+                    {% elif stock.current_stock < 10 %}Low Stock
+                    {% else %}Available
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="border-radius:12px; border-left:4.5px solid #6366f1 !important;">
+            <div class="card-body py-3">
+                <p class="text-muted mb-1" style="font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">Current Weight</p>
+                <h2 class="fw-bold font-monospace mb-0" style="color:#4f46e5;">
+                    {{ '%.2f'|format(stock.current_weight) }}
+                    <span style="font-size:14px; font-weight:500; color:#6b7280;">kg</span>
+                </h2>
+                <small class="text-muted" style="font-size:11px;">total weight in warehouse</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Quick Action Bar ─────────────────────────────────────────── #}
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="{{ url_for('inventory.material_ledger', material_id=material.id) }}"
+       class="btn btn-sm text-white px-4" style="background:#0d9488; border-radius:8px; font-weight:600;">
+        <i class="bi bi-journal-text me-1"></i> Full Material Ledger
+    </a>
+    <a href="{{ url_for('inventory.movement_history') }}?material_id={{ material.id }}"
+       class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px; font-weight:600;">
+        <i class="bi bi-clock-history me-1"></i> All Movements
+    </a>
+    <a href="{{ url_for('inventory.inventory') }}"
+       class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px; font-weight:600;">
+        <i class="bi bi-arrow-left me-1"></i> Back to Stock
+    </a>
+</div>
+
+{# ── Recent Movement History ──────────────────────────────────── #}
+<div class="erp-card">
+    <div class="erp-card-header">
+        <i class="bi bi-clock-history" style="font-size:18px; color:#0d9488;"></i>
+        <h2 class="h5 mb-0">Movement History</h2>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">(last 50 movements)</span>
+    </div>
+    <div class="erp-card-body p-0">
+        {% if movements %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Operation</th>
+                    <th>Reference</th>
+                    <th style="text-align:right;">Before</th>
+                    <th style="text-align:right;">Change</th>
+                    <th style="text-align:right;">After</th>
+                    <th>State</th>
+                    <th>Remarks</th>
+                    <th>By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set type_colors = {
+                    'PURCHASE':  ('bg-light text-primary border border-primary', 'Purchase'),
+                    'SALE':      ('bg-light text-success border border-success', 'Sale'),
+                    'MANUAL_ADJUSTMENT': ('bg-light text-warning border border-warning', 'Adjustment'),
+                    'WEIGHT_ADJUSTMENT': ('bg-light text-warning border border-warning', 'Wt Adjust'),
+                    'PROCESSING': ('bg-light text-info border border-info', 'Processing'),
+                    'REFURBISHMENT': ('bg-light text-info border border-info', 'Refurbishment'),
+                    'DISMANTLING': ('bg-light text-secondary border border-secondary', 'Dismantling'),
+                    'SORTING': ('bg-light text-secondary border border-secondary', 'Sorting'),
+                    'INTERNAL_CONSUMPTION': ('bg-light text-danger border border-danger', 'Internal Use')
+                } %}
+                {% for row in movements %}
+                <tr>
+                    <td style="white-space:nowrap; font-size:12px; color:#6b7280;">
+                        {{ row.created_at[:19] if row.created_at else '—' }}
+                    </td>
+                    <td>
+                        {% set cls, lbl = type_colors.get(row.movement_type, ('bg-light text-secondary', row.movement_type|replace('_',' ')|title)) %}
+                        <span class="badge {{ cls }}" style="font-size:9.5px; padding:3px 7px;">{{ lbl }}</span>
+                    </td>
+                    <td style="font-family:monospace; font-size:12px; color:#475569;">
+                        {{ row.reference_number or '—' }}
+                    </td>
+                    <td style="text-align:right; font-family:monospace; font-size:12px;">
+                        {{ '%.2f'|format(row.quantity_before) }}
+                    </td>
+                    <td style="text-align:right; font-family:monospace; font-weight:700;
+                                color:{% if row.quantity_change > 0 %}#16a34a{% elif row.quantity_change < 0 %}#dc2626{% else %}#6b7280{% endif %};">
+                        {{ '%+.2f'|format(row.quantity_change) }}
+                    </td>
+                    <td style="text-align:right; font-family:monospace; font-size:12px; font-weight:600; color:#374151;">
+                        {{ '%.2f'|format(row.quantity_after) }}
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-secondary border" style="font-size:9px;">
+                            {{ row.inventory_state|title if row.inventory_state else '—' }}
+                        </span>
+                    </td>
+                    <td style="font-size:12px; color:#6b7280; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ row.remarks or '' }}">
+                        {{ row.remarks or '—' }}
+                    </td>
+                    <td style="font-size:12px; color:#6b7280;">{{ row.performed_by or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>No movement history found for this material yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

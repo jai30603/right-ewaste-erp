@@ -1,0 +1,113 @@
+{
+  "template_info": {
+    "name": "Master Factory Daily Compliance Report",
+    "version": "v1.0",
+    "sheets": [
+      "EwasteMaterials",
+      "Disposal",
+      "ScrapMaterials",
+      "IncomingMaterial",
+      "OutgoingMaterial"
+    ]
+  },
+  "mappings": {
+    "header": {
+      "company_name": { "sheet": "EwasteMaterials", "cell": "B1", "prefix": "" },
+      "branch_location": { "sheet": "EwasteMaterials", "cell": "E3", "prefix": "Branch: " },
+      "report_date_str": { "sheet": "EwasteMaterials", "cell": "A3", "prefix": "Date :" }
+    },
+    "attendance": {
+      "staff_worked": { "sheet": "EwasteMaterials", "cell": "B5" },
+      "staff_leave": { "sheet": "EwasteMaterials", "cell": "C5" },
+      "staff_duty": { "sheet": "EwasteMaterials", "cell": "D5" },
+      "casual_worked": { "sheet": "EwasteMaterials", "cell": "B6" },
+      "casual_leave": { "sheet": "EwasteMaterials", "cell": "C6" },
+      "casual_duty": { "sheet": "EwasteMaterials", "cell": "D6" }
+    },
+    "ewaste_materials": {
+      "sheet": "EwasteMaterials",
+      "start_row": 8,
+      "end_row": 34,
+      "columns": {
+        "sno": "A",
+        "particulars": "B",
+        "opening_stock": "C",
+        "os_weight": "D",
+        "received_qty": "E",
+        "received_weight": "F",
+        "refurbished_qty": "G",
+        "recycled_process": "H",
+        "recycled_nos": "I",
+        "recycled_weight": "J",
+        "closing_stock": "K",
+        "cs_weight": "L",
+        "rate": "M",
+        "amount": "N"
+      }
+    },
+    "disposal": {
+      "sheet": "Disposal",
+      "start_row": 7,
+      "end_row": 21,
+      "columns": {
+        "sno": "A",
+        "particulars": "B",
+        "os_weight": "C",
+        "received_weight": "D",
+        "recycled_weight": "E",
+        "recycled_scrap_qty": "F",
+        "disposed_weight": "G",
+        "cs_weight": "H",
+        "rate": "I",
+        "amount": "J"
+      }
+    },
+    "scrap_materials": {
+      "sheet": "ScrapMaterials",
+      "start_row": 7,
+      "end_row": 34,
+      "columns": {
+        "sno": "A",
+        "particulars": "B",
+        "opening_stock": "C",
+        "received_qty": "D",
+        "recycled_weight": "E",
+        "recycled_scrap_qty": "F",
+        "sold_weight": "G",
+        "closing_stock": "H",
+        "rate": "I",
+        "amount": "J"
+      }
+    },
+    "incoming_materials": {
+      "sheet": "IncomingMaterial",
+      "start_row": 7,
+      "end_row": 26,
+      "columns": {
+        "sno": "A",
+        "igp_no": "B",
+        "procurement_inv": "C",
+        "supplier_name": "D",
+        "nomenclature": "E",
+        "qty": "F",
+        "weight": "G",
+        "total_weight": "H"
+      }
+    },
+    "outgoing_materials": {
+      "sheet": "OutgoingMaterial",
+      "start_row": 7,
+      "end_row": 26,
+      "columns": {
+        "sno": "A",
+        "dispatch_no": "B",
+        "sales_inv": "C",
+        "buyer_name": "D",
+        "nomenclature": "E",
+        "qty": "F",
+        "weight": "G",
+        "total_weight": "H"
+      }
+    }
+  }
+}

@@ -1,0 +1,238 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Event Log – Right Ewaste ERP{% endblock %}
+
+{% block styles %}
+<style>
+  /* ── Event Log Styles ──────────────────────────────── */
+  .el-header {
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d1060 100%);
+    border-radius: 14px;
+    padding: 24px 28px;
+    color: #fff;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .el-header h1 { font-size: 1.35rem; font-weight: 700; margin: 0; }
+  .el-header p  { font-size: 0.82rem; opacity: .7; margin: 4px 0 0; }
+
+  .stat-pill {
+    background: rgba(255,255,255,.12);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .filter-bar {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+    margin-bottom: 20px;
+  }
+  .filter-bar .form-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+  .filter-bar .form-control,
+  .filter-bar .form-select { font-size: 0.82rem; border-radius: 8px; }
+  .filter-bar .btn { border-radius: 8px; font-size: 0.82rem; }
+
+  /* Event table */
+  .event-table-wrap {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .event-table { font-size: 0.82rem; margin: 0; }
+  .event-table thead th {
+    background: #f9fafb;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    font-weight: 700;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .event-table tbody tr { transition: background .15s; }
+  .event-table tbody tr:hover { background: #f5f3ff; }
+  .event-table td { padding: 10px 14px; vertical-align: middle; border-bottom: 1px solid #f3f4f6; }
+
+  .event-type-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    letter-spacing: .4px;
+  }
+  .ev-purchase    { background:#dcfce7; color:#166534; }
+  .ev-sales       { background:#dbeafe; color:#1e40af; }
+  .ev-inventory   { background:#fef9c3; color:#854d0e; }
+  .ev-certificate { background:#fae8ff; color:#86198f; }
+  .ev-processing  { background:#ffedd5; color:#9a3412; }
+  .ev-platform    { background:#e0e7ff; color:#3730a3; }
+  .ev-default     { background:#f3f4f6; color:#374151; }
+
+  .payload-snippet {
+    font-family: monospace;
+    font-size: 0.72rem;
+    color: #6366f1;
+    background: #eef2ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .processed-badge {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .proc-yes { background: #10b981; }
+  .proc-no  { background: #d1d5db; }
+
+  .ts-cell { font-family: monospace; font-size: 0.75rem; color: #6b7280; white-space: nowrap; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+  .empty-state i { font-size: 3rem; display: block; margin-bottom: 12px; opacity: .3; }
+
+  /* Dark mode */
+  [data-theme="dark"] .filter-bar,
+  [data-theme="dark"] .event-table-wrap { background: var(--card-bg); border-color: var(--card-border); }
+  [data-theme="dark"] .event-table thead th { background: #1a1a2e; }
+  [data-theme="dark"] .event-table tbody tr:hover { background: rgba(99,102,241,.08); }
+  [data-theme="dark"] .event-table td { border-color: rgba(255,255,255,.05); }
+  [data-theme="dark"] .payload-snippet { background: #1e1b4b; color: #a5b4fc; }
+</style>
+{% endblock %}
+
+{% block page_title %}Event Log{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="/platform/">Platform</a></li>
+<li class="breadcrumb-item active">Event Log</li>
+{% endblock %}
+
+{% block content %}
+<div class="el-header">
+  <div>
+    <h1><i class="bi bi-lightning-charge me-2"></i>Event Bus Log</h1>
+    <p>Real-time inter-module event stream. Every publish/subscribe event is captured here.</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <div class="stat-pill"><i class="bi bi-collection"></i> {{ events|length }} events shown</div>
+    <div class="stat-pill"><i class="bi bi-check-circle"></i> {{ events|selectattr('processed', 'equalto', 1)|list|length }} processed</div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<form method="GET" class="filter-bar">
+  <div>
+    <label class="form-label">Event Type</label>
+    <input type="text" name="event_type" class="form-control" placeholder="e.g. purchase.created"
+           value="{{ request.args.get('event_type', '') }}" style="width:200px">
+  </div>
+  <div>
+    <label class="form-label">Source Module</label>
+    <input type="text" name="module" class="form-control" placeholder="e.g. purchase"
+           value="{{ request.args.get('module', '') }}" style="width:160px">
+  </div>
+  <div>
+    <label class="form-label">Processed</label>
+    <select name="processed" class="form-select" style="width:130px">
+      <option value="">All</option>
+      <option value="1" {% if request.args.get('processed')=='1' %}selected{% endif %}>Processed</option>
+      <option value="0" {% if request.args.get('processed')=='0' %}selected{% endif %}>Pending</option>
+    </select>
+  </div>
+  <div class="d-flex gap-2 align-items-end">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-funnel me-1"></i>Filter
+    </button>
+    <a href="/platform/events" class="btn btn-outline-secondary">
+      <i class="bi bi-x-circle me-1"></i>Clear
+    </a>
+    <a href="/platform/api/events?limit=5000" class="btn btn-outline-success" target="_blank">
+      <i class="bi bi-download me-1"></i>Export JSON
+    </a>
+  </div>
+</form>
+
+<!-- Event Table -->
+<div class="event-table-wrap">
+  {% if events %}
+  <table class="table event-table">
+    <thead>
+      <tr>
+        <th style="width:60px">#</th>
+        <th>Event Type</th>
+        <th>Source Module</th>
+        <th>Payload</th>
+        <th style="width:90px">Processed</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ev in events %}
+      {% set mod = ev.source_module | lower %}
+      <tr>
+        <td class="text-muted" style="font-size:.75rem">{{ ev.id }}</td>
+        <td>
+          <span class="event-type-badge ev-{{ mod if mod in ['purchase','sales','inventory','certificate','processing','platform'] else 'default' }}">
+            {{ ev.event_type }}
+          </span>
+        </td>
+        <td>
+          <i class="bi bi-box-arrow-in-right text-muted me-1"></i>
+          {{ ev.source_module }}
+        </td>
+        <td>
+          {% if ev.payload and ev.payload != 'null' and ev.payload != '{}' %}
+          <span class="payload-snippet" title="{{ ev.payload }}">{{ ev.payload[:80] }}{% if ev.payload|length > 80 %}…{% endif %}</span>
+          {% else %}
+          <span class="text-muted" style="font-size:.75rem">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="processed-badge {% if ev.processed %}proc-yes{% else %}proc-no{% endif %}"></span>
+          {% if ev.processed %}<span class="text-success fw-semibold" style="font-size:.75rem">Yes</span>
+          {% else %}<span class="text-muted" style="font-size:.75rem">Pending</span>{% endif %}
+        </td>
+        <td class="ts-cell">{{ ev.created_at[:19].replace('T', ' ') if ev.created_at else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-lightning-charge"></i>
+    <p class="mb-1 fw-semibold">No events recorded yet</p>
+    <small>Events will appear here as modules interact via the Event Bus.</small>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Legend -->
+<div class="mt-3 d-flex gap-2 flex-wrap" style="font-size:.75rem; color:var(--text-muted)">
+  <span><span class="event-type-badge ev-purchase">purchase</span></span>
+  <span><span class="event-type-badge ev-sales">sales</span></span>
+  <span><span class="event-type-badge ev-inventory">inventory</span></span>
+  <span><span class="event-type-badge ev-certificate">certificate</span></span>
+  <span><span class="event-type-badge ev-processing">processing</span></span>
+  <span><span class="event-type-badge ev-platform">platform</span></span>
+</div>
+{% endblock %}

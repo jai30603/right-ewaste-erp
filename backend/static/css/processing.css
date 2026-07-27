@@ -1,0 +1,152 @@
+/* Material Processing CSS */
+
+:root {
+  --processing-bg: #f8fafc;
+  --processing-card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 8px -1px rgba(15, 23, 42, 0.04);
+  --priority-urgent-bg: #fee2e2;
+  --priority-urgent-color: #991b1b;
+  --priority-high-bg: #ffedd5;
+  --priority-high-color: #9a3412;
+  --priority-normal-bg: #fef9c3;
+  --priority-normal-color: #854d0e;
+  --priority-low-bg: #f0fdf4;
+  --priority-low-color: #166534;
+}
+
+/* Timeline */
+.timeline-container {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin: 30px 0;
+  padding: 0 20px;
+}
+
+.timeline-container::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: 30px;
+  right: 30px;
+  height: 4px;
+  background-color: #e2e8f0;
+  z-index: 1;
+}
+
+.timeline-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  text-align: center;
+}
+
+.timeline-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 4px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  color: #64748b;
+  transition: all 0.3s ease;
+}
+
+.timeline-step.active .timeline-icon {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+.timeline-step.completed .timeline-icon {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.timeline-label {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.timeline-step.active .timeline-label {
+  color: #1e293b;
+}
+
+.timeline-step.completed .timeline-label {
+  color: #10b981;
+}
+
+/* Priority Badges */
+.badge-urgent {
+  background-color: var(--priority-urgent-bg);
+  color: var(--priority-urgent-color);
+}
+.badge-high {
+  background-color: var(--priority-high-bg);
+  color: var(--priority-high-color);
+}
+.badge-normal {
+  background-color: var(--priority-normal-bg);
+  color: var(--priority-normal-color);
+}
+.badge-low {
+  background-color: var(--priority-low-bg);
+  color: var(--priority-low-color);
+}
+
+/* Priority Badges defined in shared.css */
+
+.kpi-icon-container {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+/* Queue List */
+.queue-item {
+  border-left: 4px solid #cbd5e1;
+  transition: all 0.2s ease;
+}
+
+.queue-item.priority-URGENT {
+  border-left-color: #ef4444;
+}
+.queue-item.priority-HIGH {
+  border-left-color: #f97316;
+}
+.queue-item.priority-NORMAL {
+  border-left-color: #eab308;
+}
+.queue-item.priority-LOW {
+  border-left-color: #22c55e;
+}
+
+/* Form Styling */
+.form-section-header {
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.weight-balance-banner {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--processing-card-shadow);
+}

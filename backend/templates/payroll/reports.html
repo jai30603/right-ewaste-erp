@@ -1,0 +1,155 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Payroll Reports Center – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #1e293b;">
+        <i class="bi bi-file-earmark-bar-graph text-primary me-2"></i>Payroll Reports Center
+      </h3>
+      <p class="text-muted small mb-0">Export monthly payroll registers, department salary breakdowns, and salary revision logs.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('employees.payroll_dashboard') }}" class="btn btn-outline-secondary px-3">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+      </a>
+      <a href="{{ url_for('employees.payroll_records') }}" class="btn btn-outline-primary px-3">
+        <i class="bi bi-journal-text me-1"></i>Records
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Form Card -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-download text-success me-2"></i>Export Payroll Datasets
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="GET" action="{{ url_for('employees.export_payroll') }}">
+
+            <div class="row g-3 mb-4">
+              <!-- Report Type -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Report Type</label>
+                <select name="report_type" class="form-select">
+                  <option value="register">Monthly Payroll Register</option>
+                  <option value="salary">Salary Component Register</option>
+                  <option value="department">Department Payroll Breakdown</option>
+                  <option value="history">Employee Salary History</option>
+                </select>
+              </div>
+
+              <!-- Export Format -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Export Format</label>
+                <div class="d-flex gap-3 mt-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="p_fmt_excel" value="excel" checked>
+                    <label class="form-check-label fw-semibold text-success" for="p_fmt_excel">
+                      <i class="bi bi-file-earmark-excel me-1"></i>Excel (.xlsx)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="p_fmt_csv" value="csv">
+                    <label class="form-check-label fw-semibold text-primary" for="p_fmt_csv">
+                      <i class="bi bi-file-earmark-text me-1"></i>CSV (.csv)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="p_fmt_pdf" value="pdf">
+                    <label class="form-check-label fw-semibold text-danger" for="p_fmt_pdf">
+                      <i class="bi bi-file-earmark-pdf me-1"></i>PDF (.pdf)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Month -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Target Month</label>
+                <select name="month" class="form-select">
+                  {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                  {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {{ 'selected' if current_month == m }}>{{ months[m-1] }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Year -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Target Year</label>
+                <select name="year" class="form-select">
+                  {% for y in range(2024, 2028) %}
+                    <option value="{{ y }}" {{ 'selected' if current_year == y }}>{{ y }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Department Filter -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Department Filter (Optional)</label>
+                <select name="department" class="form-select">
+                  <option value="">All Departments</option>
+                  {% for dept in filter_options.departments %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Employee Filter -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Specific Employee (Optional)</label>
+                <select name="employee_id" class="form-select">
+                  <option value="">All Employees</option>
+                  {% for emp in employees %}
+                    <option value="{{ emp.id }}">{{ emp.employee_code }} - {{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-success px-5 py-2 shadow-sm">
+                <i class="bi bi-file-earmark-arrow-down me-2"></i>Generate & Download Report
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Info Column -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-shield-check text-primary me-2"></i>Accounting Ready Architecture
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">The Payroll module exports verified net salary and deduction figures. Ready for future automated posting to the Finance & Accounting General Ledger.</p>
+          <div class="p-3 bg-light rounded-3">
+            <small class="fw-bold d-block text-dark mb-1">Supported Report Types:</small>
+            <ul class="mb-0 ps-3 small text-muted">
+              <li>Monthly Payroll Register</li>
+              <li>Salary Component Summary</li>
+              <li>Department Expense Breakdown</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

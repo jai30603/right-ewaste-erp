@@ -1,0 +1,420 @@
+{% extends "shared/base.html" %}
+
+{% block title %}{{ employee.full_name }} ({{ employee.employee_code }}) – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header Breadcrumb & Actions -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('employees.dashboard') }}">Employees</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('employees.list_employees') }}">Directory</a></li>
+          <li class="breadcrumb-item active">{{ employee.employee_code }}</li>
+        </ol>
+      </nav>
+      <h3 class="fw-bold mb-0 text-dark">{{ employee.full_name }}</h3>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('employees.edit_employee', emp_id=employee.id) }}" class="btn btn-primary px-3 shadow-sm">
+        <i class="bi bi-pencil me-1"></i>Edit Profile
+      </a>
+      <form method="POST" action="{{ url_for('employees.toggle_status', emp_id=employee.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to change status for this employee?');">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        {% if employee.status == 'Active' %}
+          <button type="submit" class="btn btn-outline-danger px-3">
+            <i class="bi bi-person-x me-1"></i>Deactivate
+          </button>
+        {% else %}
+          <button type="submit" class="btn btn-outline-success px-3">
+            <i class="bi bi-person-check me-1"></i>Activate
+          </button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Left Column: Avatar & Summary Card -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm rounded-3 text-center p-4">
+        <div class="mb-3 d-flex justify-content-center">
+          {% if employee.profile_photo %}
+            <img src="{{ employee.profile_photo }}" class="rounded-circle border border-3 border-light shadow-sm object-fit-cover" width="120" height="120" alt="{{ employee.full_name }}">
+          {% else %}
+            <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold display-4 d-flex align-items-center justify-content-center border border-3 border-light shadow-sm" style="width: 120px; height: 120px;">
+              {{ employee.first_name[0] }}{{ employee.last_name[0] if employee.last_name else '' }}
+            </div>
+          {% endif %}
+        </div>
+        <h4 class="fw-bold mb-1 text-dark">{{ employee.full_name }}</h4>
+        <div class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-3 py-1 mb-2 fs-6">
+          {{ employee.employee_code }}
+        </div>
+        <p class="text-muted mb-3">{{ employee.designation or 'No Designation' }} • {{ employee.department or 'General' }}</p>
+
+        <div class="d-flex justify-content-center gap-2 mb-3">
+          {% if employee.status == 'Active' %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+              <i class="bi bi-check-circle me-1"></i>Active Employee
+            </span>
+          {% else %}
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1">
+              <i class="bi bi-dash-circle me-1"></i>Inactive Employee
+            </span>
+          {% endif %}
+          <span class="badge bg-light text-dark border rounded-pill px-3 py-1">{{ employee.employment_type or 'Full-Time' }}</span>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="text-start">
+          <div class="mb-2">
+            <small class="text-muted d-block">Mobile Number</small>
+            <span class="fw-semibold text-dark"><i class="bi bi-telephone me-2 text-primary"></i>{{ employee.mobile_number or 'N/A' }}</span>
+          </div>
+          <div class="mb-2">
+            <small class="text-muted d-block">Email Address</small>
+            <span class="fw-semibold text-dark"><i class="bi bi-envelope me-2 text-primary"></i>{{ employee.email or 'N/A' }}</span>
+          </div>
+          <div class="mb-2">
+            <small class="text-muted d-block">Linked ERP Account</small>
+            {% if employee.linked_username %}
+              <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1">
+                <i class="bi bi-person-lock me-1"></i>{{ employee.linked_username }} ({{ employee.linked_user_role }})
+              </span>
+            {% else %}
+              <span class="text-muted small"><i class="bi bi-slash-circle me-1"></i>No Linked User Account</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Unified 7-Tabbed Container -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+
+        <!-- Tabs Header -->
+        <div class="card-header bg-white border-bottom p-2">
+          <ul class="nav nav-pills nav-fill gap-1" id="profileTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active py-2 fw-semibold" id="tab-overview" data-bs-toggle="tab" data-bs-target="#content-overview" type="button" role="tab">
+                <i class="bi bi-person-vcard me-1"></i>Overview
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2 fw-semibold" id="tab-employment" data-bs-toggle="tab" data-bs-target="#content-employment" type="button" role="tab">
+                <i class="bi bi-briefcase me-1"></i>Employment
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2 fw-semibold" id="tab-attendance" data-bs-toggle="tab" data-bs-target="#content-attendance" type="button" role="tab">
+                <i class="bi bi-calendar-check me-1"></i>Attendance
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2 fw-semibold" id="tab-leave" data-bs-toggle="tab" data-bs-target="#content-leave" type="button" role="tab">
+                <i class="bi bi-calendar-event me-1"></i>Leave
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2 fw-semibold" id="tab-payroll" data-bs-toggle="tab" data-bs-target="#content-payroll" type="button" role="tab">
+                <i class="bi bi-cash-stack me-1"></i>Payroll
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link py-2 fw-semibold" id="tab-documents" data-bs-toggle="tab" data-bs-target="#content-documents" type="button" role="tab">
+                <i class="bi bi-folder2-open me-1"></i>Documents
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="card-body p-4">
+          <div class="tab-content" id="profileTabsContent">
+
+            <!-- 1. OVERVIEW TAB -->
+            <div class="tab-pane fade show active" id="content-overview" role="tabpanel">
+              <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-person-vcard text-primary me-2"></i>Personal & Bank Details</h5>
+              <div class="row g-3 mb-4">
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">First Name</small>
+                  <span class="fw-semibold text-dark">{{ employee.first_name }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Last Name</small>
+                  <span class="fw-semibold text-dark">{{ employee.last_name or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Gender</small>
+                  <span class="fw-semibold text-dark">{{ employee.gender or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Date of Birth</small>
+                  <span class="fw-semibold text-dark">{{ employee.date_of_birth or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">PAN Number</small>
+                  <span class="fw-bold font-monospace text-dark">{{ employee.pan_number or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Aadhaar Number</small>
+                  <span class="fw-bold font-monospace text-dark">{{ employee.aadhaar_number or 'N/A' }}</span>
+                </div>
+              </div>
+
+              <hr class="my-4">
+
+              <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-bank text-primary me-2"></i>Bank Account Information</h6>
+              {% if employee.bank_details %}
+              <div class="row g-3">
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Bank Name</small>
+                  <span class="fw-semibold text-dark">{{ employee.bank_details.bank_name or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Account Number</small>
+                  <span class="fw-bold font-monospace text-dark">{{ employee.bank_details.account_number or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">IFSC Code</small>
+                  <span class="fw-bold font-monospace text-dark">{{ employee.bank_details.ifsc_code or 'N/A' }}</span>
+                </div>
+              </div>
+              {% else %}
+              <div class="text-muted small">No bank details recorded.</div>
+              {% endif %}
+            </div>
+
+            <!-- 2. EMPLOYMENT TAB -->
+            <div class="tab-pane fade" id="content-employment" role="tabpanel">
+              <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-briefcase text-primary me-2"></i>Employment Details</h5>
+              <div class="row g-3">
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Department</small>
+                  <span class="fw-semibold text-dark">{{ employee.department or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Designation</small>
+                  <span class="fw-semibold text-dark">{{ employee.designation or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Employment Type</small>
+                  <span class="fw-semibold text-dark">{{ employee.employment_type or 'Full-Time' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Date of Joining</small>
+                  <span class="fw-semibold text-dark">{{ employee.date_of_joining or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Reporting Manager</small>
+                  <span class="fw-semibold text-dark">{{ employee.reporting_manager or 'N/A' }}</span>
+                </div>
+                <div class="col-6 col-md-4">
+                  <small class="text-muted d-block">Work Location</small>
+                  <span class="fw-semibold text-dark">{{ employee.work_location or 'Main HQ' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. ATTENDANCE TAB -->
+            <div class="tab-pane fade" id="content-attendance" role="tabpanel">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-calendar-check text-primary me-2"></i>Recent Attendance</h5>
+                <a href="{{ url_for('employees.attendance_calendar', emp_id=employee.id) }}" class="btn btn-sm btn-outline-primary">Calendar View →</a>
+              </div>
+              {% if attendance_history and attendance_history.records %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Check In</th>
+                      <th>Check Out</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for att in attendance_history.records[:10] %}
+                    <tr>
+                      <td><strong>{{ att.attendance_date }}</strong></td>
+                      <td>
+                        {% if att.attendance_status == 'Present' %}
+                          <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">Present</span>
+                        {% elif att.attendance_status == 'Absent' %}
+                          <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1">Absent</span>
+                        {% else %}
+                          <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1">{{ att.attendance_status }}</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ att.check_in_time or 'N/A' }}</td>
+                      <td>{{ att.check_out_time or 'N/A' }}</td>
+                      <td><span class="text-muted small">{{ att.remarks or '-' }}</span></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="text-muted small py-4 text-center">No attendance history logged yet.</div>
+              {% endif %}
+            </div>
+
+            <!-- 4. LEAVE TAB -->
+            <div class="tab-pane fade" id="content-leave" role="tabpanel">
+              <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-calendar-event text-primary me-2"></i>Leave Balances (2026)</h5>
+              {% if leave_balance %}
+              <div class="table-responsive mb-4">
+                <table class="table table-bordered text-center align-middle mb-0" style="font-size: 0.85rem;">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-start">Leave Type</th>
+                      <th>Allocated</th>
+                      <th>Used</th>
+                      <th>Remaining</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for bal in leave_balance %}
+                    <tr>
+                      <td class="text-start fw-bold text-dark">{{ bal.leave_name }} ({{ bal.leave_code }})</td>
+                      <td>{{ bal.allocated_days }} days</td>
+                      <td class="text-danger fw-semibold">{{ bal.used_days }} days</td>
+                      <td class="text-success fw-bold">{{ bal.remaining_days }} days</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- 5. PAYROLL TAB -->
+            <div class="tab-pane fade" id="content-payroll" role="tabpanel">
+              <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-cash-stack text-primary me-2"></i>Salary Structure & Payroll</h5>
+              {% if salary_structure %}
+              <div class="p-3 bg-light rounded-3 mb-4">
+                <div class="row g-3">
+                  <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Basic Salary</small>
+                    <strong class="text-dark">₹{{ "{:,.2f}".format(salary_structure.basic_salary) }}</strong>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Gross Salary</small>
+                    <strong class="text-primary">₹{{ "{:,.2f}".format(salary_structure.gross_salary) }}</strong>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <small class="text-muted d-block">Net Take-Home</small>
+                    <strong class="text-success">₹{{ "{:,.2f}".format(salary_structure.net_salary) }}</strong>
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <div class="text-muted small py-3 mb-4">No active salary structure configured.</div>
+              {% endif %}
+            </div>
+
+            <!-- 6. DOCUMENTS TAB -->
+            <div class="tab-pane fade" id="content-documents" role="tabpanel">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder2-open text-primary me-2"></i>Employee Document Repository</h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadDocModal">
+                  <i class="bi bi-upload me-1"></i>Upload Document
+                </button>
+              </div>
+
+              {% if documents %}
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.85rem;">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Category</th>
+                      <th>Document Name</th>
+                      <th>Uploaded By</th>
+                      <th>Date</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                      <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ doc.document_category }}</span></td>
+                      <td><strong class="text-dark">{{ doc.document_name }}</strong></td>
+                      <td><small class="text-muted">{{ doc.uploaded_by }}</small></td>
+                      <td><small class="text-muted">{{ doc.uploaded_at[:10] }}</small></td>
+                      <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                          <a href="{{ doc.file_path }}" target="_blank" class="btn btn-outline-primary" title="View / Download">
+                            <i class="bi bi-download"></i>
+                          </a>
+                          <form method="POST" action="{{ url_for('employees.delete_document', emp_id=employee.id, doc_id=doc.id) }}" class="d-inline" onsubmit="return confirm('Delete document?');">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger" title="Delete">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+              <div class="text-muted small text-center py-4">No documents uploaded for this employee.</div>
+              {% endif %}
+
+              <!-- Document Upload Modal -->
+              <div class="modal fade text-start" id="uploadDocModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('employees.upload_document', emp_id=employee.id) }}">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Upload Employee Document</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="mb-3">
+                          <label class="form-label fw-semibold">Document Category <span class="text-danger">*</span></label>
+                          <select name="document_category" class="form-select" required>
+                            <option value="Aadhaar">Aadhaar Card</option>
+                            <option value="PAN">PAN Card</option>
+                            <option value="Offer Letter">Offer Letter</option>
+                            <option value="Appointment Letter">Appointment Letter</option>
+                            <option value="Salary Revision Letter">Salary Revision Letter</option>
+                            <option value="Experience Letter">Experience Letter</option>
+                            <option value="ID Card">ID Card</option>
+                            <option value="Other">Other Document</option>
+                          </select>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label fw-semibold">Select File <span class="text-danger">*</span></label>
+                          <input type="file" name="document_file" class="form-control" required>
+                          <small class="text-muted">Supported formats: PDF, JPG, PNG, DOCX.</small>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload Document</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

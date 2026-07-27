@@ -1,0 +1,146 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Add Party – Right Ewaste ERP{% endblock %}
+
+{% block page_title %}Add New Party{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/party" class="text-decoration-none text-muted">Party</a></li>
+<li class="breadcrumb-item active">Add Party</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+<div class="col-lg-9 col-xl-8">
+
+<div class="erp-card">
+
+    <div class="erp-card-header">
+        <i class="bi bi-person-plus" style="font-size:18px; color:#3cb371;"></i>
+        <h5>Party Details</h5>
+    </div>
+
+    <div class="erp-card-body">
+        <form method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+            <!-- ── Identity ─────────────────────────────────────── -->
+            <h6 class="mb-3" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:#6c7a75;">
+                Identity
+            </h6>
+
+            <div class="row g-3 mb-3">
+
+                <div class="col-md-6">
+                    <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                    <input type="text" name="company_name" class="form-control" placeholder="e.g. Acme Pvt. Ltd." required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Contact Person</label>
+                    <input type="text" name="contact_person" class="form-control" placeholder="Full name">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Party Type <span class="text-danger">*</span></label>
+                    <select name="party_type" class="form-select" required>
+                        <option value="">Select type</option>
+                        <option value="CUSTOMER">Customer</option>
+                        <option value="SUPPLIER">Supplier</option>
+                        <option value="BOTH">Both</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">GSTIN</label>
+                    <input type="text" name="gstin" maxlength="15" class="form-control" placeholder="15-digit GST number" style="font-family:monospace;">
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Contact ──────────────────────────────────────── -->
+            <h6 class="mb-3" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:#6c7a75;">
+                Contact
+            </h6>
+
+            <div class="row g-3 mb-3">
+
+                <div class="col-md-6">
+                    <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                    <input type="tel" name="phone" maxlength="10" class="form-control" placeholder="10-digit mobile" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control" placeholder="email@example.com">
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Address ──────────────────────────────────────── -->
+            <h6 class="mb-3" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.7px; color:#6c7a75;">
+                Billing Address
+            </h6>
+
+            <div class="row g-3 mb-4">
+
+                <div class="col-12">
+                    <label class="form-label">Address <span class="text-danger">*</span></label>
+                    <textarea name="billing_address" rows="3" class="form-control" placeholder="Street, area, landmark…" required></textarea>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">City <span class="text-danger">*</span></label>
+                    <input type="text" name="city" class="form-control" placeholder="City" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">State <span class="text-danger">*</span></label>
+                    <select id="state" name="state" class="form-select" onchange="updateStateCode()" required>
+                        <option value="">Select state</option>
+                        {% for state in states %}
+                        <option value="{{ state }}">{{ state }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">State Code</label>
+                    <input type="text" id="state_code" name="state_code" class="form-control" readonly
+                           style="background:#f4f7f5; font-family:monospace;">
+                </div>
+
+            </div>
+
+            <!-- ── Actions ──────────────────────────────────────── -->
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/party" class="btn-erp-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <button type="submit" class="btn-erp-primary">
+                    <i class="bi bi-check-lg"></i> Save Party
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+</div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const states = {{ states | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/party.js') }}"></script>
+{% endblock %}

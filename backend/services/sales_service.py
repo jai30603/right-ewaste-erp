@@ -15,10 +15,6 @@ def calculate_invoice_totals(items, company_state_code, party_state_code):
     from services.invoice_service import calculate_totals
     return calculate_totals(items, company_state_code, party_state_code)
 
-def check_stock_available(material_id, required_qty, exclude_invoice_id=None):
-    from routes.sales import check_stock_available as _check_stock_available
-    return _check_stock_available(material_id, required_qty, exclude_invoice_id)
-
 def create_sales_invoice(*args, **kwargs):
     logger.info("Service Layer: Creating sales invoice")
     return sales_repository.create_sales_invoice(*args, **kwargs)
@@ -26,3 +22,40 @@ def create_sales_invoice(*args, **kwargs):
 def update_sales_invoice(*args, **kwargs):
     logger.info("Service Layer: Updating sales invoice")
     return sales_repository.update_sales_invoice(*args, **kwargs)
+
+def check_stock_available(material_id, needed_qty, needed_weight=0.0, exclude_invoice_id=None):
+    """Validate both supported stock dimensions against movement-backed inventory."""
+    from database import get_connection
+
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            """SELECT COALESCE(SUM(current_quantity), 0), COALESCE(SUM(current_weight), 0)
+               FROM inventory_balance WHERE material_id = ?""",
+            (material_id,),
+        ).fetchone()
+        available_qty, available_weight = float(row[0] or 0), float(row[1] or 0)
+        if exclude_invoice_id:
+            existing = conn.execute(
+                """SELECT COALESCE(SUM(quantity), 0), COALESCE(SUM(weight), 0)
+                   FROM sales_invoice_item WHERE sales_invoice_id = ? AND material_id = ?""",
+                (exclude_invoice_id, material_id),
+            ).fetchone()
+            available_qty += float(existing[0] or 0)
+            available_weight += float(existing[1] or 0)
+        return available_qty >= float(needed_qty or 0) and available_weight >= float(needed_weight or 0)
+    finally:
+        conn.close()
+
+def validate_status_transition(old_status, new_status):
+    if old_status == new_status:
+        return True
+    if old_status == "DRAFT":
+        return new_status in ["DRAFT", "CONFIRMED", "CANCELLED"]
+    if old_status == "CONFIRMED":
+        return new_status in ["CONFIRMED", "PRINTED", "PAID", "CANCELLED"]
+    if old_status == "PRINTED":
+        return new_status in ["PRINTED", "PAID", "CANCELLED"]
+    if old_status in ["PAID", "CANCELLED"]:
+        return False
+    return True

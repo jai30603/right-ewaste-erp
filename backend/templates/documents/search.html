@@ -1,0 +1,456 @@
+{% extends "shared/base.html" %}
+{% from "shared/_page_header.html" import page_header %}
+
+{% block title %}Content Search & Intelligence | Right Ewaste ERP{% endblock %}
+
+{% block page_title %}Enterprise Content Intelligence{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="#">EDMS</a></li>
+<li class="breadcrumb-item active">Content Search & Intel</li>
+{% endblock %}
+
+{% block styles %}
+<style>
+  .intel-search-hero {
+    background: linear-gradient(135deg, rgba(60, 179, 113, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .tag-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+  .class-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .scope-pill {
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+  .scope-pill.active {
+    background: var(--brand-accent);
+    color: #ffffff !important;
+    border-color: var(--brand-accent);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+
+  <!-- Page Header -->
+  {{ page_header(
+      title="Content Search & Intelligence",
+      subtitle="Unified EDMS enterprise search, version history, tagging, and document relationships",
+      back_url="/"
+  ) }}
+
+  <!-- Search Hero Banner -->
+  <div class="intel-search-hero mb-4">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10 text-center">
+        <h5 class="fw-bold mb-2"><i class="bi bi-search-heart text-primary me-2"></i>Unified EDMS Content Engine</h5>
+        <p class="text-muted small mb-3">Search across My Drive, Company Drive, and Business Attachments by text, OCR, tags, or classification</p>
+
+        <!-- Big Search Bar -->
+        <div class="input-group input-group-lg shadow-sm mb-3">
+          <span class="input-group-text bg-surface border-end-0"><i class="bi bi-search text-primary"></i></span>
+          <input type="text" id="intelSearchInput" class="form-control border-start-0" placeholder="Type document name, invoice #, tag, or OCR content..." onkeyup="debounceIntelSearch()">
+          <button class="btn btn-primary px-4" onclick="executeIntelSearch()"><i class="bi bi-arrow-right"></i> Search</button>
+        </div>
+
+        <!-- Scope Pills -->
+        <div class="d-flex flex-wrap justify-content-center gap-2" id="scopePillsContainer">
+          <div class="scope-pill active" onclick="setSearchScope('ALL')"><i class="bi bi-globe me-1"></i>All EDMS Vaults</div>
+          <div class="scope-pill" onclick="setSearchScope('MYDRIVE')"><i class="bi bi-hdd-network me-1"></i>My Drive</div>
+          <div class="scope-pill" onclick="setSearchScope('COMPANY')"><i class="bi bi-building me-1"></i>Company Drive</div>
+          <div class="scope-pill" onclick="setSearchScope('ATTACHMENTS')"><i class="bi bi-paperclip me-1"></i>ERP Record Attachments</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Multi-Faceted Filters Row -->
+  <div class="card bg-surface border mb-4">
+    <div class="card-body py-2.5">
+      <div class="row g-2 align-items-center">
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Classification</label>
+          <select id="filterClassification" class="form-select form-select-sm" onchange="executeIntelSearch()">
+            <option value="all">All Classifications</option>
+            <option value="INTERNAL">INTERNAL</option>
+            <option value="PUBLIC">PUBLIC</option>
+            <option value="CONFIDENTIAL">CONFIDENTIAL</option>
+            <option value="RESTRICTED">RESTRICTED</option>
+            <option value="FINANCIAL">FINANCIAL</option>
+            <option value="LEGAL">LEGAL</option>
+            <option value="COMPLIANCE">COMPLIANCE</option>
+            <option value="SAFETY">SAFETY</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label small fw-semibold mb-1">Lifecycle Status</label>
+          <select id="filterLifecycle" class="form-select form-select-sm" onchange="executeIntelSearch()">
+            <option value="all">All Lifecycle States</option>
+            <option value="UPLOADED">UPLOADED</option>
+            <option value="DRAFT">DRAFT</option>
+            <option value="UNDER_REVIEW">UNDER REVIEW</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="ARCHIVED">ARCHIVED</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">Tag Filter</label>
+          <select id="filterTag" class="form-select form-select-sm" onchange="executeIntelSearch()">
+            <option value="all">All Document Tags</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small fw-semibold mb-1">File Type</label>
+          <select id="filterFileType" class="form-select form-select-sm" onchange="executeIntelSearch()">
+            <option value="all">All File Formats</option>
+            <option value="pdf">PDF Documents</option>
+            <option value="image">Images (PNG/JPG/SVG)</option>
+            <option value="spreadsheet">Spreadsheets (Excel/CSV)</option>
+            <option value="document">Text & Docs</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-2 text-end pt-3">
+          <span class="badge bg-secondary font-monospace" id="resultsCountBadge">0 Documents</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Results Grid -->
+  <div class="row g-3" id="intelResultsContainer"></div>
+
+  <!-- Empty Results State -->
+  <div class="text-center py-5 bg-surface border rounded-4 d-none" id="intelEmptyState">
+    <i class="bi bi-search display-4 text-muted mb-2 d-block"></i>
+    <h5 class="fw-bold mb-1">No matching documents found</h5>
+    <p class="text-muted small">Try refining your search text or clear active classification filters</p>
+  </div>
+
+</div>
+
+<!-- Version History Modal -->
+<div class="modal fade" id="versionModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Document Version History</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 p-3 bg-surface-raised border rounded-3 d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="fw-bold mb-1">Upload New Version</h6>
+            <small class="text-muted">Will increment document to next version snapshot</small>
+          </div>
+          <input type="file" id="newVersionFileInput" class="d-none" onchange="submitNewVersionFile(event)">
+          <button class="btn btn-sm btn-primary" onclick="triggerNewVersionUpload()"><i class="bi bi-upload me-1"></i> Upload Version</button>
+        </div>
+        <ul class="list-group list-group-flush" id="versionHistoryList">
+          <li class="list-group-item bg-transparent text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tag Manager Modal -->
+<div class="modal fade" id="tagModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-tags text-primary me-2"></i>Manage Document Tags</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group mb-3">
+          <input type="text" id="newTagNameInput" class="form-control" placeholder="e.g. GST-2026">
+          <button class="btn btn-primary" onclick="submitAddTag()"><i class="bi bi-plus-lg"></i> Add Tag</button>
+        </div>
+        <label class="form-label small fw-semibold">Current Document Tags</label>
+        <div class="d-flex flex-wrap gap-1 mb-3" id="currentDocTagsContainer"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentScope = 'ALL';
+let activeDocIdForModal = null;
+let searchDebounceTimer = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadTagsDropdown();
+  executeIntelSearch();
+});
+
+function setSearchScope(scope) {
+  currentScope = scope;
+  document.querySelectorAll('#scopePillsContainer .scope-pill').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+  executeIntelSearch();
+}
+
+function loadTagsDropdown() {
+  fetch('/api/v1/documents/tags')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      const select = document.getElementById('filterTag');
+      select.innerHTML = '<option value="all">All Document Tags</option>';
+      data.tags.forEach(t => {
+        select.innerHTML += `<option value="${escapeHtml(t.tag_name)}">${escapeHtml(t.tag_name)}</option>`;
+      });
+    });
+}
+
+function executeIntelSearch() {
+  const q = document.getElementById('intelSearchInput').value.trim();
+  const classification = document.getElementById('filterClassification').value;
+  const lifecycle = document.getElementById('filterLifecycle').value;
+  const tag = document.getElementById('filterTag').value;
+  const fileType = document.getElementById('filterFileType').value;
+
+  const url = `/api/v1/documents/intelligence/search?q=${encodeURIComponent(q)}&scope=${currentScope}&classification=${classification}&lifecycle_status=${lifecycle}&tag=${tag}&file_type=${fileType}`;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      renderIntelResults(data.results || []);
+    });
+}
+
+function renderIntelResults(docs) {
+  const container = document.getElementById('intelResultsContainer');
+  const emptyState = document.getElementById('intelEmptyState');
+  const countBadge = document.getElementById('resultsCountBadge');
+
+  container.innerHTML = '';
+  countBadge.innerText = `${docs.length} Documents`;
+
+  if (!docs || docs.length === 0) {
+    emptyState.classList.remove('d-none');
+    return;
+  }
+
+  emptyState.classList.add('d-none');
+
+  docs.forEach(d => {
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-6 col-lg-4';
+    col.innerHTML = `
+      <div class="card bg-surface border h-100 shadow-xs">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <span class="badge bg-primary me-1">V${d.version || 1}</span>
+              ${getClassificationBadgeHtml(d.classification)}
+              ${getLifecycleBadgeHtml(d.lifecycle_status)}
+            </div>
+            <span class="badge bg-secondary font-monospace">.${d.extension}</span>
+          </div>
+
+          <h6 class="fw-bold text-truncate mb-1" title="${escapeHtml(d.original_name)}">${escapeHtml(d.original_name)}</h6>
+          <small class="text-muted font-monospace d-block mb-2">${d.document_number}</small>
+
+          <div class="d-flex justify-content-between text-muted small mb-2">
+            <span>Size: ${formatBytes(d.size_bytes)}</span>
+            <span>${(d.created_at || '').substring(0,10)}</span>
+          </div>
+
+          <!-- Tags -->
+          <div class="mb-3">
+            ${renderTagsBadgesHtml(d.tag_names)}
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-grid gap-1 border-top pt-2">
+            <div class="btn-group btn-group-sm">
+              <a href="/api/v1/documents/${d.id}/download" class="btn btn-outline-secondary py-0.5"><i class="bi bi-download me-1"></i>Download</a>
+              <button class="btn btn-outline-primary py-0.5" onclick="openVersionModal(${d.id})"><i class="bi bi-clock-history me-1"></i>V${d.version || 1}</button>
+              <button class="btn btn-outline-info py-0.5" onclick="openTagModal(${d.id})"><i class="bi bi-tag me-1"></i>Tags</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(col);
+  });
+}
+
+function getClassificationBadgeHtml(cls) {
+  cls = (cls || 'INTERNAL').toUpperCase();
+  if (cls === 'CONFIDENTIAL') return `<span class="class-badge bg-danger text-white">CONFIDENTIAL</span>`;
+  if (cls === 'FINANCIAL') return `<span class="class-badge bg-success text-white">FINANCIAL</span>`;
+  if (cls === 'RESTRICTED') return `<span class="class-badge bg-warning text-dark">RESTRICTED</span>`;
+  return `<span class="class-badge bg-secondary text-white">${cls}</span>`;
+}
+
+function getLifecycleBadgeHtml(status) {
+  status = (status || 'UPLOADED').toUpperCase();
+  if (status === 'APPROVED') return `<span class="badge bg-success-subtle text-success border">APPROVED</span>`;
+  if (status === 'UNDER_REVIEW') return `<span class="badge bg-warning-subtle text-warning border">REVIEW</span>`;
+  return `<span class="badge bg-light text-dark border">${status}</span>`;
+}
+
+function renderTagsBadgesHtml(tagNamesStr) {
+  if (!tagNamesStr) return '<span class="text-muted small italic">No tags</span>';
+  const tags = tagNamesStr.split(',');
+  return tags.map(t => `<span class="tag-badge bg-primary-subtle text-primary border"><i class="bi bi-tag-fill"></i> ${escapeHtml(t.trim())}</span>`).join('');
+}
+
+function openVersionModal(docId) {
+  activeDocIdForModal = docId;
+  const modal = new bootstrap.Modal(document.getElementById('versionModal'));
+  modal.show();
+  loadVersionHistory(docId);
+}
+
+function loadVersionHistory(docId) {
+  const list = document.getElementById('versionHistoryList');
+  fetch(`/api/v1/documents/${docId}/versions`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      list.innerHTML = '';
+      data.versions.forEach(v => {
+        const item = document.createElement('li');
+        item.className = 'list-group-item bg-transparent d-flex justify-content-between align-items-center py-2.5';
+        item.innerHTML = `
+          <div>
+            <span class="fw-bold text-primary me-2">Version V${v.version_number}</span>
+            <span class="font-monospace small text-muted me-2">${formatBytes(v.size_bytes)}</span>
+            <small class="text-muted d-block">${v.changelog_notes || ''} • ${v.created_at}</small>
+          </div>
+          <button class="btn btn-xs btn-outline-secondary" onclick="restoreVersion(${docId}, ${v.version_number})"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore</button>
+        `;
+        list.appendChild(item);
+      });
+    });
+}
+
+function triggerNewVersionUpload() { document.getElementById('newVersionFileInput').click(); }
+
+function submitNewVersionFile(e) {
+  const file = e.target.files[0];
+  if (!file || !activeDocIdForModal) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('changelog', 'Uploaded new version via Content Intel dashboard');
+
+  fetch(`/api/v1/documents/${activeDocIdForModal}/versions`, { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        loadVersionHistory(activeDocIdForModal);
+        executeIntelSearch();
+      } else alert(data.error);
+    });
+}
+
+function restoreVersion(docId, verNum) {
+  if (!confirm(`Restore document to V${verNum}?`)) return;
+  fetch(`/api/v1/documents/${docId}/versions/${verNum}/restore`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        bootstrap.Modal.getInstance(document.getElementById('versionModal')).hide();
+        executeIntelSearch();
+      } else alert(data.error);
+    });
+}
+
+function openTagModal(docId) {
+  activeDocIdForModal = docId;
+  const modal = new bootstrap.Modal(document.getElementById('tagModal'));
+  modal.show();
+  loadDocTags(docId);
+}
+
+function loadDocTags(docId) {
+  const container = document.getElementById('currentDocTagsContainer');
+  fetch(`/api/v1/documents/intelligence/search?q=`)
+    .then(r => r.json())
+    .then(data => {
+      container.innerHTML = '';
+      const doc = (data.results || []).find(x => x.id === docId);
+      if (!doc || !doc.tag_names) {
+        container.innerHTML = '<span class="text-muted small">No active tags.</span>';
+        return;
+      }
+      doc.tag_names.split(',').forEach(t => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-badge bg-primary text-white';
+        chip.innerText = t.trim();
+        container.appendChild(chip);
+      });
+    });
+}
+
+function submitAddTag() {
+  const name = document.getElementById('newTagNameInput').value.trim();
+  if (!name || !activeDocIdForModal) return;
+
+  fetch(`/api/v1/documents/${activeDocIdForModal}/tags`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ tag_name: name })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('newTagNameInput').value = '';
+      loadDocTags(activeDocIdForModal);
+      executeIntelSearch();
+    } else alert(data.error);
+  });
+}
+
+function debounceIntelSearch() {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => executeIntelSearch(), 300);
+}
+
+function formatBytes(b) {
+  if (!b) return '0 B';
+  const k = 1024;
+  const s = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(b) / Math.log(k));
+  return parseFloat((b / Math.pow(k, i)).toFixed(1)) + ' ' + s[i];
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m]));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Leave Calendar – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #1e293b;">
+        <i class="bi bi-calendar-month text-primary me-2"></i>Organization Leave Calendar
+      </h3>
+      <p class="text-muted small mb-0">Visual monthly calendar showing approved leaves and scheduled workforce absences.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('employees.apply_leave') }}" class="btn btn-primary px-3 shadow-sm">
+        <i class="bi bi-plus-circle me-1"></i>Apply Leave
+      </a>
+      <a href="{{ url_for('employees.leave_requests') }}" class="btn btn-outline-secondary px-3">
+        <i class="bi bi-list-check me-1"></i>Requests List
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4 p-3 bg-light">
+    <form method="GET" action="{{ url_for('employees.leave_calendar') }}" class="row align-items-center g-2">
+      <div class="col-6 col-md-2">
+        <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Month</label>
+        <select name="month" class="form-select" onchange="this.form.submit()">
+          {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+          {% for m in range(1, 13) %}
+            <option value="{{ m }}" {{ 'selected' if selected_month == m }}>{{ months[m-1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Year</label>
+        <select name="year" class="form-select" onchange="this.form.submit()">
+          {% for y in range(2024, 2028) %}
+            <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Department</label>
+        <select name="department" class="form-select" onchange="this.form.submit()">
+          <option value="">All Departments</option>
+          {% for dept in filter_options.departments %}
+            <option value="{{ dept }}" {{ 'selected' if selected_department == dept }}>{{ dept }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Leave Type</label>
+        <select name="leave_type_id" class="form-select" onchange="this.form.submit()">
+          <option value="">All Leave Types</option>
+          {% for lt in leave_types %}
+            <option value="{{ lt.id }}" {{ 'selected' if selected_leave_type_id|string == lt.id|string }}>{{ lt.leave_name }} ({{ lt.leave_code }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Calendar Schedule List -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+      <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+        <i class="bi bi-calendar-event text-primary me-2"></i>Approved Leaves for Selected Month
+      </h5>
+      <span class="badge bg-primary rounded-pill">{{ approved_requests|length }} Scheduled Leave(s)</span>
+    </div>
+    <div class="card-body p-0">
+      {% if approved_requests %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+              <th>Employee Code</th>
+              <th>Employee Name</th>
+              <th>Department</th>
+              <th>Leave Type</th>
+              <th>Date Range</th>
+              <th>Total Days</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in approved_requests %}
+            <tr>
+              <td>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1 fs-6">
+                  {{ req.employee_code }}
+                </span>
+              </td>
+              <td><strong class="text-dark">{{ req.full_name }}</strong></td>
+              <td><span class="badge bg-light text-dark border">{{ req.department or 'N/A' }}</span></td>
+              <td><span class="badge bg-success-subtle text-success border border-success-subtle">{{ req.leave_name }} ({{ req.leave_code }})</span></td>
+              <td>
+                <small class="fw-semibold text-dark"><i class="bi bi-calendar3 me-1 text-primary"></i>{{ req.start_date }} to {{ req.end_date }}</small>
+              </td>
+              <td><strong class="text-dark">{{ req.total_days }} day{{ 's' if req.total_days > 1 }}</strong></td>
+              <td><span class="text-muted small">{{ req.reason }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar-check fs-1 d-block mb-2 text-success"></i>
+        No approved leave requests scheduled for this month.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -26,7 +26,7 @@ The Purchase Module represents the complete intake process for all incoming e-wa
 
 ### 2.2 Business Workflow
 1.  **Material Arrives**: E-waste is unloaded at the collection point.
-2.  **Weight & Quantity Verification**: Weight or pieces are verified.
+2.  **Weight & Quantity Verification**: Quantity and/or weight are verified according to the material tracking type.
 3.  **Intake Entry**: The operator records the transaction specifying the Intake Type (Purchase, Donation, Gov Collection, AMC, Pickup) and party.
 4.  **Verification & Confirmation**: Upon confirmation, inventory stock increments automatically.
 5.  **Factory Processing Queue / Certificate Generation**: Materials proceed downstream.
@@ -54,7 +54,7 @@ Once confirmed, ownership is transfered, inventory increases, and metrics feed t
 
 ### 4.3 Validation Rules
 *   Source Party, Date, and at least one Item are mandatory.
-*   Item weights/pieces must follow the material tracking rules (`WEIGHT_ONLY`, `PIECES_ONLY`, or `BOTH`).
+*   Item quantity and weight must follow the material tracking rules (`WEIGHT_ONLY`, `QUANTITY_ONLY`, or `BOTH`).
 *   Intra-state purchases (supplier state matches company state) receive CGST + SGST. Inter-state purchases receive IGST.
 
 ---
@@ -89,7 +89,7 @@ Sales ── Outbound Invoices
 ```
 
 ### 6.3 Certificate Compatibility
-The Purchase Module does not generate certificates itself but captures all needed data (Source Party, Purchase number/date, weights, pieces, vehicle and reference numbers, remarks).
+The Purchase Module does not generate certificates itself but captures all needed data (Source Party, Purchase number/date, quantity, weight, vehicle and reference numbers, remarks).
 
 ### 6.4 Certificate Architecture & Processing Batch Integration
 *   **Processing Batch Primary Reference**: Certificates shall link to **Processing Batches** rather than directly to Purchases. This supports:

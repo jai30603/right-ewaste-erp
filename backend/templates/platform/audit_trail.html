@@ -1,0 +1,248 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Audit Trail – Right Ewaste ERP{% endblock %}
+
+{% block styles %}
+<style>
+  /* ── Audit Trail Styles ───────────────────────────────────── */
+  .audit-header {
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+    border-radius: 14px;
+    padding: 24px 28px;
+    color: #fff;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .audit-header h1 { font-size: 1.35rem; font-weight: 700; margin: 0; }
+  .audit-header p  { font-size: 0.82rem; opacity: .7; margin: 4px 0 0; }
+
+  /* Filter bar */
+  .filter-bar {
+    background: #fff; border: 1px solid var(--card-border); border-radius: 12px;
+    padding: 14px 18px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
+    margin-bottom: 18px;
+  }
+  .filter-bar .form-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+
+  /* Audit cards */
+  .audit-card {
+    background: #fff; border: 1px solid var(--card-border); border-radius: 12px;
+    margin-bottom: 10px; overflow: hidden;
+    transition: box-shadow .15s, border-color .15s;
+  }
+  .audit-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.07); border-color: #a5b4fc; }
+  .audit-card-header {
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap; border-bottom: 1px solid var(--card-border);
+    background: #fafbff;
+  }
+  .audit-card-body { padding: 14px 16px; }
+  .audit-action { font-weight: 700; font-size: 0.88rem; }
+  .audit-table-tag { background: #ede9fe; color: #5b21b6; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
+  .audit-meta { font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Action badges */
+  .act { padding: 2px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+  .act-CREATE { background: #d1fae5; color: #065f46; }
+  .act-UPDATE { background: #dbeafe; color: #1e40af; }
+  .act-DELETE { background: #fee2e2; color: #991b1b; }
+  .act-APPROVE { background: #ecfdf5; color: #065f46; }
+  .act-REJECT  { background: #fef3c7; color: #92400e; }
+
+  /* Diff viewer */
+  .diff-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .diff-container { grid-template-columns: 1fr; } }
+  .diff-pane { border-radius: 8px; overflow: hidden; }
+  .diff-pane-label {
+    padding: 5px 10px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .diff-pane-before .diff-pane-label { background: #fef2f2; color: #b91c1c; }
+  .diff-pane-after  .diff-pane-label { background: #f0fdf4; color: #166534; }
+  .diff-pane pre {
+    margin: 0; padding: 10px 12px; font-size: 0.75rem; max-height: 220px;
+    overflow-y: auto; background: #f9fafb; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .diff-pane-before pre { border: 1px solid #fecaca; }
+  .diff-pane-after  pre { border: 1px solid #bbf7d0; }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .empty-state i { font-size: 3rem; opacity: .3; }
+
+  /* Dark mode */
+  [data-theme="dark"] .filter-bar,
+  [data-theme="dark"] .audit-card { background: #1e2d26; border-color: #2d4538; }
+  [data-theme="dark"] .audit-card-header { background: #17261e; border-color: #2d4538; }
+  [data-theme="dark"] .audit-table-tag { background: rgba(139,92,246,.18); color: #c4b5fd; }
+  [data-theme="dark"] .diff-pane pre { background: #111d17; }
+  [data-theme="dark"] .diff-pane-before .diff-pane-label { background: #2d1515; }
+  [data-theme="dark"] .diff-pane-after  .diff-pane-label { background: #0d2d1a; }
+  [data-theme="dark"] .audit-header { background: linear-gradient(135deg, #12103a 0%, #1e1b4b 100%); }
+</style>
+{% endblock %}
+
+{% block page_title %}Audit Trail{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="/platform/">Platform</a></li>
+<li class="breadcrumb-item active">Audit Trail</li>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="audit-header">
+  <div>
+    <h1><i class="bi bi-shield-check me-2"></i>Audit Trail</h1>
+    <p>Legal-grade field-level change log · Before / After diff viewer</p>
+  </div>
+  <span class="badge bg-light text-dark" style="font-size:.8rem; padding:8px 14px;">
+    <i class="bi bi-journal-text me-1"></i>{{ trail | length }} records
+  </span>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <div>
+    <div class="form-label">Table</div>
+    <select class="form-select form-select-sm" id="filterTable" onchange="applyAuditFilters()" style="min-width:160px;">
+      <option value="">All Tables</option>
+      {% for t in tables %}
+      <option value="{{ t }}" {% if t == selected_table %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <div class="form-label">Record ID</div>
+    <input type="text" class="form-control form-control-sm" id="filterRecordId"
+           value="{{ selected_record or '' }}" placeholder="e.g. 42" style="width:110px;">
+  </div>
+  <div>
+    <div class="form-label">Limit</div>
+    <select class="form-select form-select-sm" id="filterLimit">
+      <option value="50">50</option>
+      <option value="100">100</option>
+      <option value="200" selected>200</option>
+    </select>
+  </div>
+  <button class="btn btn-sm btn-success" onclick="applyAuditFilters()">
+    <i class="bi bi-funnel me-1"></i>Filter
+  </button>
+  <div>
+    <div class="form-label">Search</div>
+    <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Search…" oninput="filterAuditLocal()">
+  </div>
+</div>
+
+<!-- Audit Cards -->
+<div id="auditContainer">
+  {% if trail %}
+    {% for entry in trail %}
+    <div class="audit-card" data-content="{{ (entry.action + ' ' + entry.table_name + ' ' + (entry.changed_by or '')) | lower }}">
+      <div class="audit-card-header">
+        <span class="audit-table-tag">{{ entry.table_name }}</span>
+        {% set act_cls = {'CREATE':'act-CREATE','UPDATE':'act-UPDATE','DELETE':'act-DELETE','APPROVE':'act-APPROVE','REJECT':'act-REJECT'} %}
+        <span class="act {{ act_cls.get(entry.action, '') }}">{{ entry.action }}</span>
+        {% if entry.get('record_id') %}
+        <span style="font-size:.77rem; color:var(--text-muted);"><i class="bi bi-hash"></i>{{ entry.record_id }}</span>
+        {% endif %}
+        <span class="ms-auto text-muted" style="font-size:.73rem;">{{ entry.changed_at or '' }}</span>
+      </div>
+      <div class="audit-card-body">
+        <div class="audit-meta mb-2">
+          {% if entry.get('changed_by') %}
+          <span><i class="bi bi-person-circle"></i> {{ entry.changed_by }}</span>
+          {% endif %}
+          {% if entry.get('ip_address') %}
+          <span><i class="bi bi-globe"></i> {{ entry.ip_address }}</span>
+          {% endif %}
+          {% if entry.get('session_id') %}
+          <span><i class="bi bi-key"></i> {{ entry.session_id[:12] }}…</span>
+          {% endif %}
+        </div>
+        {% if entry.get('old_values') or entry.get('new_values') %}
+        <div class="diff-container">
+          <div class="diff-pane diff-pane-before">
+            <div class="diff-pane-label"><i class="bi bi-dash-circle me-1"></i>Before</div>
+            <pre>{{ entry.old_values | default('—', true) }}</pre>
+          </div>
+          <div class="diff-pane diff-pane-after">
+            <div class="diff-pane-label"><i class="bi bi-plus-circle me-1"></i>After</div>
+            <pre>{{ entry.new_values | default('—', true) }}</pre>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty-state">
+    <i class="bi bi-shield"></i>
+    <p class="mt-3">No audit records found{% if selected_table %} for table <strong>{{ selected_table }}</strong>{% endif %}.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyAuditFilters() {
+  const table = document.getElementById('filterTable').value;
+  const recordId = document.getElementById('filterRecordId').value.trim();
+  const limit = document.getElementById('filterLimit').value;
+  const params = new URLSearchParams();
+  if (table) params.set('table', table);
+  if (recordId) params.set('record_id', recordId);
+  params.set('limit', limit);
+
+  fetch('/platform/api/audit?' + params.toString())
+    .then(r => r.json())
+    .then(data => renderAudit(data));
+}
+
+function filterAuditLocal() {
+  const q = document.getElementById('filterSearch').value.toLowerCase();
+  document.querySelectorAll('#auditContainer .audit-card').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function renderAudit(data) {
+  const container = document.getElementById('auditContainer');
+  if (!data.length) {
+    container.innerHTML = `<div class="empty-state"><i class="bi bi-shield"></i><p class="mt-3">No records match the filter.</p></div>`;
+    return;
+  }
+  const actCls = {CREATE:'act-CREATE',UPDATE:'act-UPDATE',DELETE:'act-DELETE',APPROVE:'act-APPROVE',REJECT:'act-REJECT'};
+  container.innerHTML = data.map(e => `
+    <div class="audit-card">
+      <div class="audit-card-header">
+        <span class="audit-table-tag">${e.table_name}</span>
+        <span class="act ${actCls[e.action]||''}">${e.action}</span>
+        ${e.record_id ? `<span style="font-size:.77rem;color:var(--text-muted)"><i class="bi bi-hash"></i>${e.record_id}</span>` : ''}
+        <span class="ms-auto text-muted" style="font-size:.73rem">${e.changed_at || ''}</span>
+      </div>
+      <div class="audit-card-body">
+        <div class="audit-meta mb-2">
+          ${e.changed_by ? `<span><i class="bi bi-person-circle"></i> ${e.changed_by}</span>` : ''}
+          ${e.ip_address ? `<span><i class="bi bi-globe"></i> ${e.ip_address}</span>` : ''}
+        </div>
+        ${(e.old_values || e.new_values) ? `
+        <div class="diff-container">
+          <div class="diff-pane diff-pane-before">
+            <div class="diff-pane-label"><i class="bi bi-dash-circle me-1"></i>Before</div>
+            <pre>${e.old_values || '—'}</pre>
+          </div>
+          <div class="diff-pane diff-pane-after">
+            <div class="diff-pane-label"><i class="bi bi-plus-circle me-1"></i>After</div>
+            <pre>${e.new_values || '—'}</pre>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+{% endblock %}

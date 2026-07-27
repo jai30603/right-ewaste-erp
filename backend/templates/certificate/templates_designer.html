@@ -1,0 +1,561 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Enterprise Document Designer{% endblock %}
+
+{% block styles %}
+<style>
+  .designer-container {
+    height: calc(100vh - 130px);
+    overflow: hidden;
+  }
+  .toolbox-panel, .properties-panel {
+    background-color: var(--surface);
+    border-right: 1.5px solid var(--border);
+    overflow-y: auto;
+    height: 100%;
+    color: var(--text-primary);
+  }
+  .properties-panel {
+    border-right: none;
+    border-left: 1.5px solid var(--border);
+  }
+  .canvas-workspace {
+    background-color: var(--body-bg);
+    overflow-y: auto;
+    height: 100%;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+  }
+  .designer-canvas-page {
+    background-color: #ffffff;
+    color: #0f172a;
+    box-shadow: var(--shadow-lg);
+    min-height: 842px; /* A4 Ratio */
+    width: 595px;
+    padding: 40px;
+    position: relative;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+  .designer-canvas-page.landscape {
+    width: 842px;
+    min-height: 595px;
+  }
+  .canvas-element {
+    border: 1px dashed transparent;
+    padding: 6px;
+    margin: 8px 0;
+    position: relative;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .canvas-element:hover {
+    border-color: #93c5fd;
+    background-color: rgba(37, 99, 235, 0.05);
+  }
+  .canvas-element.selected {
+    border-color: var(--brand-accent);
+    background-color: rgba(60, 179, 113, 0.1);
+    box-shadow: 0 0 0 2px var(--brand-accent-dim);
+  }
+  .element-badge {
+    position: absolute;
+    top: -8px;
+    left: 8px;
+    font-size: 8px;
+    font-weight: 800;
+    background-color: var(--brand-accent);
+    color: #ffffff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    display: none;
+  }
+  .canvas-element.selected .element-badge {
+    display: block;
+  }
+  .toolbox-item {
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: var(--surface-raised);
+    border: 1.5px solid var(--border);
+    color: var(--text-primary);
+  }
+  .toolbox-item:hover {
+    background-color: var(--surface-sunken);
+    border-color: var(--brand-accent);
+    transform: translateY(-1px);
+  }
+  .toolbox-item div, .toolbox-item small, .toolbox-item i {
+    color: var(--text-primary) !important;
+  }
+  .toolbox-panel h6, .properties-panel h6 {
+    color: var(--text-primary) !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0 designer-container">
+  <form id="designerForm" method="POST" action="{{ url_for('certificates.templates') }}" class="h-100">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" id="template_json_input" name="template_json">
+
+    <div class="row g-0 h-100">
+      <!-- Left Panel: Configuration & Toolbox -->
+      <div class="col-12 col-lg-3 toolbox-panel p-3">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-grid-fill text-primary me-2"></i>Document Template</h6>
+        
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Select Series</label>
+          <select id="templateKeySelect" name="template_key" class="form-select form-select-sm" onchange="loadTemplate(this.value)">
+            {% for t in templates %}
+              <option value="{{ t.template_key }}">{{ t.template_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Display Name</label>
+          <input type="text" id="t_name_input" name="template_name" class="form-control form-control-sm" required>
+        </div>
+        
+        <hr class="my-3">
+
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-tools text-primary me-2"></i>Canvas Toolbox</h6>
+        <small class="text-muted d-block mb-3">Click on any object to inject it into the canvas workspace.</small>
+
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('title')">
+              <i class="bi bi-type-h1 fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Header Title</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('text')">
+              <i class="bi bi-justify fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Text Wording</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('logo')">
+              <i class="bi bi-image fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Company Logo</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('dynamic_table')">
+              <i class="bi bi-table fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Items Table</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('qr')">
+              <i class="bi bi-qr-code fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">QR Code</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('barcode')">
+              <i class="bi bi-upc-scan fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Barcode</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('signature')">
+              <i class="bi bi-pencil-square fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Signature Line</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('watermark')">
+              <i class="bi bi-badge-ad fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Watermark</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('line')">
+              <i class="bi bi-hr fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Divider Line</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="toolbox-item p-2 rounded text-center" onclick="addElement('page_break')">
+              <i class="bi bi-file-earmark-break fs-4 text-secondary"></i>
+              <div class="small fw-semibold mt-1">Page Break</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+          <button type="submit" class="btn btn-primary btn-sm py-2 fw-bold"><i class="bi bi-cloud-arrow-up me-1"></i>Publish New Version</button>
+        </div>
+      </div>
+
+      <!-- Center Panel: The Visual Canvas -->
+      <div class="col-12 col-lg-6 canvas-workspace">
+        <div id="canvasPage" class="designer-canvas-page">
+          <!-- Live Elements will render here -->
+        </div>
+      </div>
+
+      <!-- Right Panel: Element Properties Editor -->
+      <div class="col-12 col-lg-3 properties-panel p-3">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-sliders text-primary me-2"></i>Element Properties</h6>
+
+        <div id="noSelectionMsg" class="text-center py-5 text-muted small">
+          <i class="bi bi-info-circle fs-3 mb-2 d-block"></i>
+          Select any element on the canvas to configure its properties.
+        </div>
+
+        <div id="propertiesEditor" style="display: none;">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Wording/Value Content</label>
+            <textarea id="propContent" class="form-control form-control-sm" rows="3" oninput="updateActiveElement('content', this.value)"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Alignment</label>
+            <select id="propAlign" class="form-select form-select-sm" onchange="updateActiveStyle('alignment', this.value)">
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+              <option value="justify">Justify</option>
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Font Size</label>
+              <input type="text" id="propFontSize" class="form-control form-control-sm" placeholder="e.g. 12px" oninput="updateActiveStyle('size', this.value)">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Font Family</label>
+              <select id="propFontFamily" class="form-select form-select-sm" onchange="updateActiveStyle('font', this.value)">
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Arial">Arial</option>
+                <option value="Courier">Courier</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Text Color</label>
+              <input type="color" id="propColor" class="form-control form-control-sm" oninput="updateActiveStyle('color', this.value)">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Bg Color</label>
+              <input type="color" id="propBgColor" class="form-control form-control-sm" oninput="updateActiveStyle('background', this.value)">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Padding</label>
+              <input type="text" id="propPadding" class="form-control form-control-sm" placeholder="e.g. 10px" oninput="updateActiveStyle('padding', this.value)">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Margin</label>
+              <input type="text" id="propMargin" class="form-control form-control-sm" placeholder="e.g. 15px" oninput="updateActiveStyle('margin', this.value)">
+            </div>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Width</label>
+              <input type="text" id="propWidth" class="form-control form-control-sm" placeholder="e.g. 100px" oninput="updateActiveStyle('width', this.value)">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Height</label>
+              <input type="text" id="propHeight" class="form-control form-control-sm" placeholder="e.g. 50px" oninput="updateActiveStyle('height', this.value)">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Border</label>
+            <input type="text" id="propBorder" class="form-control form-control-sm" placeholder="e.g. 1px solid #ccc" oninput="updateActiveStyle('border', this.value)">
+          </div>
+
+          <div class="d-grid mt-4">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeActiveElement()"><i class="bi bi-trash me-1"></i>Delete Element</button>
+          </div>
+        </div>
+
+        <hr class="my-4">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-aspect-ratio text-primary me-2"></i>Page Layout Settings</h6>
+        <div class="row g-2 mb-3">
+          <div class="col-12">
+            <label class="form-label small">Layout Type</label>
+            <select id="pageLayoutSelect" class="form-select form-select-sm" onchange="updatePageLayout(this.value)">
+              <option value="A4_PORTRAIT">A4 Portrait</option>
+              <option value="A4_LANDSCAPE">A4 Landscape</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label small">Margin Top</label>
+            <input type="number" id="pageMarginTop" class="form-control form-control-sm" value="36" oninput="updatePageMargins()">
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Margin Bottom</label>
+            <input type="number" id="pageMarginBottom" class="form-control form-control-sm" value="36" oninput="updatePageMargins()">
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Margin Left</label>
+            <input type="number" id="pageMarginLeft" class="form-control form-control-sm" value="36" oninput="updatePageMargins()">
+          </div>
+          <div class="col-6">
+            <label class="form-label small">Margin Right</label>
+            <input type="number" id="pageMarginRight" class="form-control form-control-sm" value="36" oninput="updatePageMargins()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden standard compatibility inputs -->
+    <input type="hidden" name="title" id="hidden_title">
+    <input type="hidden" name="declaration_text" id="hidden_declaration_text">
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const templateList = {{ templates|tojson|safe }};
+  let activeLayout = {
+    layout: "A4_PORTRAIT",
+    margins: { top: 36, bottom: 36, left: 36, right: 36 },
+    elements: []
+  };
+  let selectedIndex = -1;
+
+  function loadTemplate(key) {
+    const match = templateList.find(x => x.template_key === key);
+    if (!match) return;
+
+    document.getElementById("t_name_input").value = match.template_name;
+    
+    // Parse JSON layout if available, or generate standard fallback layout
+    if (match.template_json) {
+      try {
+        activeLayout = JSON.parse(match.template_json);
+      } catch(e) {
+        generateDefaultLayout(match);
+      }
+    } else {
+      generateDefaultLayout(match);
+    }
+
+    // Apply layout values
+    document.getElementById("pageLayoutSelect").value = activeLayout.layout;
+    document.getElementById("pageMarginTop").value = activeLayout.margins.top;
+    document.getElementById("pageMarginBottom").value = activeLayout.margins.bottom;
+    document.getElementById("pageMarginLeft").value = activeLayout.margins.left;
+    document.getElementById("pageMarginRight").value = activeLayout.margins.right;
+
+    renderCanvas();
+    selectElement(-1);
+  }
+
+  function generateDefaultLayout(match) {
+    activeLayout = {
+      layout: match.page_layout || "A4_PORTRAIT",
+      margins: {
+        top: match.margin_top || 36,
+        bottom: match.margin_bottom || 36,
+        left: match.margin_left || 36,
+        right: match.margin_right || 36
+      },
+      elements: [
+        { type: "title", content: match.title || "CERTIFICATE OF RECYCLING", styles: { "font-size": "20px", "font-weight": "bold", "text-align": "center", "color": "#1e3a8a" } },
+        { type: "text", content: match.declaration_text || "This certifies that waste has been responsibly processed.", styles: { "font-size": "12px", "line-height": "1.6", "text-align": "justify" } },
+        { type: "dynamic_table", source_type: "purchase", visible: match.show_processing_summary === 1 },
+        { type: "signature", title: match.signature_title || "Authorized Signatory", styles: {} }
+      ]
+    };
+  }
+
+  function renderCanvas() {
+    const canvas = document.getElementById("canvasPage");
+    canvas.className = "designer-canvas-page " + (activeLayout.layout === "A4_LANDSCAPE" ? "landscape" : "");
+    
+    // Apply margins styling in canvas display
+    canvas.style.padding = `${activeLayout.margins.top}px ${activeLayout.margins.right}px ${activeLayout.margins.bottom}px ${activeLayout.margins.left}px`;
+    
+    canvas.innerHTML = "";
+
+    activeLayout.elements.forEach((el, index) => {
+      const div = document.createElement("div");
+      div.className = "canvas-element" + (selectedIndex === index ? " selected" : "");
+      div.onclick = (e) => {
+        e.stopPropagation();
+        selectElement(index);
+      };
+
+      // Badge label
+      const badge = document.createElement("span");
+      badge.className = "element-badge";
+      badge.textContent = el.type;
+      div.appendChild(badge);
+
+      // Render inner content representation
+      const contentDiv = document.createElement("div");
+      applyElementStyles(contentDiv, el.styles);
+
+      if (el.type === "title" || el.type === "text" || el.type === "header" || el.type === "footer") {
+        contentDiv.textContent = el.content || "Empty content block...";
+      } else if (el.type === "logo") {
+        contentDiv.innerHTML = `<span class="badge bg-light text-secondary border p-3"><i class="bi bi-image me-1"></i> [Company Logo]</span>`;
+      } else if (el.type === "stamp") {
+        contentDiv.innerHTML = `<span class="badge bg-light text-secondary border p-3"><i class="bi bi-bookmark-star me-1"></i> [Stamp Image]</span>`;
+      } else if (el.type === "dynamic_table") {
+        contentDiv.innerHTML = `
+          <table class="table table-bordered table-sm m-0 small" style="opacity: 0.7;">
+            <thead><tr class="table-dark"><th>Material Details</th><th>Qty</th><th>Weight</th></tr></thead>
+            <tbody><tr><td>Sample Scrap Metal</td><td>10 Units</td><td>100.00 KG</td></tr></tbody>
+          </table>
+        `;
+      } else if (el.type === "qr") {
+        contentDiv.innerHTML = `<div class="d-inline-block border p-2 bg-light"><i class="bi bi-qr-code fs-3 text-dark"></i><br><span style="font-size:7px;">${el.content || '{{QR_CODE}}'}</span></div>`;
+      } else if (el.type === "barcode") {
+        contentDiv.innerHTML = `<div class="d-inline-block border p-2 bg-light text-center"><i class="bi bi-upc-scan fs-3 text-dark"></i><br><span style="font-size:7px;">${el.content || '{{BARCODE}}'}</span></div>`;
+      } else if (el.type === "signature") {
+        contentDiv.innerHTML = `
+          <div style="border-top: 1px solid #ccc; width: 150px; text-align: center; margin-left: auto; padding-top: 5px;">
+            <small class="fw-bold">${el.content || 'Authorized Signatory'}</small>
+          </div>
+        `;
+      } else if (el.type === "watermark") {
+        contentDiv.innerHTML = `<span class="text-danger opacity-25 fw-bold fs-2 text-uppercase" style="letter-spacing:5px;">[Watermark: ${el.content || 'DRAFT'}]</span>`;
+      } else if (el.type === "line") {
+        contentDiv.innerHTML = `<hr style="border: none; border-top: 1.5px solid #ccc; margin: 5px 0;">`;
+      } else if (el.type === "page_break") {
+        contentDiv.innerHTML = `<div class="text-center text-muted small my-2 border-top border-bottom py-1" style="border-style: dashed !important;"><i class="bi bi-file-earmark-break me-1"></i> Page Break</div>`;
+      } else {
+        contentDiv.textContent = el.content || `[${el.type} Element]`;
+      }
+
+      div.appendChild(contentDiv);
+      canvas.appendChild(div);
+    });
+
+    // Close on canvas empty click
+    canvas.onclick = () => selectElement(-1);
+
+    // Save serialization
+    document.getElementById("template_json_input").value = JSON.stringify(activeLayout);
+    
+    // Sync hidden standard title/declaration inputs for backward compatibility
+    const titleEl = activeLayout.elements.find(x => x.type === "title");
+    const declEl = activeLayout.elements.find(x => x.type === "text");
+    document.getElementById("hidden_title").value = titleEl ? titleEl.content : "";
+    document.getElementById("hidden_declaration_text").value = declEl ? declEl.content : "";
+  }
+
+  function applyElementStyles(dom, styles) {
+    if (!styles) return;
+    if (styles.alignment) dom.style.textAlign = styles.alignment;
+    if (styles.size) dom.style.fontSize = styles.size;
+    if (styles.font) dom.style.fontFamily = styles.font;
+    if (styles.color) dom.style.color = styles.color;
+    if (styles.background) dom.style.backgroundColor = styles.background;
+    if (styles.padding) dom.style.padding = styles.padding;
+    if (styles.margin) dom.style.margin = styles.margin;
+    if (styles.width) dom.style.width = styles.width;
+    if (styles.height) dom.style.height = styles.height;
+    if (styles.border) dom.style.border = styles.border;
+  }
+
+  function addElement(type) {
+    const defaultEl = {
+      type: type,
+      content: type === "title" ? "New Header Title" : type === "text" ? "Enter declaration body here..." : type === "signature" ? "Authorized Signatory" : "",
+      styles: {}
+    };
+    activeLayout.elements.push(defaultEl);
+    renderCanvas();
+    selectElement(activeLayout.elements.length - 1);
+  }
+
+  function selectElement(index) {
+    selectedIndex = index;
+    const items = document.querySelectorAll(".canvas-element");
+    items.forEach((item, i) => {
+      if (i === index) item.classList.add("selected");
+      else item.classList.remove("selected");
+    });
+
+    const editor = document.getElementById("propertiesEditor");
+    const msg = document.getElementById("noSelectionMsg");
+
+    if (index === -1) {
+      editor.style.display = "none";
+      msg.style.display = "block";
+      return;
+    }
+
+    editor.style.display = "block";
+    msg.style.display = "none";
+
+    const el = activeLayout.elements[index];
+    document.getElementById("propContent").value = el.content || "";
+    document.getElementById("propAlign").value = el.styles.alignment || "left";
+    document.getElementById("propFontSize").value = el.styles.size || "";
+    document.getElementById("propFontFamily").value = el.styles.font || "Segoe UI";
+    document.getElementById("propColor").value = el.styles.color || "#000000";
+    document.getElementById("propBgColor").value = el.styles.background || "#ffffff";
+    document.getElementById("propPadding").value = el.styles.padding || "";
+    document.getElementById("propMargin").value = el.styles.margin || "";
+    document.getElementById("propWidth").value = el.styles.width || "";
+    document.getElementById("propHeight").value = el.styles.height || "";
+    document.getElementById("propBorder").value = el.styles.border || "";
+  }
+
+  function updateActiveElement(field, value) {
+    if (selectedIndex === -1) return;
+    activeLayout.elements[selectedIndex][field] = value;
+    renderCanvas();
+  }
+
+  function updateActiveStyle(styleKey, value) {
+    if (selectedIndex === -1) return;
+    if (!activeLayout.elements[selectedIndex].styles) {
+      activeLayout.elements[selectedIndex].styles = {};
+    }
+    activeLayout.elements[selectedIndex].styles[styleKey] = value;
+    renderCanvas();
+  }
+
+  function removeActiveElement() {
+    if (selectedIndex === -1) return;
+    activeLayout.elements.splice(selectedIndex, 1);
+    selectedIndex = -1;
+    renderCanvas();
+    selectElement(-1);
+  }
+
+  function updatePageLayout(layout) {
+    activeLayout.layout = layout;
+    renderCanvas();
+  }
+
+  function updatePageMargins() {
+    activeLayout.margins.top = parseInt(document.getElementById("pageMarginTop").value) || 0;
+    activeLayout.margins.bottom = parseInt(document.getElementById("pageMarginBottom").value) || 0;
+    activeLayout.margins.left = parseInt(document.getElementById("pageMarginLeft").value) || 0;
+    activeLayout.margins.right = parseInt(document.getElementById("pageMarginRight").value) || 0;
+    renderCanvas();
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const defaultKey = document.getElementById("templateKeySelect").value;
+    loadTemplate(defaultKey);
+  });
+</script>
+{% endblock %}

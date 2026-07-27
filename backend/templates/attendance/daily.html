@@ -1,0 +1,183 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Mark Daily Attendance – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Daily Attendance Marking",
+    subtitle="Record employee attendance individually or in bulk for the selected date.",
+    back_url="/employees/dashboard",
+    actions=[
+        {'label': 'Monthly Register', 'url': url_for('employees.attendance_register'), 'icon': 'bi-grid-3x3', 'class': 'btn-outline-info'},
+        {'label': 'Attendance Dashboard', 'url': url_for('employees.attendance_dashboard'), 'icon': 'bi-speedometer2', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+
+  <!-- Filter & Date Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <form method="GET" action="{{ url_for('employees.daily_attendance') }}" class="row g-2 align-items-center">
+        <!-- Date Selector -->
+        <div class="col-12 col-md-3">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Attendance Date</label>
+          <input type="date" name="date" class="form-control" max="{{ today_str }}" value="{{ date_str }}" onchange="this.form.submit()">
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Department</label>
+          <select name="department" class="form-select" onchange="this.form.submit()">
+            <option value="">All Departments</option>
+            {% for dept in filter_options.departments %}
+              <option value="{{ dept }}" {{ 'selected' if selected_department == dept }}>{{ dept }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-6 col-md-4">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Search Employee</label>
+          <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search Code, Name..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+          </div>
+        </div>
+
+        <!-- Reset -->
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <a href="{{ url_for('employees.daily_attendance', date=date_str) }}" class="btn btn-outline-secondary w-100" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Attendance Form -->
+  <form method="POST" action="{{ url_for('employees.daily_attendance', date=date_str, department=selected_department) }}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="attendance_date" value="{{ date_str }}">
+
+    <!-- Bulk Action Toolbar Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 bg-light">
+      <div class="card-body p-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="fw-semibold text-dark">
+          <i class="bi bi-stars text-primary me-2"></i>Quick Bulk Actions for {{ date_str }}:
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="setAllStatus('Present')">
+            <i class="bi bi-check-all me-1"></i>Set All Present
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="setAllStatus('Absent')">
+            <i class="bi bi-x-circle me-1"></i>Set All Absent
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-warning" onclick="setAllStatus('Half Day')">
+            <i class="bi bi-clock me-1"></i>Set All Half Day
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-purple" style="color: #7e22ce; border-color: #7e22ce;" onclick="setAllStatus('Holiday')">
+            <i class="bi bi-calendar-event me-1"></i>Set All Holiday
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Table -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+      <div class="card-body p-0">
+        {% if daily_records %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+                <th>Employee Code</th>
+                <th>Employee Name</th>
+                <th>Department</th>
+                <th style="width: 180px;">Attendance Status</th>
+                <th style="width: 130px;">Check In</th>
+                <th style="width: 130px;">Check Out</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in daily_records %}
+              <tr>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace px-2 py-1 fs-6">
+                    {{ rec.employee_code }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if rec.profile_photo %}
+                      <img src="{{ rec.profile_photo }}" class="rounded-circle object-fit-cover" width="32" height="32" alt="{{ rec.full_name }}">
+                    {% else %}
+                      <div class="rounded-circle bg-secondary bg-opacity-10 text-secondary fw-bold d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 12px;">
+                        {{ rec.first_name[0] }}{{ rec.last_name[0] if rec.last_name else '' }}
+                      </div>
+                    {% endif %}
+                    <div>
+                      <strong class="text-dark d-block mb-0">{{ rec.full_name }}</strong>
+                      <small class="text-muted" style="font-size: 0.75rem;">{{ rec.designation or 'Staff' }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ rec.department or 'N/A' }}</span></td>
+                <td>
+                  <select name="status_{{ rec.employee_id }}" class="form-select form-select-sm status-select fw-semibold">
+                    <option value="Present" {{ 'selected' if rec.attendance_status == 'Present' }}>Present</option>
+                    <option value="Absent" {{ 'selected' if rec.attendance_status == 'Absent' }}>Absent</option>
+                    <option value="Half Day" {{ 'selected' if rec.attendance_status == 'Half Day' }}>Half Day</option>
+                    <option value="Leave" {{ 'selected' if rec.attendance_status == 'Leave' }}>Leave</option>
+                    <option value="Holiday" {{ 'selected' if rec.attendance_status == 'Holiday' }}>Holiday</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="time" name="check_in_{{ rec.employee_id }}" class="form-control form-control-sm" value="{{ rec.check_in_time or '09:00' }}">
+                </td>
+                <td>
+                  <input type="time" name="check_out_{{ rec.employee_id }}" class="form-control form-control-sm" value="{{ rec.check_out_time or '18:00' }}">
+                </td>
+                <td>
+                  <input type="text" name="remarks_{{ rec.employee_id }}" class="form-control form-control-sm" placeholder="Optional remarks..." value="{{ rec.remarks or '' }}">
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-people fs-1 d-block mb-2"></i>
+          No active employees found.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Submit Floating Bar / Bottom Action -->
+    {% if daily_records %}
+    <div class="d-flex align-items-center justify-content-between mb-5">
+      <div class="text-muted small">
+        Total Employees to Mark: <strong>{{ daily_records|length }}</strong>
+      </div>
+      <button type="submit" class="btn btn-primary px-5 py-2 shadow">
+        <i class="bi bi-check-circle-fill me-2"></i>Save Attendance Records
+      </button>
+    </div>
+    {% endif %}
+  </form>
+
+</div>
+
+<script>
+function setAllStatus(statusValue) {
+  const selects = document.querySelectorAll('.status-select');
+  selects.forEach(select => {
+    select.value = statusValue;
+  });
+}
+</script>
+{% endblock %}

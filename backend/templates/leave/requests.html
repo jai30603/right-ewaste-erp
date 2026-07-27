@@ -1,0 +1,211 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Leave Approval Workflow – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Leave Requests & Approvals",
+    subtitle="Review pending leave applications, approve or reject requests, and manage leave status.",
+    back_url="/employees/dashboard",
+    actions=[
+        {'label': 'Leave Calendar', 'url': url_for('employees.leave_calendar'), 'icon': 'bi-calendar-month', 'class': 'btn-outline-info'},
+        {'label': 'Apply Leave', 'url': url_for('employees.apply_leave'), 'icon': 'bi-plus-circle', 'class': 'btn-primary'}
+    ]
+) }}
+
+  <!-- Search & Filter Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <form method="GET" action="{{ url_for('employees.leave_requests') }}" class="row g-2 align-items-center">
+        <!-- Status Filter -->
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Status</label>
+          <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="">All Statuses</option>
+            <option value="Pending" {{ 'selected' if selected_status == 'Pending' }}>Pending Approval</option>
+            <option value="Approved" {{ 'selected' if selected_status == 'Approved' }}>Approved</option>
+            <option value="Rejected" {{ 'selected' if selected_status == 'Rejected' }}>Rejected</option>
+            <option value="Cancelled" {{ 'selected' if selected_status == 'Cancelled' }}>Cancelled</option>
+          </select>
+        </div>
+
+        <!-- Department Filter -->
+        <div class="col-6 col-md-3">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Department</label>
+          <select name="department" class="form-select" onchange="this.form.submit()">
+            <option value="">All Departments</option>
+            {% for dept in filter_options.departments %}
+              <option value="{{ dept }}" {{ 'selected' if selected_department == dept }}>{{ dept }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Search Filter -->
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold mb-1" style="font-size: 0.8rem;">Search Employee</label>
+          <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search Code, Name..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex align-items-end">
+          <a href="{{ url_for('employees.leave_requests') }}" class="btn btn-outline-secondary w-100" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Requests Table Card -->
+  <div class="card border-0 shadow-sm rounded-3">
+    <div class="card-body p-0">
+      {% if requests %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+              <th>ID</th>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Leave Type</th>
+              <th>Dates</th>
+              <th>Total Days</th>
+              <th>Status</th>
+              <th>Reason</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+            <tr>
+              <td><span class="badge bg-light text-dark font-monospace border">#{{ req.id }}</span></td>
+              <td>
+                <strong class="text-dark d-block mb-0">{{ req.full_name }}</strong>
+                <small class="text-muted font-monospace">{{ req.employee_code }}</small>
+              </td>
+              <td><span class="badge bg-light text-dark border">{{ req.department or 'N/A' }}</span></td>
+              <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ req.leave_name }} ({{ req.leave_code }})</span></td>
+              <td>
+                <small class="text-dark fw-semibold d-block"><i class="bi bi-calendar3 me-1 text-primary"></i>{{ req.start_date }} to {{ req.end_date }}</small>
+              </td>
+              <td><strong class="text-dark">{{ req.total_days }} day{{ 's' if req.total_days > 1 }}</strong></td>
+              <td>
+                {% if req.status == 'Approved' %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+                    <i class="bi bi-check-circle me-1"></i>Approved
+                  </span>
+                {% elif req.status == 'Pending' %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-1">
+                    <i class="bi bi-hourglass-split me-1"></i>Pending
+                  </span>
+                {% elif req.status == 'Rejected' %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-1" title="{{ req.rejection_reason or '' }}">
+                    <i class="bi bi-x-circle me-1"></i>Rejected
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1">
+                    <i class="bi bi-dash-circle me-1"></i>Cancelled
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                <small class="text-muted text-truncate d-inline-block" style="max-width: 180px;" title="{{ req.reason }}">{{ req.reason }}</small>
+                {% if req.attachment_path %}
+                  <a href="{{ req.attachment_path }}" target="_blank" class="ms-1 text-primary" title="View Attachment"><i class="bi bi-paperclip"></i></a>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if req.status == 'Pending' %}
+                  <div class="btn-group btn-group-sm">
+                    <form method="POST" action="{{ url_for('employees.leave_action', req_id=req.id) }}" class="d-inline">
+                      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="approve">
+                      <button type="submit" class="btn btn-outline-success" title="Approve Leave">
+                        <i class="bi bi-check-lg me-1"></i>Approve
+                      </button>
+                    </form>
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ req.id }}" title="Reject Leave">
+                      <i class="bi bi-x-lg me-1"></i>Reject
+                    </button>
+                  </div>
+
+                  <!-- Reject Modal -->
+                  <div class="modal fade text-start" id="rejectModal{{ req.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <form method="POST" action="{{ url_for('employees.leave_action', req_id=req.id) }}">
+                          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                          <input type="hidden" name="action" value="reject">
+                          <div class="modal-header">
+                            <h5 class="modal-title fw-bold">Reject Leave Request #{{ req.id }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                            <p class="small text-muted mb-2">Rejecting leave application for <strong>{{ req.full_name }}</strong> ({{ req.total_days }} days).</p>
+                            <label class="form-label fw-semibold">Optional Rejection Reason</label>
+                            <textarea name="rejection_reason" class="form-control" rows="3" placeholder="Enter reason for rejection..."></textarea>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                {% elif req.status == 'Approved' %}
+                  <form method="POST" action="{{ url_for('employees.leave_action', req_id=req.id) }}" class="d-inline" onsubmit="return confirm('Cancel approved leave? This will revert attendance & restore leave balance.');">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="cancel">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" title="Cancel Approved Leave">
+                      <i class="bi bi-arrow-counterclockwise me-1"></i>Cancel
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="text-muted small">N/A</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      {% if total_pages > 1 %}
+      <div class="d-flex align-items-center justify-content-between p-3 border-top">
+        <div class="text-muted small">
+          Showing page <strong>{{ current_page }}</strong> of <strong>{{ total_pages }}</strong> (Total: {{ total_count }})
+        </div>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item {{ 'disabled' if current_page <= 1 }}">
+            <a class="page-link" href="{{ url_for('employees.leave_requests', page=current_page-1, status=selected_status, department=selected_department, search=search) }}">Previous</a>
+          </li>
+          {% for p in range(1, total_pages + 1) %}
+          <li class="page-item {{ 'active' if p == current_page }}">
+            <a class="page-link" href="{{ url_for('employees.leave_requests', page=p, status=selected_status, department=selected_department, search=search) }}">{{ p }}</a>
+          </li>
+          {% endfor %}
+          <li class="page-item {{ 'disabled' if current_page >= total_pages }}">
+            <a class="page-link" href="{{ url_for('employees.leave_requests', page=current_page+1, status=selected_status, department=selected_department, search=search) }}">Next</a>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+        No leave requests found matching criteria.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

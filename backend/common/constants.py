@@ -1,0 +1,77 @@
+"""
+Centralized Constants
+Avoids hardcoded strings throughout the project.
+"""
+
+class PurchaseStatus:
+    DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+    
+    ALL = {DRAFT, CONFIRMED, CANCELLED}
+
+
+class SalesStatus:
+    DRAFT = "DRAFT"
+    CONFIRMED = "CONFIRMED"
+    PRINTED = "PRINTED"
+    PAID = "PAID"
+    CANCELLED = "CANCELLED"
+    
+    ALL = {DRAFT, CONFIRMED, PRINTED, PAID, CANCELLED}
+
+
+class MovementType:
+    PURCHASE = "PURCHASE"
+    SALE = "SALE"
+    PROCESSING = "PROCESSING"
+    REFURBISHMENT = "REFURBISHMENT"
+    DISMANTLING = "DISMANTLING"
+    SORTING = "SORTING"
+    INTERNAL_CONSUMPTION = "INTERNAL_CONSUMPTION"
+    WEIGHT_ADJUSTMENT = "WEIGHT_ADJUSTMENT"
+    MANUAL_ADJUSTMENT = "MANUAL_ADJUSTMENT"
+    RETURN = "RETURN"
+    TRANSFER = "TRANSFER"
+    
+    ALL = {
+        PURCHASE, SALE, PROCESSING, REFURBISHMENT, DISMANTLING, SORTING,
+        INTERNAL_CONSUMPTION, WEIGHT_ADJUSTMENT, MANUAL_ADJUSTMENT, RETURN, TRANSFER
+    }
+
+
+class GSTType:
+    CGST_SGST = "CGST_SGST"
+    IGST = "IGST"
+    EXEMPT = "EXEMPT"
+    
+    ALL = {CGST_SGST, IGST, EXEMPT}
+
+
+class InventoryState:
+    RAW = "RAW"
+    PROCESSING = "PROCESSING"
+    RECOVERED = "RECOVERED"
+    FINISHED = "FINISHED"
+    RESERVED = "RESERVED"
+    REJECTED = "REJECTED"
+    DISPOSED = "DISPOSED"
+    
+    ALL = {RAW, PROCESSING, RECOVERED, FINISHED, RESERVED, REJECTED, DISPOSED}
+
+
+class UserRole:
+    ADMIN = "admin"
+    OPERATOR = "operator"
+    VIEWER = "viewer"
+    
+    ALL = {ADMIN, OPERATOR, VIEWER}
+
+
+class InvoicePrefix:
+    PURCHASE = "PUR"
+    SALES = "INV"
+
+
+class WarehouseName:
+    MAIN = "Main Warehouse"

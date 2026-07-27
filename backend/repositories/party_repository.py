@@ -1,15 +1,9 @@
 from database import get_connection
 
 
-def generate_party_code():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT MAX(CAST(SUBSTR(party_code, 5) AS INTEGER)) FROM party"
-    )
-    max_num = cursor.fetchone()[0] or 0
-    conn.close()
-    return f"PTY-{(max_num + 1):05d}"
+def generate_party_code(conn=None):
+    from repositories import settings_repository
+    return settings_repository.increment_and_get_number("PARTY", conn)
 
 
 def get_all_parties():
@@ -142,4 +136,22 @@ def get_active_party_states():
     states = [row[0] for row in cursor.fetchall()]
     conn.close()
     return states
+
+
+def get_customer_top_materials(party_id, limit=5):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT m.material_name, SUM(sii.quantity) as total_qty, m.uom
+        FROM sales_invoice_item sii
+        JOIN sales_invoice si ON sii.sales_invoice_id = si.id
+        JOIN material m ON sii.material_id = m.id
+        WHERE si.party_id = ? AND si.is_active = 1
+        GROUP BY sii.material_id
+        ORDER BY total_qty DESC
+        LIMIT ?
+    """, (party_id, limit))
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
 

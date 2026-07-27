@@ -1,0 +1,259 @@
+{% extends "shared/base.html" %}
+{% block title %}Material Flow Dashboard – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Material Flow Dashboard",
+    subtitle="Enterprise Material Intelligence — Real-time production analytics, reconciliation, and end-to-end traceability.",
+    back_url="/inventory/dashboard",
+    actions=[
+        {'label': 'Batches', 'url': '/inventory/batches', 'icon': 'bi-boxes', 'class': 'btn-outline-secondary'},
+        {'label': 'Timeline Search', 'url': '/inventory/timeline', 'icon': 'bi-diagram-3', 'class': 'btn-primary'}
+    ]
+) }}
+
+<!-- Daily KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--blue">
+      <div class="kpi-icon"><i class="bi bi-box-arrow-in-down"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ "%.2f"|format(daily_summary.intake_wt) }} KG</div>
+        <div class="kpi-label">Material Intake Today</div>
+        <div class="kpi-sub">{{ daily_summary.intake_qty }} units received</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--green">
+      <div class="kpi-icon"><i class="bi bi-recycle"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ "%.2f"|format(daily_summary.recoverable_wt) }} KG</div>
+        <div class="kpi-label">Recoverable Materials</div>
+        <div class="kpi-sub">Scrap & Metals</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--purple">
+      <div class="kpi-icon"><i class="bi bi-tools"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ "%.2f"|format(daily_summary.refurbishable_wt) }} KG</div>
+        <div class="kpi-label">Refurbishable Products</div>
+        <div class="kpi-sub">Finished goods</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--red">
+      <div class="kpi-icon"><i class="bi bi-trash3"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ "%.2f"|format(daily_summary.disposal_wt) }} KG</div>
+        <div class="kpi-label">Disposal Materials</div>
+        <div class="kpi-sub">{{ daily_summary.disposal_queue_count }} in queue</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--orange">
+      <div class="kpi-icon"><i class="bi bi-box-arrow-up-right"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ "%.2f"|format(daily_summary.dispatch_wt) }} KG</div>
+        <div class="kpi-label">Sales Dispatch Today</div>
+        <div class="kpi-sub">{{ daily_summary.dispatch_qty }} units dispatched</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="kpi-card {% if reconciliation.is_fully_reconciled %}kpi-card--green{% else %}kpi-card--red{% endif %}">
+      <div class="kpi-icon"><i class="bi bi-{% if reconciliation.is_fully_reconciled %}check-circle{% else %}exclamation-triangle{% endif %}"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ reconciliation.reconciled_jobs_count }}/{{ reconciliation.completed_jobs_count }}</div>
+        <div class="kpi-label">Jobs Reconciled</div>
+        <div class="kpi-sub">{{ reconciliation.unreconciled_jobs_count }} unreconciled</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--blue">
+      <div class="kpi-icon"><i class="bi bi-arrow-down-up"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-value">{{ "%.2f"|format(reconciliation.total_input_weight) }} KG</div>
+        <div class="kpi-label">Total E-Waste Processed</div>
+        <div class="kpi-sub">All completed jobs</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="kpi-card kpi-card--green">
+      <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="kpi-body">
+        {% set total_out = reconciliation.total_recoverable_weight + reconciliation.total_refurbishable_weight %}
+        {% set rec_pct = (total_out / reconciliation.total_input_weight * 100) if reconciliation.total_input_weight > 0 else 0 %}
+        <div class="kpi-value">{{ "%.1f"|format(rec_pct) }}%</div>
+        <div class="kpi-label">Overall Recovery Rate</div>
+        <div class="kpi-sub">Recoverable + Refurbishable</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reconciliation Section -->
+{% if not reconciliation.is_fully_reconciled %}
+<div class="alert alert-warning mb-4 d-flex align-items-center gap-3" role="alert">
+  <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+  <div>
+    <strong>Reconciliation Warning:</strong> {{ reconciliation.unreconciled_jobs_count }} processing jobs have weight discrepancies totalling 
+    <strong>{{ "%.4f"|format(reconciliation.overall_discrepancy) }} KG</strong>.
+    <a href="/processing/jobs" class="alert-link ms-2">Review Processing Jobs →</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Material Flow Visualization -->
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-diagram-3 me-2 text-primary"></i>Daily Material Flow – {{ report_date }}</h5></div>
+      <div class="card-body">
+        <div class="material-flow-diagram">
+          <!-- Flow Diagram -->
+          <div class="flow-node flow-purchase">
+            <i class="bi bi-inbox-fill"></i>
+            <span>Purchase Intake</span>
+            <strong>{{ "%.2f"|format(daily_summary.intake_wt) }} KG</strong>
+          </div>
+          <div class="flow-arrow-down"><i class="bi bi-arrow-down"></i></div>
+          <div class="flow-node flow-inventory">
+            <i class="bi bi-boxes"></i>
+            <span>Inventory</span>
+            <strong>Received</strong>
+          </div>
+          <div class="flow-arrow-down"><i class="bi bi-arrow-down"></i></div>
+          <div class="flow-node flow-processing">
+            <i class="bi bi-gear-fill"></i>
+            <span>Processing</span>
+            <strong>Classification Engine</strong>
+          </div>
+          <div class="flow-split">
+            <div class="flow-branch">
+              <div class="flow-arrow-branch text-success"><i class="bi bi-arrow-down-left"></i></div>
+              <div class="flow-node flow-recoverable">
+                <i class="bi bi-recycle"></i>
+                <span>Recoverable</span>
+                <strong>{{ "%.2f"|format(daily_summary.recoverable_wt) }} KG</strong>
+              </div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-arrow-branch text-purple"><i class="bi bi-arrow-down"></i></div>
+              <div class="flow-node flow-refurbishable">
+                <i class="bi bi-tools"></i>
+                <span>Refurbishable</span>
+                <strong>{{ "%.2f"|format(daily_summary.refurbishable_wt) }} KG</strong>
+              </div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-arrow-branch text-danger"><i class="bi bi-arrow-down-right"></i></div>
+              <div class="flow-node flow-disposal">
+                <i class="bi bi-trash3"></i>
+                <span>Disposal</span>
+                <strong>{{ "%.2f"|format(daily_summary.disposal_wt) }} KG</strong>
+              </div>
+            </div>
+          </div>
+          <div class="flow-sales text-center mt-3">
+            <div class="flow-node flow-sales-node d-inline-block">
+              <i class="bi bi-box-arrow-up-right"></i>
+              <span>Sales Dispatch</span>
+              <strong>{{ "%.2f"|format(daily_summary.dispatch_wt) }} KG</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-pie-chart me-2 text-success"></i>Recovery Analytics</h5></div>
+      <div class="card-body">
+        {% set total_all = reconciliation.total_recoverable_weight + reconciliation.total_refurbishable_weight + reconciliation.total_disposal_weight + reconciliation.total_loss_weight %}
+        {% if total_all > 0 %}
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-1"><span>Recoverable</span><strong>{{ "%.1f"|format(reconciliation.total_recoverable_weight / total_all * 100) }}%</strong></div>
+          <div class="progress mb-2" style="height:8px"><div class="progress-bar bg-success" style="width:{{ reconciliation.total_recoverable_weight / total_all * 100 }}%"></div></div>
+          <div class="d-flex justify-content-between mb-1"><span>Refurbishable</span><strong>{{ "%.1f"|format(reconciliation.total_refurbishable_weight / total_all * 100) }}%</strong></div>
+          <div class="progress mb-2" style="height:8px"><div class="progress-bar bg-purple" style="width:{{ reconciliation.total_refurbishable_weight / total_all * 100 }}%"></div></div>
+          <div class="d-flex justify-content-between mb-1"><span>Disposal</span><strong>{{ "%.1f"|format(reconciliation.total_disposal_weight / total_all * 100) }}%</strong></div>
+          <div class="progress mb-2" style="height:8px"><div class="progress-bar bg-danger" style="width:{{ reconciliation.total_disposal_weight / total_all * 100 }}%"></div></div>
+          <div class="d-flex justify-content-between mb-1"><span>Loss</span><strong>{{ "%.1f"|format(reconciliation.total_loss_weight / total_all * 100) }}%</strong></div>
+          <div class="progress mb-2" style="height:8px"><div class="progress-bar bg-warning" style="width:{{ reconciliation.total_loss_weight / total_all * 100 }}%"></div></div>
+        </div>
+        {% else %}
+        <div class="text-muted text-center py-4"><i class="bi bi-bar-chart-line fs-2 d-block mb-2"></i>No processing data yet.</div>
+        {% endif %}
+
+        <hr>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-semibold">Overall Discrepancy</span>
+          <span class="badge {% if reconciliation.overall_discrepancy == 0 %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ "%.4f"|format(reconciliation.overall_discrepancy) }} KG</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Reconciliation Status</span>
+          <span class="badge {% if reconciliation.is_fully_reconciled %}bg-success{% else %}bg-danger{% endif %}">{% if reconciliation.is_fully_reconciled %}✓ Fully Reconciled{% else %}⚠ Discrepancies Found{% endif %}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3 mt-2">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><h5 class="card-title mb-0"><i class="bi bi-lightning me-2 text-warning"></i>Quick Navigation</h5></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3"><a href="/inventory/batches" class="btn btn-outline-primary w-100"><i class="bi bi-boxes me-2"></i>View All Batches</a></div>
+          <div class="col-md-3"><a href="/inventory/timeline" class="btn btn-outline-info w-100"><i class="bi bi-diagram-3 me-2"></i>Material Timeline</a></div>
+          <div class="col-md-3"><a href="/platform/api/reconciliation/summary" class="btn btn-outline-success w-100"><i class="bi bi-check2-all me-2"></i>Reconciliation API</a></div>
+          <div class="col-md-3"><a href="/factory-reports" class="btn btn-outline-secondary w-100"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Factory Reports</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.kpi-card { display:flex; align-items:center; gap:1rem; background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:1.2rem; }
+.kpi-icon { font-size:2rem; width:52px; text-align:center; }
+.kpi-card--blue .kpi-icon { color:#4a9eff; }
+.kpi-card--green .kpi-icon { color:#4caf7d; }
+.kpi-card--red .kpi-icon { color:#ef5350; }
+.kpi-card--purple .kpi-icon { color:#9c27b0; }
+.kpi-card--orange .kpi-icon { color:#ff9800; }
+.kpi-value { font-size:1.5rem; font-weight:700; line-height:1; }
+.kpi-label { font-size:0.8rem; color:var(--text-muted); margin-top:0.2rem; }
+.kpi-sub { font-size:0.75rem; color:var(--text-muted); }
+
+.material-flow-diagram { display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
+.flow-node { display:flex; flex-direction:column; align-items:center; gap:4px; background:var(--table-hover-bg); border:1px solid var(--border-color); border-radius:12px; padding:0.8rem 1.5rem; min-width:140px; text-align:center; font-size:0.85rem; }
+.flow-node i { font-size:1.4rem; }
+.flow-purchase .flow-node { border-color:#4a9eff; }
+.flow-processing { border-color:#ff9800!important; }
+.flow-recoverable { border-color:#4caf7d!important; }
+.flow-refurbishable { border-color:#9c27b0!important; }
+.flow-disposal { border-color:#ef5350!important; }
+.flow-sales-node { border-color:#4a9eff!important; }
+.flow-arrow-down { color:var(--text-muted); font-size:1.2rem; }
+.flow-split { display:flex; justify-content:center; gap:2rem; margin-top:0.5rem; }
+.flow-branch { display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
+.flow-arrow-branch { font-size:1.2rem; }
+.bg-purple { background-color:#9c27b0!important; }
+</style>
+{% endblock %}

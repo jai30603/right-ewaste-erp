@@ -1,0 +1,194 @@
+{% extends "shared/base.html" %}
+
+{% block title %}My Profile – Right Ewaste ERP{% endblock %}
+{% block page_title %}My Profile Hub{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Profile</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2" style="font-family: 'Inter', sans-serif;">
+    <div class="row g-4">
+        <!-- Bio Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4 text-center">
+                <div class="rounded-circle bg-light p-4 text-primary mx-auto mb-3 d-flex align-items-center justify-content-center fw-bold fs-2 text-uppercase" style="width: 90px; height: 90px; background-color: #f3f4f6;">
+                    {{ user.username[:2] }}
+                </div>
+                <h5 class="fw-bold mb-1 text-dark">{{ user.full_name }}</h5>
+                <p class="text-muted small mb-3">@{{ user.username }} | {{ user.erp_role }}</p>
+                <div class="text-start border-top pt-3 small text-secondary">
+                    <p class="mb-1"><strong>Employee ID:</strong> <span class="font-monospace float-end text-dark">{{ user.employee_id or 'N/A' }}</span></p>
+                    <p class="mb-1"><strong>Department:</strong> <span class="float-end text-dark">{{ user.department or 'N/A' }}</span></p>
+                    <p class="mb-1"><strong>Designation:</strong> <span class="float-end text-dark">{{ user.designation or 'N/A' }}</span></p>
+                    <p class="mb-1"><strong>Status:</strong> <span class="float-end badge bg-success">{{ user.status }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details tabs -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <ul class="nav nav-pills mb-4 gap-2" id="profileTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active rounded-pill px-3 py-2 small fw-bold" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                            <i class="bi bi-person me-1"></i> Personal Info
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill px-3 py-2 small fw-bold" id="pass-tab" data-bs-toggle="tab" data-bs-target="#pass" type="button" role="tab">
+                            <i class="bi bi-key me-1"></i> Change Password
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill px-3 py-2 small fw-bold" id="sessions-tab" data-bs-toggle="tab" data-bs-target="#sessions" type="button" role="tab">
+                            <i class="bi bi-laptop me-1"></i> Active Sessions
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill px-3 py-2 small fw-bold" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+                            <i class="bi bi-list-task me-1"></i> Login History
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="profileTabContent">
+                    <!-- PERSONAL INFO -->
+                    <div class="tab-pane fade show active" id="info" role="tabpanel">
+                        <form method="POST" action="/profile/update">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-secondary">Full Name</label>
+                                    <input type="text" class="form-control rounded-3" name="full_name" value="{{ user.full_name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Email Address</label>
+                                    <input type="email" class="form-control rounded-3" name="email" value="{{ user.email or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Phone Number</label>
+                                    <input type="text" class="form-control rounded-3" name="phone" value="{{ user.phone or '' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Preferred UI Theme</label>
+                                    <select class="form-select rounded-3" name="theme">
+                                        <option value="light" {% if preferences.get('theme') == 'light' %}selected{% endif %}>Light Theme</option>
+                                        <option value="dark" {% if preferences.get('theme') == 'dark' %}selected{% endif %}>Dark Theme</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Preferred Time Zone</label>
+                                    <select class="form-select rounded-3" name="timezone">
+                                        <option value="Asia/Kolkata" {% if preferences.get('timezone') == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (IST)</option>
+                                        <option value="UTC" {% if preferences.get('timezone') == 'UTC' %}selected{% endif %}>UTC</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- CHANGE PASSWORD -->
+                    <div class="tab-pane fade" id="pass" role="tabpanel">
+                        <form method="POST" action="/profile/password">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-secondary">Current Password</label>
+                                    <input type="password" class="form-control rounded-3" name="old_password" placeholder="••••••••" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">New Password</label>
+                                    <input type="password" class="form-control rounded-3" name="new_password" placeholder="••••••••" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-secondary">Confirm New Password</label>
+                                    <input type="password" class="form-control rounded-3" name="confirm_password" placeholder="••••••••" required>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-end">
+                                <button type="submit" class="btn btn-danger rounded-pill px-4">Update Password</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ACTIVE SESSIONS -->
+                    <div class="tab-pane fade" id="sessions" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover small">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                    <tr>
+                                        <th>Log-in Time</th>
+                                        <th>Last Active</th>
+                                        <th>IP &amp; Browser</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in sessions %}
+                                    <tr>
+                                        <td>{{ s.login_time }}</td>
+                                        <td>{{ s.last_activity }}</td>
+                                        <td>
+                                            <span class="fw-bold text-dark font-monospace small d-block">{{ s.ip_address }}</span>
+                                            <span class="text-muted small text-truncate d-inline-block" style="max-width: 250px;">{{ s.browser }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            {% if session.get('session_token') == s.session_token %}
+                                            <span class="badge bg-success rounded-pill px-2 py-1">Current Session</span>
+                                            {% else %}
+                                            <form method="POST" action="/profile/session/revoke/{{ s.session_token }}" class="d-inline" onsubmit="return confirm('Terminate this session? The device will be logged out.');">
+                                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-link text-danger p-0 border-0">Revoke</button>
+                                            </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- LOGIN HISTORY -->
+                    <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table align-middle table-hover small">
+                                <thead class="table-light text-secondary small text-uppercase">
+                                    <tr>
+                                        <th>Date &amp; Time</th>
+                                        <th>Location / IP</th>
+                                        <th>Status</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for h in login_history %}
+                                    <tr>
+                                        <td>{{ h.login_time }}</td>
+                                        <td class="font-monospace text-secondary">{{ h.ip_address }}</td>
+                                        <td>
+                                            {% if h.status == 'SUCCESS' %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1">Success</span>
+                                            {% else %}
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1">Failed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-muted small">{{ h.failure_reason or '—' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

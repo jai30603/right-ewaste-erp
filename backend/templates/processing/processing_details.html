@@ -1,0 +1,431 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Processing Job - {{ job.processing_number }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/processing.css') }}">
+<style>
+  .detail-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+  .card-action-bar { border-top: 1px solid #f1f5f9; padding-top: 16px; margin-top: 20px; }
+</style>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Processing Job: " ~ job.processing_number,
+    subtitle="End-to-end processing lifecycle — inputs, classification outputs, and weight reconciliation.",
+    back_url="/processing/jobs",
+    actions=[
+        {'label': 'All Jobs', 'url': '/processing/jobs', 'icon': 'bi-list-task', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+
+  <!-- Status & Actions Alert Banner -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <span class="text-muted small">Current Job Status</span>
+          <h4 class="fw-bold m-0 d-flex align-items-center gap-2">
+            {{ job.processing_number }}
+            {% if job.status == 'COMPLETED' %}
+              <span class="badge bg-success-subtle text-success fs-6">Completed</span>
+            {% elif job.status == 'IN_PROGRESS' %}
+              <span class="badge bg-warning-subtle text-warning fs-6">In Progress</span>
+            {% elif job.status == 'READY' %}
+              <span class="badge bg-info-subtle text-info fs-6">Ready</span>
+            {% elif job.status == 'CANCELLED' %}
+              <span class="badge bg-danger-subtle text-danger fs-6">Cancelled</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary fs-6">Draft</span>
+            {% endif %}
+          </h4>
+        </div>
+        
+        <div class="d-flex gap-2">
+          {% if job.status in ('DRAFT', 'READY') %}
+            <a href="{{ url_for('material_processing.edit_job', job_id=job.id) }}" class="btn btn-outline-primary">
+              <i class="bi bi-pencil me-1"></i>Edit Details / Outputs
+            </a>
+            <form action="{{ url_for('material_processing.start_job', job_id=job.id) }}" method="POST" class="d-inline">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-success fw-bold">
+                <i class="bi bi-play-fill me-1"></i>Start Job & Reserve Stock
+              </button>
+            </form>
+          {% endif %}
+
+          {% if job.status == 'IN_PROGRESS' and can_complete_job %}
+            <form action="{{ url_for('material_processing.complete_job', job_id=job.id) }}" method="POST" class="d-inline">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="outputs_json" value="{{ job.outputs|tojson|forceescape }}">
+              <input type="hidden" name="losses_json" value="{{ job.losses|tojson|forceescape }}">
+              
+              <!-- Check if weights check out before allowing Complete -->
+              {% set total_in_wt = job.inputs|map(attribute='weight')|sum %}
+              {% set total_out_wt = job.outputs|map(attribute='weight')|sum %}
+              {% set total_loss_wt = job.losses|map(attribute='loss_weight')|sum %}
+              {% set diff = (total_in_wt - (total_out_wt + total_loss_wt))|abs %}
+              
+              {% if diff <= config.PROCESSING_WEIGHT_TOLERANCE %}
+                <button type="submit" class="btn btn-success fw-bold">
+                  <i class="bi bi-check-lg me-1"></i>Complete Job & Sync Stock
+                </button>
+              {% else %}
+                <button type="button" class="btn btn-success fw-bold" disabled title="Weight Balance is Unbalanced. Edit job details first.">
+                  <i class="bi bi-check-lg me-1"></i>Complete Job (Unbalanced)
+                </button>
+              {% endif %}
+            </form>
+          {% endif %}
+
+          {% if job.status in ('DRAFT', 'READY', 'IN_PROGRESS') %}
+            <form action="{{ url_for('material_processing.cancel_job', job_id=job.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this processing job? This releases all reservations.');">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline-danger">
+                <i class="bi bi-x-circle me-1"></i>Cancel Job
+              </button>
+            </form>
+          {% endif %}
+
+          {% if job.status == 'COMPLETED' and session.get('user', {}).get('role') == 'admin' %}
+            <form action="{{ url_for('material_processing.reopen_job', job_id=job.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Reopening this job will restore reservations and reverse completed inventory updates. Proceed?');">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-warning">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reopen Completed Job
+              </button>
+            </form>
+          {% endif %}
+
+          <form action="{{ url_for('material_processing.duplicate_job', job_id=job.id) }}" method="POST" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-dark">
+              <i class="bi bi-files me-1"></i>Duplicate
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline Block -->
+  {% if job.status != 'CANCELLED' %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="timeline-container">
+        <!-- Step 1: Created -->
+        <div class="timeline-step completed">
+          <div class="timeline-icon"><i class="bi bi-check-lg"></i></div>
+          <div class="timeline-label">Created</div>
+        </div>
+        
+        <!-- Step 2: Ready -->
+        <div class="timeline-step {% if job.status in ('READY', 'IN_PROGRESS', 'COMPLETED') %}completed{% endif %}">
+          <div class="timeline-icon">
+            {% if job.status in ('READY', 'IN_PROGRESS', 'COMPLETED') %}<i class="bi bi-check-lg"></i>{% else %}2{% endif %}
+          </div>
+          <div class="timeline-label">Ready</div>
+        </div>
+
+        <!-- Step 3: Started / Reserved -->
+        <div class="timeline-step {% if job.status in ('IN_PROGRESS', 'COMPLETED') %}completed{% else %}{% if job.status == 'READY' %}active{% endif %}{% endif %}">
+          <div class="timeline-icon">
+            {% if job.status in ('IN_PROGRESS', 'COMPLETED') %}<i class="bi bi-check-lg"></i>{% else %}3{% endif %}
+          </div>
+          <div class="timeline-label">Started & Reserved</div>
+        </div>
+
+        <!-- Step 4: Completed -->
+        <div class="timeline-step {% if job.status == 'COMPLETED' %}completed{% else %}{% if job.status == 'IN_PROGRESS' %}active{% endif %}{% endif %}">
+          <div class="timeline-icon">
+            {% if job.status == 'COMPLETED' %}<i class="bi bi-check-lg"></i>{% else %}4{% endif %}
+          </div>
+          <div class="timeline-label">Completed & Synced</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+    <div>
+      <strong>Job Cancelled:</strong> This processing job was cancelled. All inventory reservations have been released.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Core Content Row -->
+  <div class="row g-3">
+    <!-- Left Column: Header metadata, Inputs & Outputs -->
+    <div class="col-12 col-lg-8">
+      
+      <!-- Metadata details -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Processing Date</div>
+              <div class="detail-value">{{ job.processing_date }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Operator</div>
+              <div class="detail-value">{{ job.operator_id }}</div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Priority</div>
+              <div class="detail-value"><span class="badge badge-{{ job.priority.lower() }}">{{ job.priority }}</span></div>
+            </div>
+            <div class="col-6 col-sm-3">
+              <div class="detail-label">Created At</div>
+              <div class="detail-value" style="font-size:12px;">{{ job.created_at }}</div>
+            </div>
+            {% if job.remarks %}
+            <div class="col-12 pt-2 border-top">
+              <div class="detail-label">Remarks / Description</div>
+              <div class="text-secondary small">{{ job.remarks }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Inputs table -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-box-arrow-in-right text-primary me-2"></i>Processed Inputs</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Material</th>
+                  <th>Quantity</th>
+                  <th>Weight</th>
+                  <th>Operation Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in job.inputs %}
+                <tr>
+                  <td>
+                    <span class="fw-bold text-dark">{{ item.material_name }}</span><br>
+                    <small class="text-muted">{{ item.material_code }}</small>
+                  </td>
+                  <td>{{ item.quantity }} {{ item.unit }}</td>
+                  <td>{{ "%.2f"|format(item.weight) }} KG</td>
+                  <td><span class="badge bg-secondary">{{ item.processing_type }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outputs table -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-box-arrow-up-right text-success me-2"></i>Recovered / Refurbished Outputs</h6>
+        </div>
+        <div class="card-body p-0">
+          {% if job.outputs %}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Material</th>
+                  <th>Quantity</th>
+                  <th>Weight</th>
+                  <th>Target State</th>
+                  <th>Source Genealogy</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in job.outputs %}
+                <tr>
+                  <td>
+                    <span class="fw-bold text-dark">{{ item.material_name }}</span><br>
+                    <small class="text-muted">{{ item.material_code }}</small>
+                  </td>
+                  <td>{{ item.quantity }} {{ item.unit }}</td>
+                  <td>{{ "%.2f"|format(item.weight) }} KG</td>
+                  <td>
+                    {% if item.inventory_state == 'REFURBISHED' %}
+                      <span class="badge bg-primary-subtle text-primary">Refurbished</span>
+                    {% elif item.inventory_state == 'RECOVERED' %}
+                      <span class="badge bg-success-subtle text-success">Recovered</span>
+                    {% else %}
+                      <span class="badge bg-secondary-subtle text-secondary">{{ item.inventory_state }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.recovered_from_name %}
+                      <span class="text-secondary small"><i class="bi bi-arrow-return-right me-1"></i>{{ item.recovered_from_name }}</span>
+                    {% else %}
+                      <span class="text-muted small">Unknown</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-muted">No output materials entered yet. Edit job to record outputs.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Losses table -->
+      {% if job.losses %}
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-danger"><i class="bi bg-danger-subtle text-danger bi-trash3 me-2"></i>Processing Losses</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Loss Weight</th>
+                  <th>Reason</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in job.losses %}
+                <tr>
+                  <td><strong>{{ "%.2f"|format(item.loss_weight) }} KG</strong></td>
+                  <td><span class="badge bg-danger-subtle text-danger">{{ item.loss_reason }}</span></td>
+                  <td class="text-secondary small">{{ item.remarks or '—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Genealogy Traceability mapping -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Supply Genealogy Audit</h6>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary small mb-3">Oldest purchases supplying materials consumed by this Processing Job:</p>
+          {% for item in job.inputs %}
+            <div class="mb-3 border-bottom pb-2">
+              <span class="fw-bold text-dark" style="font-size: 13px;">{{ item.material_name }} ({{ item.material_code }})</span>
+              {% if item.purchases %}
+                <ul class="list-unstyled mt-2 ps-3" style="font-size:12.5px;">
+                  {% for p in item.purchases %}
+                    <li class="mb-1 text-secondary">
+                      <i class="bi bi-link-45deg me-1"></i>Invoice <strong>{{ p.purchase_invoice_number }}</strong> (Date: {{ p.invoice_date }}), Supplier: <strong>{{ p.supplier_name }}</strong>, Qty: {{ p.quantity }}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="ps-3 text-muted small mt-1" style="font-style: italic;">No purchase invoices matching material found in system history.</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Audits and Timeline Logs -->
+    <div class="col-12 col-lg-4">
+      
+      <!-- Weight Summary Card -->
+      <div class="card shadow-sm border-0 mb-3 bg-dark text-white">
+        <div class="card-body p-4">
+          <h6 class="text-uppercase text-secondary fw-bold mb-3" style="font-size: 11px; color:#94a3b8 !important;">Weight Balance Audit</h6>
+          {% set total_in_wt = job.inputs|map(attribute='weight')|sum %}
+          {% set total_out_wt = job.outputs|map(attribute='weight')|sum %}
+          {% set total_loss_wt = job.losses|map(attribute='loss_weight')|sum %}
+          {% set diff = (total_in_wt - (total_out_wt + total_loss_wt))|abs %}
+
+          <div class="row g-2 text-white-50" style="font-size: 13px;">
+            <div class="col-6">Total Input Wt:</div>
+            <div class="col-6 text-end text-white fw-bold">{{ "%.2f"|format(total_in_wt) }} KG</div>
+            <div class="col-6">Total Output Wt:</div>
+            <div class="col-6 text-end text-white fw-bold">{{ "%.2f"|format(total_out_wt) }} KG</div>
+            <div class="col-6">Total Loss Wt:</div>
+            <div class="col-6 text-end text-white fw-bold">{{ "%.2f"|format(total_loss_wt) }} KG</div>
+            <div class="col-12 border-bottom border-secondary my-2"></div>
+            <div class="col-6">Weight Difference:</div>
+            <div class="col-6 text-end text-white fw-bold">{{ "%.2f"|format(diff) }} KG</div>
+            <div class="col-6">Tolerance Limit:</div>
+            <div class="col-6 text-end text-white fw-bold">&plusmn; {{ config.PROCESSING_WEIGHT_TOLERANCE }} KG</div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+            <span>Verify Status:</span>
+            {% if diff <= config.PROCESSING_WEIGHT_TOLERANCE + 0.0001 %}
+              <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Balanced</span>
+            {% else %}
+              <span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Unbalanced</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Movements list -->
+      {% if movements %}
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-arrow-left-right text-primary me-2"></i>Ledger Stock Movements</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" style="font-size: 12.5px;">
+            {% for m in movements %}
+            <div class="list-group-item p-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="fw-bold text-dark">{{ m.material_name }}</span>
+                <span class="fw-bold {% if m.quantity_change < 0 %}text-danger{% else %}text-success{% endif %}">
+                  {{ "%+g"|format(m.quantity_change) }} {{ m.uom }}
+                </span>
+              </div>
+              <div class="d-flex justify-content-between text-muted" style="font-size: 11.5px;">
+                <span>State: <strong class="text-dark">{{ m.inventory_state }}</strong></span>
+                <span>Type: <strong class="text-dark">{{ m.movement_type }}</strong></span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Activity Timeline -->
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0 py-3">
+          <h6 class="fw-bold m-0 text-dark"><i class="bi bi-list-check text-primary me-2"></i>Job Timeline Audits</h6>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush" style="font-size: 12.5px;">
+            {% for act in job.activities %}
+            <li class="list-group-item p-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="fw-bold text-dark">{{ act.status }}</span>
+                <small class="text-muted">{{ act.created_at }}</small>
+              </div>
+              <div class="text-secondary small">{{ act.remarks or '' }}</div>
+              <div class="text-muted mt-1" style="font-size: 11px;"><i class="bi bi-person-fill me-1"></i>{{ act.performed_by }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

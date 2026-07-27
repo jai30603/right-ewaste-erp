@@ -1,0 +1,390 @@
+{% extends "shared/base.html" %}
+{% from "shared/_page_header.html" import page_header %}
+
+{% block title %}Collaboration & Governance | Right Ewaste ERP{% endblock %}
+
+{% block page_title %}Enterprise Collaboration & Governance Platform{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="#">EDMS</a></li>
+<li class="breadcrumb-item active">Collaboration & Governance</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+
+  <!-- Page Header -->
+  {{ page_header(
+      title="Enterprise Collaboration & Governance Platform",
+      subtitle="Document sharing, approval workflows, threaded comments, check-in/out locks, and enterprise compliance policies",
+      back_url="/",
+      actions=[
+          {'label': 'Pending Approvals', 'icon': 'bi-clock-history', 'class': 'btn-primary', 'onclick': 'switchCollabTab("approvals")'},
+          {'label': 'Governance Policies', 'icon': 'bi-shield-check', 'class': 'btn-outline-secondary', 'onclick': 'switchCollabTab("governance")'}
+      ]
+  ) }}
+
+  <!-- KPI Cards Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card bg-surface border h-100 shadow-xs cursor-pointer" onclick="switchCollabTab('approvals')">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small fw-semibold">Pending Approvals</span>
+            <i class="bi bi-clock-history text-warning fs-5"></i>
+          </div>
+          <h3 class="fw-bold mb-0 text-dark" id="kpiApprovals">0</h3>
+          <small class="text-muted">Awaiting review & signature</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="card bg-surface border h-100 shadow-xs cursor-pointer" onclick="switchCollabTab('locks')">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small fw-semibold">Active Check-Out Locks</span>
+            <i class="bi bi-lock text-danger fs-5"></i>
+          </div>
+          <h3 class="fw-bold mb-0 text-dark" id="kpiLocks">0</h3>
+          <small class="text-muted">Currently locked for editing</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="card bg-surface border h-100 shadow-xs cursor-pointer" onclick="switchCollabTab('notifications')">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small fw-semibold">In-App Notifications</span>
+            <i class="bi bi-bell text-primary fs-5"></i>
+          </div>
+          <h3 class="fw-bold mb-0 text-dark" id="kpiNotifs">0</h3>
+          <small class="text-muted">Document alerts & mentions</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-6 col-md-3">
+      <div class="card bg-surface border h-100 shadow-xs cursor-pointer" onclick="switchCollabTab('governance')">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="text-muted small fw-semibold">Governance Policies</span>
+            <i class="bi bi-shield-check text-success fs-5"></i>
+          </div>
+          <h3 class="fw-bold mb-0 text-dark" id="kpiPolicies">4</h3>
+          <small class="text-muted">Enterprise compliance rules</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-tabs erp-tabs mb-3" id="collabTabs">
+    <li class="nav-item">
+      <button class="nav-link active" id="tab-approvals" onclick="switchCollabTab('approvals')">
+        <i class="bi bi-check-circle me-1"></i>Approval Workflows
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tab-locks" onclick="switchCollabTab('locks')">
+        <i class="bi bi-lock me-1"></i>Check-In / Check-Out Locks
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tab-notifications" onclick="switchCollabTab('notifications')">
+        <i class="bi bi-bell me-1"></i>In-App Notifications
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" id="tab-governance" onclick="switchCollabTab('governance')">
+        <i class="bi bi-shield-lock me-1"></i>Governance Policies
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Contents -->
+  <div class="tab-content">
+    
+    <!-- 1. APPROVAL WORKFLOWS TAB -->
+    <div class="tab-pane fade show active" id="pane-approvals">
+      <div class="card bg-surface border shadow-xs">
+        <div class="card-header py-2.5 bg-surface-raised border-bottom d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-clock-history me-1"></i>Documents Awaiting Approval</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table erp-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Document Name</th>
+                  <th>Document Number</th>
+                  <th>Workflow Type</th>
+                  <th>Status</th>
+                  <th>Submitted At</th>
+                  <th class="text-end" style="width: 160px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="approvalsTbody">
+                <tr><td colspan="6" class="text-center py-3 text-muted small"><div class="spinner-border spinner-border-sm text-primary"></div> Loading approvals...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. CHECK-IN / CHECK-OUT LOCKS TAB -->
+    <div class="tab-pane fade" id="pane-locks">
+      <div class="card bg-surface border shadow-xs">
+        <div class="card-header py-2.5 bg-surface-raised border-bottom">
+          <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-lock me-1"></i>Active Document Locks</h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table erp-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Document Name</th>
+                  <th>Document #</th>
+                  <th>Lock Reason</th>
+                  <th>Checked Out At</th>
+                  <th class="text-end" style="width: 140px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="locksTbody">
+                <tr><td colspan="5" class="text-center py-3 text-muted small">No active document locks found.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. IN-APP NOTIFICATIONS TAB -->
+    <div class="tab-pane fade" id="pane-notifications">
+      <div class="card bg-surface border shadow-xs">
+        <div class="card-header py-2.5 bg-surface-raised border-bottom">
+          <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-bell me-1"></i>Notifications Feed</h6>
+        </div>
+        <div class="card-body p-3">
+          <ul class="list-group list-group-flush" id="notificationsList">
+            <li class="list-group-item text-center py-3 text-muted small">No notifications found.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. GOVERNANCE POLICIES TAB -->
+    <div class="tab-pane fade" id="pane-governance">
+      <div class="card bg-surface border shadow-xs">
+        <div class="card-header py-2.5 bg-surface-raised border-bottom">
+          <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-shield-check me-1"></i>Enterprise Governance Rules</h6>
+        </div>
+        <div class="card-body p-3">
+          <div class="table-responsive">
+            <table class="table erp-table align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Policy Name</th>
+                  <th>Policy Identifier</th>
+                  <th>Status</th>
+                  <th class="text-end" style="width: 120px;">Toggle</th>
+                </tr>
+              </thead>
+              <tbody id="policiesTbody">
+                <tr><td colspan="4" class="text-center py-3 text-muted small"><div class="spinner-border spinner-border-sm text-primary"></div> Loading policies...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  loadApprovals();
+  loadLocks();
+  loadNotifications();
+  loadPolicies();
+});
+
+function switchCollabTab(tabName) {
+  const tabs = ['approvals', 'locks', 'notifications', 'governance'];
+  tabs.forEach(t => {
+    document.getElementById(`tab-${t}`).classList.remove('active');
+    document.getElementById(`pane-${t}`).classList.remove('show', 'active');
+  });
+  document.getElementById(`tab-${tabName}`).classList.add('active');
+  document.getElementById(`pane-${tabName}`).classList.add('show', 'active');
+}
+
+function loadApprovals() {
+  const tbody = document.getElementById('approvalsTbody');
+  fetch('/api/v1/documents/approvals/pending')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      tbody.innerHTML = '';
+      document.getElementById('kpiApprovals').innerText = data.approvals ? data.approvals.length : 0;
+
+      if (!data.approvals || data.approvals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted small">No pending document approval workflows.</td></tr>';
+        return;
+      }
+
+      data.approvals.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold small">${escapeHtml(a.original_name)}</td>
+          <td><span class="badge bg-secondary-subtle text-dark border font-monospace">${escapeHtml(a.document_number)}</span></td>
+          <td class="small text-muted">${escapeHtml(a.workflow_type)}</td>
+          <td><span class="badge bg-warning text-dark">${escapeHtml(a.status)}</span></td>
+          <td class="small text-muted">${escapeHtml(a.created_at || '')}</td>
+          <td class="text-end">
+            <button class="btn btn-xs btn-success me-1" onclick="processApproval(${a.id}, 'APPROVE')"><i class="bi bi-check-lg"></i> Approve</button>
+            <button class="btn btn-xs btn-outline-danger" onclick="processApproval(${a.id}, 'REJECT')"><i class="bi bi-x-lg"></i> Reject</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function processApproval(wfId, action) {
+  fetch(`/api/v1/documents/approvals/${wfId}/action`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ action: action, remarks: `Processed by Super Admin (${action})` })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert(`Approval Workflow ${action} successfully!`);
+      loadApprovals();
+    } else alert(data.error);
+  });
+}
+
+function loadLocks() {
+  const tbody = document.getElementById('locksTbody');
+  fetch('/api/v1/documents/locks')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      tbody.innerHTML = '';
+      document.getElementById('kpiLocks').innerText = data.locks ? data.locks.length : 0;
+
+      if (!data.locks || data.locks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted small">No active document locks found.</td></tr>';
+        return;
+      }
+
+      data.locks.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold small">${escapeHtml(l.original_name)}</td>
+          <td><span class="badge bg-secondary-subtle text-dark border font-monospace">${escapeHtml(l.document_number)}</span></td>
+          <td class="small text-muted">${escapeHtml(l.lock_reason)}</td>
+          <td class="small text-muted">${escapeHtml(l.checked_out_at || '')}</td>
+          <td class="text-end">
+            <button class="btn btn-xs btn-outline-secondary" onclick="checkInDocument(${l.document_id})">Check-In</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function checkInDocument(docId) {
+  fetch(`/api/v1/documents/${docId}/checkin`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('Document checked in successfully!');
+        loadLocks();
+      } else alert(data.error);
+    });
+}
+
+function loadNotifications() {
+  const list = document.getElementById('notificationsList');
+  fetch('/api/v1/documents/notifications')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      list.innerHTML = '';
+      document.getElementById('kpiNotifs').innerText = data.notifications ? data.notifications.length : 0;
+
+      if (!data.notifications || data.notifications.length === 0) {
+        list.innerHTML = '<li class="list-group-item text-center py-3 text-muted small">No notifications found.</li>';
+        return;
+      }
+
+      data.notifications.forEach(n => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+        li.innerHTML = `
+          <div>
+            <span class="badge bg-primary-subtle text-primary border me-2">${escapeHtml(n.event_type)}</span>
+            <span class="small">${escapeHtml(n.message)}</span>
+          </div>
+          <small class="text-muted">${escapeHtml(n.created_at || '')}</small>
+        `;
+        list.appendChild(li);
+      });
+    });
+}
+
+function loadPolicies() {
+  const tbody = document.getElementById('policiesTbody');
+  fetch('/api/v1/documents/governance/policies')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      tbody.innerHTML = '';
+      document.getElementById('kpiPolicies').innerText = data.policies ? data.policies.length : 0;
+
+      data.policies.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="fw-semibold small">${escapeHtml(p.policy_name)}</td>
+          <td><span class="font-monospace text-muted small">${escapeHtml(p.policy_key)}</span></td>
+          <td><span class="badge ${p.is_enabled ? 'bg-success' : 'bg-secondary'}">${p.is_enabled ? 'ENABLED' : 'DISABLED'}</span></td>
+          <td class="text-end">
+            <div class="form-check form-switch d-inline-block">
+              <input class="form-check-input" type="checkbox" ${p.is_enabled ? 'checked' : ''} onchange="togglePolicy('${p.policy_key}', this.checked)">
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function togglePolicy(policyKey, enabled) {
+  fetch('/api/v1/documents/governance/policies', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ policy_key: policyKey, is_enabled: enabled })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) loadPolicies();
+    else alert(data.error);
+  });
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m]));
+}
+</script>
+{% endblock %}

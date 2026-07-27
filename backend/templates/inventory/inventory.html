@@ -1,0 +1,272 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Stock Summary – Right Ewaste ERP{% endblock %}
+{% block page_title %}Inventory Summary{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item active">Stock Summary</li>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Inventory Stock Summary",
+    subtitle="Live warehouse balances, stock counts, and material status across all locations.",
+    back_url="/",
+    actions=[
+        {'label': 'Stock Movements', 'url': '/inventory/movements', 'icon': 'bi-arrow-left-right', 'class': 'btn-outline-secondary'},
+        {'label': 'Manual Adjustment', 'url': '/inventory/adjustment', 'icon': 'bi-sliders', 'class': 'btn-primary'}
+    ]
+) }}
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #0d9488 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Total Materials</p>
+                        <h4 class="mb-0 font-monospace fw-bold" style="color:#0f766e;">{{ total_materials }}</h4>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle text-teal" style="color:#0d9488; font-size:22px; line-height:1;">
+                        <i class="bi bi-box"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #d97706 !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Low Stock Alerts</p>
+                        <h4 class="mb-0 font-monospace fw-bold {% if low_stock_alerts > 0 %}text-danger{% else %}text-muted{% endif %}">
+                            {{ low_stock_alerts }}
+                        </h4>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle" style="color:#d97706; font-size:22px; line-height:1;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #2563eb !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Purchases / Sales (Qty)</p>
+                        <h5 class="mb-0 font-monospace fw-bold" style="color:#475569;">
+                            {{ "%.1f"|format(total_purchased) }} / {{ "%.1f"|format(total_sold) }}
+                        </h5>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle" style="color:#2563eb; font-size:22px; line-height:1;">
+                        <i class="bi bi-arrow-down-up"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #16a34a !important;">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Total Stock Value</p>
+                        <h4 class="mb-0 font-monospace fw-bold" style="color:#16a34a;">₹ {{ "%.2f"|format(total_stock_value) }}</h4>
+                    </div>
+                    <div class="bg-light p-2.5 rounded-circle" style="color:#16a34a; font-size:22px; line-height:1;">
+                        <i class="bi bi-currency-rupee"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="erp-card">
+    <div class="erp-card-header">
+        <i class="bi bi-box" style="font-size:18px; color:#0d9488;"></i>
+        <h5>Material Inventory Summary</h5>
+        <span style="color:#aaa; font-size:13px; margin-left:4px;">
+            ({{ summary|length }} item{{ 's' if summary|length != 1 }})
+        </span>
+    </div>
+
+    <!-- ── Filter Bar ────────────────────────────────────────────── -->
+    <div class="p-3 bg-light border-bottom">
+        <form method="GET" action="/inventory" class="row g-2 align-items-end" id="filter-form">
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Search</label>
+                <input type="text" name="q" class="form-control form-control-sm" value="{{ q or '' }}" placeholder="Code, Name...">
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Category</label>
+                <select name="category" id="category" class="form-select form-select-sm">
+                    <option value="all" {% if category == 'all' or not category %}selected{% endif %}>All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Quick Filter</label>
+                <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
+                    <option value="all" {% if date_filter == 'all' or not date_filter %}selected{% endif %}>All Time</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+                    <option value="last_6_months" {% if date_filter == 'last_6_months' %}selected{% endif %}>Last 6 Months</option>
+                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Start Date</label>
+                <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+            </div>
+
+            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
+                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">End Date</label>
+                <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+            </div>
+
+            <div class="col-md-2 col-sm-12 d-flex gap-2">
+                <button type="submit" class="btn btn-sm text-white px-3 py-2 w-100" style="font-size:12.5px; background-color:#0d9488;">
+                    <i class="bi bi-filter"></i> Filter
+                </button>
+                <a href="/inventory" class="btn btn-sm btn-outline-secondary px-3 py-2 w-100" style="font-size:12.5px;">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ── Summary Table ────────────────────────────────────────── -->
+    <div class="erp-card-body p-0">
+        {% if summary %}
+        <div style="overflow-x:auto;">
+        <table class="erp-table">
+            <thead>
+                <tr>
+                    <th>Material Code</th>
+                    <th>Material Name</th>
+                    <th>Category</th>
+                    <th style="text-align:right;">Purchased Quantity</th>
+                    <th style="text-align:right;">Sold Quantity</th>
+                    <th style="text-align:right;">Current Stock</th>
+                    <th style="text-align:center;">Unit</th>
+                    <th style="text-align:right;">Stock Value</th>
+                    <th style="text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in summary %}
+                <tr>
+                    <td>
+                        <a href="/inventory/{{ item.id }}/ledger" class="text-decoration-none">
+                            <code class="code-cell">{{ item.code }}</code>
+                        </a>
+                    </td>
+                    <td class="fw-semibold">{{ item.name }}</td>
+                    <td><span class="badge bg-secondary">{{ item.category or '—' }}</span></td>
+                    <td style="text-align:right;" class="font-monospace">{{ "%.2f"|format(item.purchased_qty) }}</td>
+                    <td style="text-align:right;" class="font-monospace">{{ "%.2f"|format(item.sold_qty) }}</td>
+                    <td style="text-align:right;" class="font-monospace fw-semibold">
+                        <span class="{% if item.current_stock < 10 %}text-danger{% else %}text-success{% endif %}">
+                            {{ "%.2f"|format(item.current_stock) }}
+                        </span>
+                        {% if item.current_stock < 10 %}
+                        <span class="badge bg-danger ms-1" style="font-size:9px; padding:2px 5px;">LOW</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;"><span class="badge bg-info-subtle">{{ item.unit }}</span></td>
+                    <td style="text-align:right;" class="font-monospace fw-semibold">
+                        ₹ {{ "%.2f"|format(item.current_stock * item.rate) }}
+                    </td>
+                    <td style="text-align:center;">
+                        <a href="/inventory/{{ item.id }}/ledger"
+                           class="btn btn-sm btn-outline-secondary" 
+                           style="font-size:11px; padding:3px 8px; border-radius:5px;"
+                           title="View Material Ledger">
+                            <i class="bi bi-journal-text me-1"></i> Ledger
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if total_pages > 1 %}
+        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
+            <div class="text-muted small" style="font-size:12.5px;">
+                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
+            </div>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
+                </li>
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+
+        <!-- Export Excel and PDF buttons -->
+        <div class="p-3 bg-light border-top d-flex justify-content-start gap-2">
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-spreadsheet" style="color:#0d9488; font-size:15px;"></i> Export to Excel
+            </button>
+            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportPDF()" style="font-size:13px; font-weight:600; border-radius:8px;">
+                <i class="bi bi-file-earmark-pdf" style="color:#dc3545; font-size:15px;"></i> Export to PDF
+            </button>
+        </div>
+
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <p>No materials or stock movements matched this filter.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCustomDates() {
+    const select = document.getElementById('date_filter');
+    const customFields = document.querySelectorAll('.custom-date-field');
+    customFields.forEach(field => {
+        field.style.display = select.value === 'custom' ? 'block' : 'none';
+    });
+}
+
+function exportExcel() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/inventory/export?" + params.toString();
+}
+
+function exportPDF() {
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = "/inventory/export/pdf?" + params.toString();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Attendance Reports – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Attendance Reports Center",
+    subtitle="Generate and export customizable attendance reports in Excel, PDF, or CSV formats.",
+    back_url="/employees/attendance/dashboard",
+    actions=[
+        {'label': 'Monthly Register', 'url': url_for('employees.attendance_register'), 'icon': 'bi-grid-3x3', 'class': 'btn-outline-primary'},
+        {'label': 'Attendance Dashboard', 'url': url_for('employees.attendance_dashboard'), 'icon': 'bi-speedometer2', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+
+  <div class="row g-4">
+    <!-- Main Export Form Card -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-download text-success me-2"></i>Export Attendance Data
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="GET" action="{{ url_for('employees.export_attendance') }}">
+
+            <div class="row g-3 mb-4">
+              <!-- Report Type -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Report Type</label>
+                <select name="report_type" class="form-select">
+                  <option value="daily">Daily Attendance Summary</option>
+                  <option value="monthly">Monthly Attendance Report</option>
+                  <option value="department">Department Attendance Analysis</option>
+                  <option value="employee">Individual Employee Summary</option>
+                </select>
+              </div>
+
+              <!-- Export Format -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Export Format</label>
+                <div class="d-flex gap-3 mt-1">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="fmt_excel" value="excel" checked>
+                    <label class="form-check-label fw-semibold text-success" for="fmt_excel">
+                      <i class="bi bi-file-earmark-excel me-1"></i>Excel (.xlsx)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="fmt_csv" value="csv">
+                    <label class="form-check-label fw-semibold text-primary" for="fmt_csv">
+                      <i class="bi bi-file-earmark-text me-1"></i>CSV (.csv)
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="format" id="fmt_pdf" value="pdf">
+                    <label class="form-check-label fw-semibold text-danger" for="fmt_pdf">
+                      <i class="bi bi-file-earmark-pdf me-1"></i>PDF (.pdf)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Date Range -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ today_str }}">
+              </div>
+
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ today_str }}">
+              </div>
+
+              <!-- Department Filter -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Department Filter (Optional)</label>
+                <select name="department" class="form-select">
+                  <option value="">All Departments</option>
+                  {% for dept in filter_options.departments %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Employee Filter -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Specific Employee (Optional)</label>
+                <select name="employee_id" class="form-select">
+                  <option value="">All Employees</option>
+                  {% for emp in employees %}
+                    <option value="{{ emp.id }}">{{ emp.employee_code }} - {{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-success px-5 py-2 shadow-sm">
+                <i class="bi bi-file-earmark-arrow-down me-2"></i>Generate & Download Report
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Info & Engine Info -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-info-circle text-primary me-2"></i>Export Engine Features
+          </h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush border-0 small">
+            <li class="list-group-item border-0 px-0 d-flex align-items-center">
+              <i class="bi bi-check-circle-fill text-success me-2"></i>Full audit trail & remarks included.
+            </li>
+            <li class="list-group-item border-0 px-0 d-flex align-items-center">
+              <i class="bi bi-check-circle-fill text-success me-2"></i>Supports Excel formatting & PDF layout engine.
+            </li>
+            <li class="list-group-item border-0 px-0 d-flex align-items-center">
+              <i class="bi bi-check-circle-fill text-success me-2"></i>Filterable by date range, department, and employee.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

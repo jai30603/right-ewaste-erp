@@ -1,0 +1,31 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Offline – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5 d-flex align-items-center justify-content-center" style="min-height: 75vh;">
+  <div class="text-center p-4 rounded-4 shadow-sm bg-surface border" style="max-width: 480px; width: 100%;">
+    <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; font-size: 38px;">
+      <i class="bi bi-wifi-off"></i>
+    </div>
+    
+    <h3 class="fw-bold mb-2">You're Currently Offline</h3>
+    <p class="text-muted small mb-4">
+      Right Ewaste ERP is unable to reach the network. Previously loaded pages and cached material stocks are still accessible.
+    </p>
+
+    <div class="d-grid gap-2">
+      <button onclick="window.location.reload()" class="btn btn-primary py-2.5 fw-semibold">
+        <i class="bi bi-arrow-clockwise me-1"></i> Retry Connection
+      </button>
+      <a href="/" class="btn btn-outline-secondary py-2">
+        <i class="bi bi-house me-1"></i> Return to Cached Dashboard
+      </a>
+    </div>
+
+    <div class="mt-4 pt-3 border-top text-muted small">
+      <i class="bi bi-shield-check me-1 text-success"></i> Progressive Web App (PWA) Offline Resilience Active
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Attendance Calendar – {{ employee.full_name }} – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Attendance Calendar: " ~ employee.full_name,
+    subtitle="Individual employee attendance history, leave logs, and monthly calendar matrix.",
+    back_url=url_for('employees.view_employee', emp_id=employee.id),
+    actions=[
+        {'label': 'Employee Profile', 'url': url_for('employees.view_employee', emp_id=employee.id), 'icon': 'bi-person-badge', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+    </div>
+  </div>
+
+  <!-- Month & Year selector -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4 p-3 bg-light">
+    <form method="GET" action="{{ url_for('employees.attendance_calendar', emp_id=employee.id) }}" class="row align-items-center g-3">
+      <div class="col-auto">
+        <label class="fw-semibold text-dark mb-0">Select Month & Year:</label>
+      </div>
+      <div class="col-auto">
+        <select name="month" class="form-select" onchange="this.form.submit()">
+          {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+          {% for m in range(1, 13) %}
+            <option value="{{ m }}" {{ 'selected' if selected_month == m }}>{{ months[m-1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto">
+        <select name="year" class="form-select" onchange="this.form.submit()">
+          {% for y in range(2024, 2028) %}
+            <option value="{{ y }}" {{ 'selected' if selected_year == y }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <!-- Summary stats cards row -->
+  <div class="row g-3 mb-4">
+    <div class="col">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-success bg-opacity-10 border-start border-success border-4">
+        <small class="text-success text-uppercase fw-semibold">Present</small>
+        <h3 class="fw-bold my-1 text-dark">{{ history.summary.Present }}</h3>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-danger bg-opacity-10 border-start border-danger border-4">
+        <small class="text-danger text-uppercase fw-semibold">Absent</small>
+        <h3 class="fw-bold my-1 text-dark">{{ history.summary.Absent }}</h3>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-warning bg-opacity-10 border-start border-warning border-4">
+        <small class="text-warning-emphasis text-uppercase fw-semibold">Half Day</small>
+        <h3 class="fw-bold my-1 text-dark">{{ history.summary['Half Day'] }}</h3>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-primary bg-opacity-10 border-start border-primary border-4">
+        <small class="text-primary text-uppercase fw-semibold">Leave</small>
+        <h3 class="fw-bold my-1 text-dark">{{ history.summary.Leave }}</h3>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-purple bg-opacity-10 border-start border-purple border-4" style="border-color: #7e22ce !important; background: #f3e8ff;">
+        <small class="text-uppercase fw-semibold" style="color: #7e22ce;">Holiday</small>
+        <h3 class="fw-bold my-1 text-dark">{{ history.summary.Holiday }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Grid Card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+      <div class="table-responsive">
+        <table class="table table-bordered text-center align-middle mb-0" style="table-layout: fixed;">
+          <thead class="table-dark">
+            <tr>
+              <th style="width: 14.28%;">Mon</th>
+              <th style="width: 14.28%;">Tue</th>
+              <th style="width: 14.28%;">Wed</th>
+              <th style="width: 14.28%;">Thu</th>
+              <th style="width: 14.28%;">Fri</th>
+              <th style="width: 14.28%;">Sat</th>
+              <th style="width: 14.28%;">Sun</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for week in month_days %}
+            <tr style="height: 90px;">
+              {% for day_date in week %}
+                {% set date_key = day_date.isoformat() %}
+                {% set is_curr_month = (day_date.month == selected_month) %}
+                {% set att = att_by_date.get(date_key) %}
+                <td class="{{ 'bg-light text-muted opacity-50' if not is_curr_month else '' }} align-top p-2 text-start position-relative">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold {{ 'text-primary' if date_key == today_str else 'text-dark' }}">{{ day_date.day }}</span>
+                    {% if att %}
+                      {% if att.attendance_status == 'Present' %}
+                        <span class="badge bg-success">P</span>
+                      {% elif att.attendance_status == 'Absent' %}
+                        <span class="badge bg-danger">A</span>
+                      {% elif att.attendance_status == 'Half Day' %}
+                        <span class="badge bg-warning text-dark">HD</span>
+                      {% elif att.attendance_status == 'Leave' %}
+                        <span class="badge bg-primary">L</span>
+                      {% elif att.attendance_status == 'Holiday' %}
+                        <span class="badge" style="background: #7e22ce; color: #fff;">H</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                  {% if att and is_curr_month %}
+                    <div style="font-size: 0.7rem;" class="text-muted">
+                      {% if att.check_in_time %}<div>In: {{ att.check_in_time }}</div>{% endif %}
+                      {% if att.check_out_time %}<div>Out: {{ att.check_out_time }}</div>{% endif %}
+                      {% if att.remarks %}<div class="text-truncate text-dark" title="{{ att.remarks }}">{{ att.remarks }}</div>{% endif %}
+                    </div>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

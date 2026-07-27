@@ -1,0 +1,131 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Apply for Leave – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('employees.leave_dashboard') }}">Leave</a></li>
+          <li class="breadcrumb-item active">Apply Leave</li>
+        </ol>
+      </nav>
+      <h3 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-plus-circle text-primary me-2"></i>Submit Leave Application
+      </h3>
+    </div>
+    <a href="{{ url_for('employees.leave_requests') }}" class="btn btn-outline-secondary px-3">
+      <i class="bi bi-arrow-left me-1"></i>Back to Requests
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-file-earmark-plus text-primary me-2"></i>Leave Details & Dates
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" enctype="multipart/form-data" action="{{ url_for('employees.apply_leave') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3">
+              <!-- Employee Selection -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
+                <select name="employee_id" id="employee_id" class="form-select" required>
+                  <option value="">-- Select Employee --</option>
+                  {% for emp in employees %}
+                    <option value="{{ emp.id }}" {{ 'selected' if form_data.get('employee_id')|string == emp.id|string }}>
+                      {{ emp.employee_code }} - {{ emp.full_name }} ({{ emp.department or 'General' }})
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Leave Type -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Leave Type <span class="text-danger">*</span></label>
+                <select name="leave_type_id" id="leave_type_id" class="form-select" required>
+                  <option value="">-- Select Leave Type --</option>
+                  {% for lt in leave_types %}
+                    <option value="{{ lt.id }}" {{ 'selected' if form_data.get('leave_type_id')|string == lt.id|string }}>
+                      {{ lt.leave_name }} ({{ lt.leave_code }}) - {{ 'Paid' if lt.is_paid == 1 else 'Unpaid' }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Start Date -->
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold">Start Date <span class="text-danger">*</span></label>
+                <input type="date" name="start_date" id="start_date" class="form-control" required value="{{ form_data.get('start_date', today_str) }}" onchange="calcTotalDays()">
+              </div>
+
+              <!-- End Date -->
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold">End Date <span class="text-danger">*</span></label>
+                <input type="date" name="end_date" id="end_date" class="form-control" required value="{{ form_data.get('end_date', today_str) }}" onchange="calcTotalDays()">
+              </div>
+
+              <!-- Total Days -->
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold">Total Days (Auto Calculated)</label>
+                <input type="text" id="total_days_display" class="form-control font-monospace fw-bold bg-light" readonly value="1.0 Day">
+              </div>
+
+              <!-- Reason -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">Reason for Leave <span class="text-danger">*</span></label>
+                <textarea name="reason" class="form-control" rows="3" required placeholder="Please state the reason for leave application...">{{ form_data.get('reason', '') }}</textarea>
+              </div>
+
+              <!-- Attachment -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">Medical / Supporting Document (Optional)</label>
+                <input type="file" name="attachment" class="form-control">
+                <small class="text-muted">Upload doctor's prescription or supporting document if applicable.</small>
+              </div>
+
+              <!-- Submit Buttons -->
+              <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+                <a href="{{ url_for('employees.leave_requests') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                  <i class="bi bi-send me-1"></i>Submit Leave Request
+                </button>
+              </div>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function calcTotalDays() {
+  const s = document.getElementById('start_date').value;
+  const e = document.getElementById('end_date').value;
+  if (s && e) {
+    const d1 = new Date(s);
+    const d2 = new Date(e);
+    if (d2 >= d1) {
+      const diffTime = Math.abs(d2 - d1);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      document.getElementById('total_days_display').value = diffDays.toFixed(1) + ' Day' + (diffDays > 1 ? 's' : '');
+    } else {
+      document.getElementById('total_days_display').value = 'Invalid Date Range';
+    }
+  }
+}
+document.addEventListener('DOMContentLoaded', calcTotalDays);
+</script>
+{% endblock %}

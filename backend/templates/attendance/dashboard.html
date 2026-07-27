@@ -1,0 +1,183 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Attendance Dashboard – Right Ewaste ERP{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Attendance Dashboard",
+    subtitle="Track daily workforce attendance, leave balances, and attendance performance.",
+    back_url="/employees/dashboard",
+    actions=[
+        {'label': 'Monthly Register', 'url': url_for('employees.attendance_register'), 'icon': 'bi-grid-3x3', 'class': 'btn-outline-secondary'},
+        {'label': 'Reports', 'url': url_for('employees.attendance_reports'), 'icon': 'bi-file-earmark-bar-graph', 'class': 'btn-outline-success'},
+        {'label': 'Mark Daily Attendance', 'url': url_for('employees.daily_attendance'), 'icon': 'bi-calendar-check-fill', 'class': 'btn-primary'}
+    ]
+) }}
+
+  <!-- Date selector card -->
+  <div class="card border-0 shadow-sm rounded-3 mb-4 p-3">
+    <form method="GET" action="{{ url_for('employees.attendance_dashboard') }}" class="row align-items-center g-3">
+      <div class="col-auto">
+        <label class="fw-semibold mb-0"><i class="bi bi-calendar3 me-1 text-primary"></i>Selected Date:</label>
+      </div>
+      <div class="col-auto">
+        <input type="date" name="date" class="form-control" value="{{ stats.date }}" onchange="this.form.submit()">
+      </div>
+      <div class="col-auto">
+        <span class="text-muted small">Showing attendance metrics for <strong>{{ stats.date }}</strong></span>
+      </div>
+    </form>
+  </div>
+
+  <!-- KPI Metrics Cards -->
+  <div class="row g-3 mb-4">
+
+    <!-- Present Today -->
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-green">
+        <i class="bi bi-check-circle-fill kpi-icon"></i>
+        <div class="kpi-value">{{ stats.present_count }}</div>
+        <div class="kpi-label">Present Today</div>
+        <div class="kpi-sub">On Duty</div>
+      </div>
+    </div>
+
+    <!-- Absent Today -->
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-rose">
+        <i class="bi bi-x-circle-fill kpi-icon"></i>
+        <div class="kpi-value">{{ stats.absent_count }}</div>
+        <div class="kpi-label">Absent Today</div>
+        <div class="kpi-sub">Unexcused</div>
+      </div>
+    </div>
+
+    <!-- On Leave -->
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-blue">
+        <i class="bi bi-person-slash kpi-icon"></i>
+        <div class="kpi-value">{{ stats.leave_count }}</div>
+        <div class="kpi-label">On Leave</div>
+        <div class="kpi-sub">Approved Leave</div>
+      </div>
+    </div>
+
+    <!-- Half Day -->
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-amber">
+        <i class="bi bi-clock-history kpi-icon"></i>
+        <div class="kpi-value">{{ stats.half_day_count }}</div>
+        <div class="kpi-label">Half Day</div>
+        <div class="kpi-sub">Partial Shift</div>
+      </div>
+    </div>
+
+    <!-- Holidays -->
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-purple">
+        <i class="bi bi-calendar-event kpi-icon"></i>
+        <div class="kpi-value">{{ stats.holiday_count }}</div>
+        <div class="kpi-label">Holidays</div>
+        <div class="kpi-sub">Official Holiday</div>
+      </div>
+    </div>
+
+    <!-- Attendance Percentage Gauge -->
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="kpi-card kpi-teal">
+        <i class="bi bi-graph-up-arrow kpi-icon"></i>
+        <div class="kpi-value">{{ stats.attendance_percentage }}%</div>
+        <div class="kpi-label">Attendance Rate</div>
+        <div class="kpi-sub">Active Workforce</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Content Row -->
+  <div class="row g-4">
+    <!-- Employees on Leave Widget -->
+    <div class="col-12 col-lg-7">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-person-badge-fill text-primary me-2"></i>Employees on Leave Today
+          </h5>
+          <span class="badge bg-primary rounded-pill">{{ stats.employees_on_leave|length }}</span>
+        </div>
+        <div class="card-body p-0">
+          {% if stats.employees_on_leave %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr class="text-uppercase text-muted" style="font-size: 0.75rem;">
+                  <th>Employee Code</th>
+                  <th>Name</th>
+                  <th>Department</th>
+                  <th>Remarks / Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for emp in stats.employees_on_leave %}
+                <tr>
+                  <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">{{ emp.employee_code }}</span></td>
+                  <td><strong class="text-dark">{{ emp.full_name }}</strong></td>
+                  <td><span class="badge bg-light text-dark border">{{ emp.department or 'N/A' }}</span></td>
+                  <td><span class="text-muted small">{{ emp.remarks or 'Approved Leave' }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-check2-circle fs-1 d-block mb-2 text-success"></i>
+            No employees on leave for the selected date.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Shortcuts Panel -->
+    <div class="col-12 col-lg-5">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-lightning-charge text-warning me-2"></i>Attendance Actions
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-3">
+            <a href="{{ url_for('employees.daily_attendance') }}" class="btn btn-outline-primary p-3 text-start rounded-3 d-flex align-items-center">
+              <i class="bi bi-check2-square fs-3 me-3"></i>
+              <div>
+                <strong class="d-block text-dark">Mark Daily Attendance</strong>
+                <small class="text-muted">Record Present, Absent, Half Day or Leave in bulk</small>
+              </div>
+            </a>
+            <a href="{{ url_for('employees.attendance_register') }}" class="btn btn-outline-secondary p-3 text-start rounded-3 d-flex align-items-center">
+              <i class="bi bi-calendar3-range fs-3 me-3"></i>
+              <div>
+                <strong class="d-block text-dark">Monthly Attendance Register</strong>
+                <small class="text-muted">Grid view of 1 to 31 days with monthly totals</small>
+              </div>
+            </a>
+            <a href="{{ url_for('employees.attendance_reports') }}" class="btn btn-outline-success p-3 text-start rounded-3 d-flex align-items-center">
+              <i class="bi bi-file-earmark-excel fs-3 me-3"></i>
+              <div>
+                <strong class="d-block text-dark">Export Attendance Reports</strong>
+                <small class="text-muted">Generate Excel, PDF, or CSV attendance summaries</small>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

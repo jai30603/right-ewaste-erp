@@ -1,0 +1,257 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Platform Services – Right Ewaste ERP{% endblock %}
+
+{% block styles %}
+<style>
+  /* ── Platform Module Styles ──────────────────────────────── */
+  .platform-hero {
+    background: linear-gradient(135deg, #0f2318 0%, #1c3d2b 50%, #2d6a4f 100%);
+    border-radius: 16px;
+    padding: 32px 36px;
+    color: #fff;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .platform-hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 260px; height: 260px;
+    background: rgba(60,179,113,0.12);
+    border-radius: 50%;
+  }
+  .platform-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -40px; left: 40px;
+    width: 160px; height: 160px;
+    background: rgba(60,179,113,0.07);
+    border-radius: 50%;
+  }
+  .platform-hero h1 { font-size: 1.75rem; font-weight: 700; margin: 0; }
+  .platform-hero p  { opacity: 0.75; margin: 6px 0 0; font-size: 0.9rem; }
+
+  /* KPI Grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: box-shadow .2s, transform .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.09); transform: translateY(-2px); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--kpi-color, var(--accent));
+    border-radius: 14px 14px 0 0;
+  }
+  .kpi-icon {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem;
+    background: color-mix(in srgb, var(--kpi-color, var(--accent)) 12%, transparent);
+    color: var(--kpi-color, var(--accent));
+    margin-bottom: 4px;
+  }
+  .kpi-value { font-size: 1.85rem; font-weight: 700; color: #1a2b22; line-height: 1; }
+  .kpi-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-unit  { font-size: 0.73rem; color: var(--text-muted); }
+  .kpi-status-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; align-self: flex-start;
+  }
+  .badge-ok       { background: #d1fae5; color: #065f46; }
+  .badge-warning  { background: #fef3c7; color: #92400e; }
+  .badge-critical { background: #fee2e2; color: #991b1b; }
+
+  /* Module Cards */
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .module-card {
+    background: #fff;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 22px;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow .2s, transform .2s, border-color .2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .module-card:hover {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.09);
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    color: inherit;
+    text-decoration: none;
+  }
+  .module-card-icon {
+    width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; background: #f0fdf4; color: var(--accent);
+  }
+  .module-card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .module-card-desc  { font-size: 0.8rem; color: var(--text-muted); }
+
+  /* Stats row */
+  .stats-row {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px;
+  }
+  .stat-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid var(--card-border);
+    border-radius: 10px; padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+  .stat-chip strong { font-size: 1.1rem; color: var(--accent); }
+
+  /* Handler table */
+  .section-title {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--text-muted); margin-bottom: 12px;
+  }
+
+  /* Dark mode */
+  [data-theme="dark"] .kpi-card,
+  [data-theme="dark"] .module-card,
+  [data-theme="dark"] .stat-chip {
+    background: #1e2d26; border-color: #2d4538;
+  }
+  [data-theme="dark"] .kpi-value,
+  [data-theme="dark"] .module-card-title { color: #e8f5ee; }
+  [data-theme="dark"] .kpi-icon { background: rgba(60,179,113,0.15); }
+  [data-theme="dark"] .module-card-icon { background: rgba(60,179,113,0.12); }
+  [data-theme="dark"] .platform-hero { background: linear-gradient(135deg, #0a1a10 0%, #112d1e 50%, #1c4530 100%); }
+</style>
+{% endblock %}
+
+{% block page_title %}Platform Services{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item active">Platform</li>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="platform-hero">
+  <h1><i class="bi bi-layers me-2"></i>Enterprise Platform Services</h1>
+  <p>Module 3 – Activity Center · Audit Trail · KPI Engine · Notifications · Event Bus</p>
+</div>
+
+<!-- Activity Stats -->
+<div class="stats-row">
+  <div class="stat-chip"><i class="bi bi-activity text-success"></i><div><div class="section-title mb-0">TODAY</div><strong>{{ stats.today }}</strong></div></div>
+  <div class="stat-chip"><i class="bi bi-database text-primary"></i><div><div class="section-title mb-0">TOTAL LOGS</div><strong>{{ stats.total }}</strong></div></div>
+  <div class="stat-chip"><i class="bi bi-bell text-warning"></i><div><div class="section-title mb-0">UNREAD ALERTS</div><strong>{{ unread }}</strong></div></div>
+  <div class="stat-chip"><i class="bi bi-diagram-3 text-info"></i><div><div class="section-title mb-0">EVENT HANDLERS</div><strong>{{ handlers | length }}</strong></div></div>
+</div>
+
+<!-- KPI Cards -->
+{% if kpis %}
+<div class="section-title">Live KPIs</div>
+<div class="kpi-grid">
+  {% set kpi_colors = ['#10b981','#6366f1','#f59e0b','#ef4444','#8b5cf6','#06b6d4'] %}
+  {% for kpi in kpis %}
+  {% set col = kpi_colors[loop.index0 % kpi_colors|length] %}
+  <div class="kpi-card" style="--kpi-color:{{ col }}">
+    <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+    <div class="kpi-label">{{ kpi.kpi_name }}</div>
+    <div class="kpi-value">
+      {% if kpi.unit == 'INR' %}₹{{ '{:,.0f}'.format(kpi.value) }}
+      {% else %}{{ kpi.value }}{% endif %}
+    </div>
+    <div class="kpi-unit">{{ kpi.unit }} · {{ kpi.kpi_category }}</div>
+    <span class="kpi-status-badge badge-{{ kpi.status | lower }}">{{ kpi.status }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Module Navigation Cards -->
+<div class="section-title">Platform Modules</div>
+<div class="module-grid">
+  <a href="/platform/activities" class="module-card">
+    <div class="module-card-icon"><i class="bi bi-activity"></i></div>
+    <div>
+      <div class="module-card-title">Activity Center</div>
+      <div class="module-card-desc">Timeline of all user actions across every ERP module</div>
+    </div>
+  </a>
+  <a href="/platform/audit" class="module-card">
+    <div class="module-card-icon"><i class="bi bi-shield-check"></i></div>
+    <div>
+      <div class="module-card-title">Audit Trail</div>
+      <div class="module-card-desc">Field-level before/after change log for compliance</div>
+    </div>
+  </a>
+  <a href="/platform/notifications" class="module-card">
+    <div class="module-card-icon"><i class="bi bi-bell"></i></div>
+    <div>
+      <div class="module-card-title">Notifications</div>
+      <div class="module-card-desc">In-app notification inbox · {{ unread }} unread</div>
+    </div>
+  </a>
+  <a href="/platform/events" class="module-card">
+    <div class="module-card-icon"><i class="bi bi-lightning-charge"></i></div>
+    <div>
+      <div class="module-card-title">Event Log</div>
+      <div class="module-card-desc">Inter-module event bus activity and handler registry</div>
+    </div>
+  </a>
+</div>
+
+<!-- Activity by Module -->
+{% if stats.by_module %}
+<div class="section-title">Activity by Module</div>
+<div class="card border-0 shadow-sm" style="border-radius:14px;">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0" style="border-radius:14px; overflow:hidden;">
+      <thead style="background:#f8faf9;">
+        <tr>
+          <th class="ps-4 py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted);">Module</th>
+          <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted);">Activity Count</th>
+          <th class="py-3" style="font-size:0.75rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted);">Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in stats.by_module %}
+        <tr>
+          <td class="ps-4 py-2"><span class="badge bg-success-subtle text-success-emphasis">{{ row.module }}</span></td>
+          <td class="py-2"><strong>{{ row.count }}</strong></td>
+          <td class="py-2" style="width:220px;">
+            <div class="progress" style="height:6px; border-radius:6px;">
+              <div class="progress-bar bg-success" style="width:{{ ((row.count / stats.total) * 100) | round(1) if stats.total else 0 }}%"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Disposal Materials Master{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/material">Masters</a></li>
+<li class="breadcrumb-item active">Disposal Materials</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1 fw-bold"><i class="bi bi-trash text-danger me-2"></i>Disposal Materials Master</h4>
+            <p class="text-muted small mb-0">Maintain hazardous and non-saleable disposal material definitions</p>
+        </div>
+        <button class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+            <i class="bi bi-plus-lg me-1"></i>Add Disposal Material
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-3">Code</th>
+                            <th>Material Name</th>
+                            <th>Category</th>
+                            <th>Hazardous</th>
+                            <th>Default Unit</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if materials %}
+                        {% for m in materials %}
+                        <tr>
+                            <td class="ps-3"><code class="code-cell">{{ m.material_code }}</code></td>
+                            <td class="fw-semibold">{{ m.material_name }}</td>
+                            <td><span class="badge bg-info-subtle">{{ m.category }}</span></td>
+                            <td>
+                                {% if m.is_hazardous %}
+                                <span class="badge bg-danger-subtle"><i class="bi bi-exclamation-triangle me-1"></i>Yes</span>
+                                {% else %}
+                                <span class="badge bg-success-subtle">No</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary">{{ m.default_unit }}</span></td>
+                            <td>
+                                {% if m.is_active %}
+                                <span class="badge bg-success-subtle">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No disposal materials defined.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ADD MATERIAL MODAL -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Add Disposal Material</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Material Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="material_code" placeholder="e.g. DISP-BAT-101" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Material Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="material_name" placeholder="e.g. Lead Acid Battery Water" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category</label>
+                        <select class="form-select" name="category">
+                            <option value="Hazardous Batteries">Hazardous Batteries</option>
+                            <option value="Lithium Ion Batteries">Lithium Ion Batteries</option>
+                            <option value="Electronic Waste">Electronic Waste</option>
+                            <option value="Glass & Electronic Waste">Glass & Electronic Waste</option>
+                            <option value="Packaging Waste">Packaging Waste</option>
+                            <option value="General Waste">General Waste</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Default Unit</label>
+                            <select class="form-select" name="default_unit">
+                                <option value="KGS">KGS</option>
+                                <option value="PCS">PCS</option>
+                                <option value="NOS">NOS</option>
+                            </select>
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="is_hazardous" id="isHazCheck" value="1" checked>
+                                <label class="form-check-label fw-semibold" for="isHazCheck">Hazardous Waste</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold">Save Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

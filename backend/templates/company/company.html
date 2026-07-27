@@ -1,0 +1,110 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Company Profile – Right Ewaste ERP{% endblock %}
+{% block page_title %}Company Profile{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Company Profile</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="font-family: 'Inter', sans-serif;">
+    <div class="row g-4">
+        <!-- Profile Card View / Form Card -->
+        <div class="col-12 col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 text-success me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                        <i class="bi bi-building fs-3"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-1 text-dark">Company Information</h5>
+                        <p class="text-muted small mb-0">Manage legal registry records, GSTIN, PAN, and corporate billing details.</p>
+                    </div>
+                </div>
+
+                <form id="company-form" method="POST" action="/company">
+                    <div class="row g-3">
+                        <!-- Company Name -->
+                        <div class="col-12">
+                            <label for="company_name" class="form-label small fw-bold text-secondary">Company Legal Name</label>
+                            <input type="text" class="form-control rounded-3" id="company_name" name="company_name" value="{{ company.company_name }}" required>
+                        </div>
+
+                        <!-- Address Line 1 -->
+                        <div class="col-12 col-md-6">
+                            <label for="address_line_1" class="form-label small fw-bold text-secondary">Address Line 1</label>
+                            <input type="text" class="form-control rounded-3" id="address_line_1" name="address_line_1" value="{{ company.address_line_1 }}" required>
+                        </div>
+
+                        <!-- Address Line 2 -->
+                        <div class="col-12 col-md-6">
+                            <label for="address_line_2" class="form-label small fw-bold text-secondary">Address Line 2 (Optional)</label>
+                            <input type="text" class="form-control rounded-3" id="address_line_2" name="address_line_2" value="{{ company.address_line_2 or '' }}">
+                        </div>
+
+                        <!-- City & Pincode -->
+                        <div class="col-6 col-md-4">
+                            <label for="city" class="form-label small fw-bold text-secondary">City</label>
+                            <input type="text" class="form-control rounded-3" id="city" name="city" value="{{ company.city }}" required>
+                        </div>
+
+                        <div class="col-6 col-md-4">
+                            <label for="state" class="form-label small fw-bold text-secondary">State</label>
+                            <input type="text" class="form-control rounded-3" id="state" name="state" value="{{ company.state }}" required>
+                        </div>
+
+                        <div class="col-6 col-md-2">
+                            <label for="state_code" class="form-label small fw-bold text-secondary">State Code</label>
+                            <input type="text" class="form-control rounded-3" id="state_code" name="state_code" value="{{ company.state_code }}" required maxlength="2">
+                        </div>
+
+                        <div class="col-6 col-md-2">
+                            <label for="pincode" class="form-label small fw-bold text-secondary">Pincode</label>
+                            <input type="text" class="form-control rounded-3" id="pincode" name="pincode" value="{{ company.pincode }}" required>
+                        </div>
+
+                        <!-- GSTIN & PAN -->
+                        <div class="col-12 col-md-4">
+                            <label for="gstin" class="form-label small fw-bold text-secondary">GSTIN</label>
+                            <input type="text" class="form-control rounded-3" id="gstin" name="gstin" value="{{ company.gstin }}" required maxlength="15">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label for="pan" class="form-label small fw-bold text-secondary">PAN Number</label>
+                            <input type="text" class="form-control rounded-3" id="pan" name="pan" value="{{ company.pan }}" required maxlength="10">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label for="cin" class="form-label small fw-bold text-secondary">CIN (Optional)</label>
+                            <input type="text" class="form-control rounded-3" id="cin" name="cin" value="{{ company.cin or '' }}">
+                        </div>
+
+                        <!-- Contact info -->
+                        <div class="col-12 col-md-4">
+                            <label for="phone" class="form-label small fw-bold text-secondary">Phone number</label>
+                            <input type="text" class="form-control rounded-3" id="phone" name="phone" value="{{ company.phone }}" required>
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label for="email" class="form-label small fw-bold text-secondary">Email address</label>
+                            <input type="email" class="form-control rounded-3" id="email" name="email" value="{{ company.email or '' }}">
+                        </div>
+
+                        <div class="col-12 col-md-4">
+                            <label for="website" class="form-label small fw-bold text-secondary">Website URL</label>
+                            <input type="text" class="form-control rounded-3" id="website" name="website" value="{{ company.website or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-success rounded-pill px-4">
+                            <i class="bi bi-check-circle me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

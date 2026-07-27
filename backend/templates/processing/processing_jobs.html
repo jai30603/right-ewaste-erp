@@ -1,0 +1,186 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}Processing Queue & Active Jobs{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/processing.css') }}">
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title="Processing Queue & Active Jobs",
+    subtitle="View materials pending sorting, in-progress jobs, and completed batch records.",
+    back_url="/processing/dashboard",
+    actions=[
+        {'label': 'New Processing Job', 'url': '/processing/create', 'icon': 'bi-plus-lg', 'class': 'btn-primary'}
+    ]
+) }}
+
+  <div class="row g-3 mb-4">
+    <!-- Left Column: Processing Queue -->
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white border-0 py-3 d-flex align-items-center">
+          <h5 class="m-0 fw-bold"><i class="bi bi-list-stars text-primary me-2"></i>Processing Queue</h5>
+          <span class="badge bg-primary ms-auto">{{ queue|length }} materials</span>
+        </div>
+        <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+          {% if queue %}
+          <div class="list-group list-group-flush">
+            {% for item in queue %}
+            <div class="list-group-item queue-item priority-{{ item.priority }} p-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <h6 class="fw-bold m-0 text-dark">{{ item.name }}</h6>
+                  <small class="text-muted">{{ item.code }} | {{ item.category }}</small>
+                </div>
+                <span class="badge badge-{{ item.priority.lower() }}">{{ item.priority }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center text-secondary mb-3" style="font-size: 13px;">
+                <span>
+                  <i class="bi bi-boxes me-1"></i><strong>{{ item.qty }}</strong> {{ item.unit }}
+                </span>
+                <span>
+                  <i class="bi bi-clock me-1"></i>Waiting: <strong>{{ item.waiting_days }}</strong> days
+                </span>
+              </div>
+              <div class="d-grid">
+                <a href="{{ url_for('material_processing.create_job') }}?pre_material_id={{ item.id }}" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-plus-circle me-1"></i>Create Job
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state py-5 text-center text-muted">
+            <div class="empty-icon fs-1 mb-2"><i class="bi bi-check2-circle"></i></div>
+            <p>No materials waiting in the queue.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Active Jobs -->
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+          <h5 class="m-0 fw-bold"><i class="bi bi-cpu text-primary me-2"></i>Active Processing Jobs</h5>
+          <a href="{{ url_for('material_processing.create_job') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle-fill me-1"></i>New Processing Job
+          </a>
+        </div>
+        <div class="card-body p-0">
+          <!-- Filters row -->
+          <div class="bg-light p-3 border-bottom d-flex flex-wrap gap-2">
+            <form method="GET" action="{{ url_for('material_processing.jobs') }}" class="d-flex flex-wrap gap-2 w-100">
+              <div class="input-group input-group-sm flex-grow-1" style="min-width: 200px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" class="form-control" placeholder="Search jobs by operator, remarks..." value="{{ q or '' }}">
+              </div>
+              
+              <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                <option value="all" {% if status == 'all' or status == 'active' %}selected{% endif %}>Active Jobs</option>
+                <option value="DRAFT" {% if status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                <option value="READY" {% if status == 'READY' %}selected{% endif %}>Ready</option>
+                <option value="IN_PROGRESS" {% if status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+              </select>
+
+              <select name="priority" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                <option value="all" {% if priority == 'all' %}selected{% endif %}>All Priorities</option>
+                <option value="LOW" {% if priority == 'LOW' %}selected{% endif %}>Low</option>
+                <option value="NORMAL" {% if priority == 'NORMAL' %}selected{% endif %}>Normal</option>
+                <option value="HIGH" {% if priority == 'HIGH' %}selected{% endif %}>High</option>
+                <option value="URGENT" {% if priority == 'URGENT' %}selected{% endif %}>Urgent</option>
+              </select>
+
+              <button type="submit" class="btn btn-dark btn-sm">Filter</button>
+              <a href="{{ url_for('material_processing.jobs') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+            </form>
+          </div>
+
+          {% if jobs %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Job Number</th>
+                  <th>Date</th>
+                  <th>Operator</th>
+                  <th>Priority</th>
+                  <th>Inputs</th>
+                  <th>Total Weight</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for job in jobs %}
+                <tr>
+                  <td>
+                    <a href="{{ url_for('material_processing.job_details', job_id=job.id) }}" class="fw-bold text-primary">
+                      {{ job.processing_number }}
+                    </a>
+                  </td>
+                  <td>{{ job.processing_date }}</td>
+                  <td>{{ job.operator_id }}</td>
+                  <td>
+                    <span class="badge badge-{{ job.priority.lower() }}">{{ job.priority }}</span>
+                  </td>
+                  <td><span class="badge bg-secondary">{{ job.input_count }} items</span></td>
+                  <td>{{ "%.2f"|format(job.input_weight) }} KG</td>
+                  <td>
+                    {% if job.status == 'DRAFT' %}
+                      <span class="badge bg-secondary-subtle text-secondary">Draft</span>
+                    {% elif job.status == 'READY' %}
+                      <span class="badge bg-info-subtle text-info">Ready</span>
+                    {% elif job.status == 'IN_PROGRESS' %}
+                      <span class="badge bg-warning-subtle text-warning">In Progress</span>
+                    {% elif job.status == 'COMPLETED' %}
+                      <span class="badge bg-success-subtle text-success">Completed</span>
+                    {% elif job.status == 'CANCELLED' %}
+                      <span class="badge bg-danger-subtle text-danger">Cancelled</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ job.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{{ url_for('material_processing.job_details', job_id=job.id) }}" class="btn btn-outline-secondary" title="View details">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                      {% if job.status in ('DRAFT', 'READY') %}
+                      <a href="{{ url_for('material_processing.edit_job', job_id=job.id) }}" class="btn btn-outline-primary" title="Edit Draft">
+                        <i class="bi bi-pencil"></i>
+                      </a>
+                      {% endif %}
+                      <form action="{{ url_for('material_processing.duplicate_job', job_id=job.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-dark" title="Duplicate Job">
+                          <i class="bi bi-files"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state py-5 text-center text-muted">
+            <div class="empty-icon fs-1 mb-2"><i class="bi bi-inbox"></i></div>
+            <p>No active processing jobs matching filters.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

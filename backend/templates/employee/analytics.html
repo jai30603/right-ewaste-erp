@@ -1,0 +1,187 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Workforce Analytics Dashboard – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1" style="color: #1e293b;">
+        <i class="bi bi-graph-up-arrow text-primary me-2"></i>Workforce Analytics & Insights
+      </h3>
+      <p class="text-muted small mb-0">Real-time organizational analytics, department distributions, attendance metrics, and payroll summaries.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('employees.dashboard') }}" class="btn btn-outline-secondary px-3">
+        <i class="bi bi-speedometer2 me-1"></i>Module Dashboard
+      </a>
+      <a href="{{ url_for('employees.reports') }}" class="btn btn-primary px-3 shadow-sm">
+        <i class="bi bi-file-earmark-bar-graph me-1"></i>Reports Center
+      </a>
+    </div>
+  </div>
+
+  <!-- Workforce KPI Metrics Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-primary bg-opacity-10 border-start border-primary border-4">
+        <small class="text-primary text-uppercase fw-bold" style="font-size: 0.75rem;">Total Workforce</small>
+        <h2 class="fw-bold my-1 text-dark">{{ analytics.total_employees }}</h2>
+        <div class="text-muted small">Registered Employees</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-success bg-opacity-10 border-start border-success border-4">
+        <small class="text-success text-uppercase fw-bold" style="font-size: 0.75rem;">Active Employees</small>
+        <h2 class="fw-bold my-1 text-dark">{{ analytics.active_employees }}</h2>
+        <div class="text-success small"><i class="bi bi-check-circle me-1"></i>Operational</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-warning bg-opacity-10 border-start border-warning border-4">
+        <small class="text-warning-emphasis text-uppercase fw-bold" style="font-size: 0.75rem;">Attendance Rate</small>
+        <h2 class="fw-bold my-1 text-dark">{{ analytics.attendance_percentage }}%</h2>
+        <div class="text-muted small">{{ analytics.present_today }} Present Today</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm rounded-3 p-3 bg-info bg-opacity-10 border-start border-info border-4">
+        <small class="text-info-emphasis text-uppercase fw-bold" style="font-size: 0.75rem;">Monthly Payroll</small>
+        <h2 class="fw-bold my-1 text-dark">₹{{ "{:,.0f}".format(analytics.monthly_payroll) }}</h2>
+        <div class="text-muted small">Avg: ₹{{ "{:,.0f}".format(analytics.average_salary) }}/emp</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts & Distributions Row -->
+  <div class="row g-4 mb-4">
+    <!-- Department Distribution Card -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-building text-primary me-2"></i>Department Workforce Breakdown
+          </h5>
+          <span class="badge bg-light text-dark border">{{ analytics.department_distribution|length }} Departments</span>
+        </div>
+        <div class="card-body">
+          {% if analytics.department_distribution %}
+          <div class="d-flex flex-column gap-3">
+            {% for dept, count in analytics.department_distribution.items() %}
+              {% set pct = ((count / analytics.active_employees) * 100)|round(1) if analytics.active_employees > 0 else 0 %}
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ dept }}</span>
+                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace">{{ count }} emp ({{ pct }}%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-primary" role="progressbar" style="width: {{ pct }}%;" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-muted small text-center py-4">No active department data available.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Employment Type Distribution Card -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm rounded-3 h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-person-badge text-primary me-2"></i>Employment Type Breakdown
+          </h5>
+          <span class="badge bg-light text-dark border">Workforce Types</span>
+        </div>
+        <div class="card-body">
+          {% if analytics.employment_type_distribution %}
+          <div class="d-flex flex-column gap-3">
+            {% for etype, count in analytics.employment_type_distribution.items() %}
+              {% set pct = ((count / analytics.active_employees) * 100)|round(1) if analytics.active_employees > 0 else 0 %}
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ etype }}</span>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace">{{ count }} emp ({{ pct }}%)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct }}%;" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-muted small text-center py-4">No active employment type data available.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Operational Insights Grid -->
+  <div class="row g-4">
+    <!-- Attendance Insights -->
+    <div class="col-12 col-md-6">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-calendar-check text-warning me-2"></i>Daily Attendance & Leave Status
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-3">
+            <div class="col-6">
+              <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
+                <small class="text-success fw-bold d-block text-uppercase" style="font-size: 0.75rem;">Present Today</small>
+                <h3 class="fw-bold text-dark my-1">{{ analytics.present_today }}</h3>
+                <span class="text-muted small">On Duty</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25">
+                <small class="text-primary fw-bold d-block text-uppercase" style="font-size: 0.75rem;">On Approved Leave</small>
+                <h3 class="fw-bold text-dark my-1">{{ analytics.on_leave_today }}</h3>
+                <span class="text-muted small">Sanctioned Absence</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payroll Insights -->
+    <div class="col-12 col-md-6">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-wallet2 text-success me-2"></i>Current Month Payroll Insights
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-3">
+            <div class="col-6">
+              <div class="p-3 bg-info bg-opacity-10 rounded-3 border border-info border-opacity-25">
+                <small class="text-info-emphasis fw-bold d-block text-uppercase" style="font-size: 0.75rem;">Net Monthly Payroll</small>
+                <h3 class="fw-bold text-dark my-1">₹{{ "{:,.0f}".format(analytics.monthly_payroll) }}</h3>
+                <span class="text-muted small">Total Disbursed</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 bg-purple bg-opacity-10 rounded-3 border border-purple border-opacity-25" style="background: #f3e8ff;">
+                <small class="fw-bold d-block text-uppercase" style="font-size: 0.75rem; color: #7e22ce;">Average Net Salary</small>
+                <h3 class="fw-bold text-dark my-1">₹{{ "{:,.0f}".format(analytics.average_salary) }}</h3>
+                <span class="text-muted small">Per Employee</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Run Monthly Payroll – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('employees.payroll_dashboard') }}">Payroll</a></li>
+          <li class="breadcrumb-item active">Generate Monthly Payroll</li>
+        </ol>
+      </nav>
+      <h3 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-play-circle text-primary me-2"></i>Run Automated Monthly Payroll Processing
+      </h3>
+    </div>
+    <a href="{{ url_for('employees.payroll_records') }}" class="btn btn-outline-secondary px-3">
+      <i class="bi bi-arrow-left me-1"></i>Back to Records
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-white py-3 border-bottom">
+          <h5 class="fw-bold mb-0 text-dark" style="font-size: 1rem;">
+            <i class="bi bi-calendar-check text-primary me-2"></i>Select Processing Period
+          </h5>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('employees.payroll_generate') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3 mb-4">
+              <!-- Month -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Target Month <span class="text-danger">*</span></label>
+                <select name="month" class="form-select form-select-lg">
+                  {% set months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                  {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {{ 'selected' if current_month == m }}>{{ months[m-1] }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Year -->
+              <div class="col-12 col-md-6">
+                <label class="form-label fw-semibold">Target Year <span class="text-danger">*</span></label>
+                <select name="year" class="form-select form-select-lg">
+                  {% for y in range(2024, 2028) %}
+                    <option value="{{ y }}" {{ 'selected' if current_year == y }}>{{ y }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <!-- Integration Engine Features Box -->
+            <div class="p-3 bg-light rounded-3 mb-4">
+              <h6 class="fw-bold text-dark mb-2">
+                <i class="bi bi-cpu-fill text-primary me-2"></i>Automated Calculation Workflow:
+              </h6>
+              <ul class="list-unstyled mb-0 small text-muted">
+                <li class="mb-1"><i class="bi bi-check2-circle text-success me-2"></i><strong>Attendance Module Sync:</strong> Computes Working Days, Present Days, and Absent Days for each employee.</li>
+                <li class="mb-1"><i class="bi bi-check2-circle text-success me-2"></i><strong>Leave Module Sync:</strong> Includes approved paid leave days in payable days calculation.</li>
+                <li class="mb-1"><i class="bi bi-check2-circle text-success me-2"></i><strong>Pro-rated Salary Engine:</strong> Pro-rates gross salary and net take-home pay according to actual attendance.</li>
+                <li><i class="bi bi-check2-circle text-success me-2"></i><strong>Audit Protection:</strong> Generates a draft/generated payroll record ready for review and disbursement.</li>
+              </ul>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{{ url_for('employees.payroll_records') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+              <button type="submit" class="btn btn-primary px-5 py-2 shadow-sm">
+                <i class="bi bi-gear-fill me-1"></i>Generate Payroll Records
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

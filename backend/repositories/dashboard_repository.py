@@ -69,27 +69,7 @@ def get_dashboard_snapshot():
 
     # ── Inventory Items (distinct active materials in stock with stock > 0) ──
     cursor.execute("""
-        SELECT COUNT(*) FROM (
-            SELECT 
-                m.id,
-                (COALESCE(p.total_purchased, 0.0) - COALESCE(s.total_sold, 0.0)) AS current_stock
-            FROM material m
-            LEFT JOIN (
-                SELECT pii.material_id, SUM(pii.quantity) AS total_purchased
-                FROM purchase_invoice_item pii
-                JOIN purchase_invoice pi ON pii.purchase_invoice_id = pi.id
-                WHERE pi.is_active = 1 AND pi.status NOT IN ('DRAFT', 'CANCELLED')
-                GROUP BY pii.material_id
-            ) p ON m.id = p.material_id
-            LEFT JOIN (
-                SELECT sii.material_id, SUM(sii.quantity) AS total_sold
-                FROM sales_invoice_item sii
-                JOIN sales_invoice si ON sii.sales_invoice_id = si.id
-                WHERE si.is_active = 1 AND si.status NOT IN ('DRAFT', 'CANCELLED')
-                GROUP BY sii.material_id
-            ) s ON m.id = s.material_id
-            WHERE m.is_active = 1 AND (COALESCE(p.total_purchased, 0.0) - COALESCE(s.total_sold, 0.0)) > 0
-        )
+        SELECT COUNT(DISTINCT material_id) FROM inventory_balance WHERE current_quantity > 0
     """)
     inventory_items = cursor.fetchone()[0] or 0
 
@@ -109,6 +89,46 @@ def get_dashboard_snapshot():
     """)
     total_sales_invoices = cursor.fetchone()[0] or 0
 
+    # ── Pending Processing Jobs ──────────────────────────────────────────
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM processing_job
+        WHERE status IN ('DRAFT', 'IN_PROGRESS')
+    """)
+    pending_processing = cursor.fetchone()[0] or 0
+
+    # ── Pending Certificates ─────────────────────────────────────────────
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM processing_job pj
+        WHERE pj.status = 'COMPLETED'
+          AND pj.id NOT IN (
+              SELECT cp.processing_job_id
+              FROM certificate_processing cp
+              JOIN certificate c ON cp.certificate_id = c.id
+              WHERE c.status NOT IN ('CANCELLED')
+          )
+    """)
+    pending_certificates = cursor.fetchone()[0] or 0
+
+    # ── Employee Management Metrics ─────────────────────────────────────
+    cursor.execute("SELECT COUNT(*) FROM employees WHERE status = 'Active'")
+    total_employees = cursor.fetchone()[0] or 0
+
+    cursor.execute("SELECT COUNT(*) FROM employee_attendance WHERE attendance_date = ? AND attendance_status = 'Present'", (today,))
+    present_today = cursor.fetchone()[0] or 0
+
+    cursor.execute("""
+        SELECT COUNT(DISTINCT lr.employee_id) 
+        FROM employee_leave_requests lr
+        JOIN employees e ON lr.employee_id = e.id
+        WHERE lr.status = 'Approved' AND ? BETWEEN lr.start_date AND lr.end_date AND e.status = 'Active'
+    """, (today,))
+    employees_on_leave = cursor.fetchone()[0] or 0
+
+    cursor.execute("SELECT COUNT(*) FROM employee_leave_requests WHERE status = 'Pending'")
+    pending_leave_requests = cursor.fetchone()[0] or 0
+
     conn.close()
 
     return {
@@ -123,6 +143,10 @@ def get_dashboard_snapshot():
         "inventory_items":        inventory_items,
         "total_purchase_invoices": total_purchase_invoices,
         "total_sales_invoices":   total_sales_invoices,
-        "pending_processing":     0,  # placeholder — Factory module
-        "pending_certificates":   0,  # placeholder — Certificates module
+        "pending_processing":     pending_processing,
+        "pending_certificates":   pending_certificates,
+        "total_employees":        total_employees,
+        "present_today":          present_today,
+        "employees_on_leave":     employees_on_leave,
+        "pending_leave_requests": pending_leave_requests,
     }

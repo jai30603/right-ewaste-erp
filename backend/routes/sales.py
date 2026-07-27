@@ -5,12 +5,17 @@ import calendar
 from urllib.parse import urlparse
 from flask import (
     Blueprint, render_template, request,
-    redirect, url_for, flash, Response, abort,
+    redirect, url_for, Response, abort,
 )
-from xhtml2pdf import pisa
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+
+from backend.common.utils.date_utils import get_filter_date_range
+from backend.common.utils.format_utils import get_report_filename
+from backend.common.utils.flash_helpers import flash_success, flash_error, flash_warning, flash_info
+from backend.services.pdf_service import render_to_pdf, send_pdf_response
+from backend.services.sales_service import check_stock_available, validate_status_transition
 
 from repositories.sales_repository import (
     get_all_invoices,
@@ -38,40 +43,6 @@ PAYMENT_MODES = ["Cash", "NEFT", "RTGS", "UPI", "Cheque", "Credit"]
 
 # ── V2 Stock & Status Transition Validation ───────────────────────────────
 
-def check_stock_available(material_id, needed_qty, exclude_invoice_id=None):
-    from repositories.inventory_repository import get_stock_summary
-    summary = get_stock_summary()
-    for row in summary:
-        if row["id"] == material_id:
-            current_stock = float(row["current_stock"] or 0.0)
-            if exclude_invoice_id:
-                from database import get_connection
-                conn = get_connection()
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT SUM(quantity) FROM sales_invoice_item 
-                    WHERE sales_invoice_id = ? AND material_id = ?
-                """, (exclude_invoice_id, material_id))
-                res = cursor.fetchone()
-                existing_invoice_qty = float(res[0] or 0.0) if res else 0.0
-                conn.close()
-                current_stock += existing_invoice_qty
-            return current_stock >= needed_qty
-    return needed_qty <= 0.0
-
-
-def validate_status_transition(old_status, new_status):
-    if old_status == new_status:
-        return True
-    if old_status == "DRAFT":
-        return new_status in ["DRAFT", "CONFIRMED", "CANCELLED"]
-    if old_status == "CONFIRMED":
-        return new_status in ["CONFIRMED", "PRINTED", "PAID", "CANCELLED"]
-    if old_status == "PRINTED":
-        return new_status in ["PRINTED", "PAID", "CANCELLED"]
-    if old_status in ["PAID", "CANCELLED"]:
-        return False
-    return True
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -227,7 +198,7 @@ def sales():
     paginated_invoices = invoices[offset : offset + per_page]
 
     return render_template(
-        "sales.html",
+        "sales/sales.html",
         invoices=paginated_invoices,
         parties=parties,
         materials=materials,
@@ -373,31 +344,22 @@ def export_sales_pdf():
     total_amount = sum(float(inv["grand_total"] or 0) for inv in invoices)
     today_str = date.today().strftime("%d-%b-%Y")
 
-    html = render_template(
-        "sales_report_pdf.html",
-        invoices=invoices,
-        total_amount=total_amount,
-        today_str=today_str,
-        date_filter=date_filter,
-        year=year,
-        month=month,
-        start_date=start_date,
-        end_date=end_date
+    pdf_bytes = render_to_pdf(
+        "reports/sales_report_pdf.html",
+        {
+            "invoices": invoices,
+            "total_amount": total_amount,
+            "today_str": today_str,
+            "date_filter": date_filter,
+            "year": year,
+            "month": month,
+            "start_date": start_date,
+            "end_date": end_date
+        }
     )
-
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    pdf_bytes = buf.getvalue()
 
     filename = get_report_filename("sales_invoices_report", "pdf", date_filter, year, month, start_date, end_date)
-    return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": len(pdf_bytes),
-        },
-    )
+    return send_pdf_response(pdf_bytes, filename)
 
 
 # ── Add ───────────────────────────────────────────────────────────────────────
@@ -415,7 +377,6 @@ def add_sales_invoice():
         material_ids    = request.form.getlist("material_id[]")
         qtys            = request.form.getlist("qty[]")
         weights         = request.form.getlist("weight[]")
-        pieces_list     = request.form.getlist("pieces[]")
         rates           = request.form.getlist("rate[]")
         amounts         = request.form.getlist("amount[]")
         gst_percentages = request.form.getlist("gst_percentage[]")
@@ -433,25 +394,31 @@ def add_sales_invoice():
             
             qty_val = float(qtys[i] or 0)
             weight_val = float(weights[i] or 0)
-            pieces_val = int(pieces_list[i] or 0)
             
             if qty_val <= 0:
                 errors["items"] = "Quantity must be greater than zero for all items."
             
-            if tracking_type == "WEIGHT_ONLY" and weight_val <= 0:
-                errors["items"] = f"Weight is required and must be greater than 0 for item '{mat['material_name']}'."
-            elif tracking_type == "PIECES_ONLY" and pieces_val <= 0:
-                errors["items"] = f"Pieces are required and must be greater than 0 for item '{mat['material_name']}'."
-            elif tracking_type == "BOTH" and (weight_val <= 0 or pieces_val <= 0):
-                errors["items"] = f"Both Weight and Pieces are required for item '{mat['material_name']}'."
+            if tracking_type == "WEIGHT_ONLY":
+                qty_val = 0.0
+                if weight_val <= 0:
+                    errors["items"] = f"Weight is required and must be greater than 0 for item '{mat['material_name']}'."
+            elif tracking_type == "QUANTITY_ONLY":
+                weight_val = 0.0
+                if qty_val <= 0:
+                    errors["items"] = f"Quantity is required and must be greater than 0 for item '{mat['material_name']}'."
+            else:
+                if qty_val <= 0:
+                    errors["items"] = f"Quantity is required for item '{mat['material_name']}'."
+                if weight_val <= 0:
+                    errors["items"] = f"Weight is required for item '{mat['material_name']}'."
 
+            amount_val = round((weight_val if tracking_type == "WEIGHT_ONLY" else qty_val) * float(rates[i] or 0), 2)
             items.append({
                 "material_id":    int(mid),
                 "qty":            qty_val,
                 "weight":         weight_val,
-                "pieces":         pieces_val,
                 "rate":           float(rates[i]           or 0),
-                "amount":         float(amounts[i]         or 0),
+                "amount":         amount_val,
                 "gst_percentage": float(gst_percentages[i] or 0),
             })
 
@@ -465,7 +432,7 @@ def add_sales_invoice():
             for item in items:
                 mid = item["material_id"]
                 qty = item["qty"]
-                is_available = check_stock_available(mid, qty)
+                is_available = check_stock_available(mid, qty, item["weight"])
                 if not is_available:
                     from repositories.material_repository import get_material_by_id
                     mat = get_material_by_id(mid)
@@ -475,9 +442,9 @@ def add_sales_invoice():
                 errors["items"] = " ".join(stock_errors)
 
         if errors:
-            flash("Please fix the errors below.", "danger")
+            flash_error("Please fix the errors below.")
             return render_template(
-                "sales_form.html",
+                "sales/sales_form.html",
                 form=request.form,
                 parties=parties,
                 materials=materials,
@@ -506,10 +473,12 @@ def add_sales_invoice():
                 status             = status_val,
                 created_by         = "System User",
             )
-        except RuntimeError as exc:
-            flash(str(exc), "danger")
+            from services.inventory_service import sync_document
+            sync_document("SALE", invoice_id)
+        except Exception as exc:
+            flash_error(str(exc))
             return render_template(
-                "sales_form.html",
+                "sales/sales_form.html",
                 form=request.form,
                 parties=parties,
                 materials=materials,
@@ -523,11 +492,11 @@ def add_sales_invoice():
         inv_num = invoice["invoice_number"] if invoice else f"ID {invoice_id}"
         log_activity("System User", "Create Invoice", f"Created sales invoice {inv_num}")
 
-        flash("Sales invoice created successfully.", "success")
+        flash_success("Sales invoice created successfully.")
         return redirect(url_for("sales.view_invoice", invoice_id=invoice_id))
 
     return render_template(
-        "sales_form.html",
+        "sales/sales_form.html",
         form=None,
         parties=parties,
         materials=materials,
@@ -544,7 +513,7 @@ def add_sales_invoice():
 def edit_sales_invoice(invoice_id):
     existing = get_invoice_by_id(invoice_id)
     if not existing:
-        flash("Sales invoice not found.", "danger")
+        flash_error("Sales invoice not found.")
         return redirect(url_for("sales.sales"))
 
     parties = [p for p in get_all_parties() if p["party_type"] in ("CUSTOMER", "BOTH")]
@@ -557,7 +526,6 @@ def edit_sales_invoice(invoice_id):
         material_ids = request.form.getlist("material_id[]")
         qtys = request.form.getlist("qty[]")
         weights = request.form.getlist("weight[]")
-        pieces_list = request.form.getlist("pieces[]")
         rates = request.form.getlist("rate[]")
         amounts = request.form.getlist("amount[]")
         gst_percentages = request.form.getlist("gst_percentage[]")
@@ -575,25 +543,28 @@ def edit_sales_invoice(invoice_id):
             
             qty_val = float(qtys[i] or 0)
             weight_val = float(weights[i] or 0)
-            pieces_val = int(pieces_list[i] or 0)
             
-            if qty_val <= 0:
-                errors["items"] = "Quantity must be greater than zero for all items."
-            
-            if tracking_type == "WEIGHT_ONLY" and weight_val <= 0:
-                errors["items"] = f"Weight is required and must be greater than 0 for item '{mat['material_name']}'."
-            elif tracking_type == "PIECES_ONLY" and pieces_val <= 0:
-                errors["items"] = f"Pieces are required and must be greater than 0 for item '{mat['material_name']}'."
-            elif tracking_type == "BOTH" and (weight_val <= 0 or pieces_val <= 0):
-                errors["items"] = f"Both Weight and Pieces are required for item '{mat['material_name']}'."
+            if tracking_type == "WEIGHT_ONLY":
+                qty_val = 0.0
+                if weight_val <= 0:
+                    errors["items"] = f"Weight is required and must be greater than 0 for item '{mat['material_name']}'."
+            elif tracking_type == "QUANTITY_ONLY":
+                weight_val = 0.0
+                if qty_val <= 0:
+                    errors["items"] = f"Quantity is required and must be greater than 0 for item '{mat['material_name']}'."
+            else:
+                if qty_val <= 0:
+                    errors["items"] = f"Quantity is required for item '{mat['material_name']}'."
+                if weight_val <= 0:
+                    errors["items"] = f"Weight is required for item '{mat['material_name']}'."
 
+            amount_val = round((weight_val if tracking_type == "WEIGHT_ONLY" else qty_val) * float(rates[i] or 0), 2)
             items.append({
                 "material_id": int(mid),
                 "qty": qty_val,
                 "weight": weight_val,
-                "pieces": pieces_val,
                 "rate": float(rates[i] or 0),
-                "amount": float(amounts[i] or 0),
+                "amount": amount_val,
                 "gst_percentage": float(gst_percentages[i] or 0),
             })
 
@@ -612,7 +583,7 @@ def edit_sales_invoice(invoice_id):
             for item in items:
                 mid = item["material_id"]
                 qty = item["qty"]
-                is_available = check_stock_available(mid, qty, exclude_invoice_id=invoice_id)
+                is_available = check_stock_available(mid, qty, item["weight"], exclude_invoice_id=invoice_id)
                 if not is_available:
                     from repositories.material_repository import get_material_by_id
                     mat = get_material_by_id(mid)
@@ -622,11 +593,11 @@ def edit_sales_invoice(invoice_id):
                 errors["items"] = " ".join(stock_errors)
 
         if errors:
-            flash("Please fix the errors below.", "danger")
+            flash_error("Please fix the errors below.")
             form_data = dict(request.form)
             form_data["status"] = new_status
             return render_template(
-                "sales_form.html",
+                "sales/sales_form.html",
                 form=form_data,
                 parties=parties,
                 materials=materials,
@@ -639,24 +610,42 @@ def edit_sales_invoice(invoice_id):
 
         party = get_party_by_id(int(request.form["party_id"]))
         party_state_code = party["state_code"] if party else ""
-        update_sales_invoice(
-            invoice_id,
-            request.form["party_id"],
-            request.form["invoice_date"],
-            request.form.get("payment_mode"),
-            request.form.get("transporter"),
-            request.form.get("vehicle_number"),
-            request.form.get("remarks"),
-            items,
-            company_state_code,
-            party_state_code,
-            eway_bill_number   = request.form.get("eway_bill_number"),
-            reference_number   = request.form.get("reference_number"),
-            status             = new_status,
-            updated_by         = "System User"
-        )
-        log_activity("System User", "Update Invoice", f"Updated sales invoice {existing['invoice_number']}")
-        flash("Sales invoice updated successfully.", "success")
+        try:
+            update_sales_invoice(
+                invoice_id,
+                request.form["party_id"],
+                request.form["invoice_date"],
+                request.form.get("payment_mode"),
+                request.form.get("transporter"),
+                request.form.get("vehicle_number"),
+                request.form.get("remarks"),
+                items,
+                company_state_code,
+                party_state_code,
+                eway_bill_number   = request.form.get("eway_bill_number"),
+                reference_number   = request.form.get("reference_number"),
+                status             = new_status,
+                updated_by         = "System User"
+            )
+            from services.inventory_service import sync_document
+            sync_document("SALE", invoice_id)
+            log_activity("System User", "Update Invoice", f"Updated sales invoice {existing['invoice_number']}")
+        except Exception as exc:
+            flash_error(str(exc))
+            form_data = dict(request.form)
+            form_data["status"] = new_status
+            return render_template(
+                "sales/sales_form.html",
+                form=form_data,
+                parties=parties,
+                materials=materials,
+                payment_modes=PAYMENT_MODES,
+                company_state_code=company_state_code,
+                errors={},
+                today=existing["invoice_date"],
+                invoice_id=invoice_id,
+            )
+        flash_success("Sales invoice updated successfully.")
         return redirect(url_for("sales.view_invoice", invoice_id=invoice_id))
 
     existing_items = get_invoice_items(invoice_id)
@@ -672,7 +661,7 @@ def edit_sales_invoice(invoice_id):
     form_data["status"] = existing["status"] or "CONFIRMED"
 
     return render_template(
-        "sales_form.html",
+        "sales/sales_form.html",
         form=form_data,
         parties=parties,
         materials=materials,
@@ -689,11 +678,13 @@ def edit_sales_invoice(invoice_id):
 def delete_sales_invoice_route(invoice_id):
     existing = get_invoice_by_id(invoice_id)
     if not existing:
-        flash("Sales invoice not found.", "danger")
+        flash_error("Sales invoice not found.")
         return redirect(url_for("sales.sales"))
     delete_sales_invoice(invoice_id)
+    from services.inventory_service import sync_document
+    sync_document("SALE", invoice_id)
     log_activity("System User", "Delete Invoice", f"Deleted sales invoice {existing['invoice_number']}")
-    flash("Sales invoice deleted successfully.", "warning")
+    flash_warning("Sales invoice deleted successfully.")
     return redirect(url_for("sales.sales"))
 
 
@@ -704,7 +695,7 @@ def view_invoice(invoice_id):
     increment_print_count(invoice_id)
     ctx = _invoice_context(invoice_id)
     log_activity("System User", "Print Invoice", f"Printed sales invoice {ctx['invoice']['invoice_number']}")
-    return render_template("sales_invoice.html", **ctx)
+    return render_template("sales/sales_invoice.html", **ctx)
 
 
 # ── Download PDF ──────────────────────────────────────────────────────────────
@@ -726,21 +717,9 @@ def download_pdf(invoice_id):
     increment_pdf_download_count(invoice_id)
     ctx  = _invoice_context(invoice_id)
     log_activity("System User", "Download PDF", f"Downloaded PDF for sales invoice {ctx['invoice']['invoice_number']}")
-    html = render_template("sales_invoice_pdf.html", **ctx)
-
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    pdf_bytes = buf.getvalue()
-
+    pdf_bytes = render_to_pdf("reports/sales_invoice_pdf.html", ctx)
     filename = f"{ctx['invoice']['invoice_number']}.pdf"
-    return Response(
-        pdf_bytes,
-        mimetype="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Length": len(pdf_bytes),
-        },
-    )
+    return send_pdf_response(pdf_bytes, filename)
 
 
 # ── Email (mailto link handled in template) ───────────────────────────────────
@@ -748,7 +727,7 @@ def download_pdf(invoice_id):
 @sales_bp.route("/sales/<int:invoice_id>/email")
 def email_invoice(invoice_id):
     ctx = _invoice_context(invoice_id)
-    return render_template("sales_invoice.html", open_email_modal=True, **ctx)
+    return render_template("sales/sales_invoice.html", open_email_modal=True, **ctx)
 
 
 # ── Validation ────────────────────────────────────────────────────────────────
@@ -817,7 +796,7 @@ def sales_register():
     paginated_rows = rows[offset : offset + per_page]
 
     return render_template(
-        "sales_register.html",
+        "sales/sales_register.html",
         rows=paginated_rows,
         parties=parties,
         materials=materials,
@@ -979,7 +958,7 @@ def export_sales_register():
 def duplicate_invoice(invoice_id):
     existing = get_invoice_by_id(invoice_id)
     if not existing:
-        flash("Sales invoice not found.", "danger")
+        flash_error("Sales invoice not found.")
         return redirect(url_for("sales.sales"))
         
     items = get_invoice_items(invoice_id)
@@ -989,7 +968,6 @@ def duplicate_invoice(invoice_id):
             "material_id": it["material_id"],
             "qty": it["quantity"],
             "weight": it["weight"],
-            "pieces": it["pieces"],
             "rate": it["rate"],
             "amount": it["amount"],
             "gst_percentage": it["gst_percentage"]
@@ -1016,10 +994,10 @@ def duplicate_invoice(invoice_id):
             status="DRAFT",
             created_by=None
         )
-        flash("Invoice duplicated successfully as a DRAFT. Please review and update details.", "success")
+        flash_success("Invoice duplicated successfully as a DRAFT. Please review and update details.")
         return redirect(url_for("sales.edit_sales_invoice", invoice_id=new_id))
     except Exception as e:
-        flash(f"Failed to duplicate invoice: {e}", "danger")
+        flash_error(f"Failed to duplicate invoice: {e}")
         return redirect(url_for("sales.sales"))
 
 
@@ -1143,7 +1121,7 @@ def sales_dashboard():
     conn.close()
     
     return render_template(
-        "sales_dashboard.html",
+        "sales/sales_dashboard.html",
         invoice_count=invoice_count,
         total_sales=total_sales,
         avg_sales=avg_sales,
@@ -1167,5 +1145,5 @@ def sales_dashboard():
 def audit_log():
     from repositories.activity_log_repository import get_all_activities
     logs = get_all_activities()
-    return render_template("activity_log.html", logs=logs)
+    return render_template("dashboard/activity_log.html", logs=logs)
 

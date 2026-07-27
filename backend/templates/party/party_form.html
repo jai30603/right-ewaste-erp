@@ -1,0 +1,243 @@
+{% extends "shared/base.html" %}
+
+{% block title %}{{ 'Edit Party' if mode == 'edit' else 'Add Party' }} – Right Ewaste ERP{% endblock %}
+{% block page_title %}{{ 'Edit Party' if mode == 'edit' else 'Add New Party' }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/party" class="text-decoration-none text-muted">Party</a></li>
+<li class="breadcrumb-item active">{{ 'Edit Party' if mode == 'edit' else 'Add Party' }}</li>
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title='Edit Party' if mode == 'edit' else 'Add New Party',
+    subtitle='Add or update supplier / buyer master record with GSTIN and contact details.',
+    back_url="/party",
+    actions=[
+        {'label': 'Cancel & Return', 'url': '/party', 'icon': 'bi-x-circle', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+
+{# Helper macro: field value from party (supports both sqlite3.Row and form MultiDict) #}
+{% macro val(field) %}{{ party[field] if party and party[field] else '' }}{% endmacro %}
+
+<div class="row justify-content-center">
+<div class="col-lg-10 col-xl-9">
+
+<div class="erp-card">
+
+    <div class="erp-card-header">
+        <i class="bi bi-{{ 'pencil-square' if mode == 'edit' else 'person-plus' }}" style="font-size:18px; color:#3cb371;"></i>
+        <h5>{{ 'Edit Party Details' if mode == 'edit' else 'New Party' }}</h5>
+        {% if mode == 'edit' and party %}
+        <span style="margin-left:8px; font-family:monospace; font-size:12px; background:#e8f5ee; color:#2d6a4f; padding:3px 10px; border-radius:20px;">
+            {{ party['party_code'] }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="erp-card-body">
+        <form method="POST"
+              action="{{ '/party/' + party_id|string + '/edit' if mode == 'edit' else '/party/add' }}"
+              novalidate>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+            <!-- ── Identity ───────────────────────────────────────── -->
+            <h6 class="form-section-title">Identity</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-md-6">
+                    <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                    <input type="text" name="company_name" class="form-control {{ 'is-invalid' if errors.company_name }}"
+                           value="{{ val('company_name') }}" placeholder="e.g. Acme Pvt. Ltd." required>
+                    {% if errors.company_name %}
+                    <div class="invalid-feedback">{{ errors.company_name }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Contact Person</label>
+                    <input type="text" name="contact_person" class="form-control"
+                           value="{{ val('contact_person') }}" placeholder="Full name">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Party Type <span class="text-danger">*</span></label>
+                    <select name="party_type" class="form-select {{ 'is-invalid' if errors.party_type }}" required>
+                        <option value="">Select type</option>
+                        {% for opt in ['CUSTOMER', 'SUPPLIER', 'BOTH'] %}
+                        <option value="{{ opt }}" {{ 'selected' if val('party_type') == opt }}>
+                            {{ opt.title() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.party_type %}
+                    <div class="invalid-feedback">{{ errors.party_type }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">GSTIN</label>
+                    <input type="text" name="gstin" class="form-control {{ 'is-invalid' if errors.gstin }}"
+                           value="{{ val('gstin') }}" maxlength="15"
+                           placeholder="15-digit GST number" style="font-family:monospace; text-transform:uppercase;">
+                    {% if errors.gstin %}
+                    <div class="invalid-feedback">{{ errors.gstin }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">PAN</label>
+                    <input type="text" name="pan" class="form-control"
+                           value="{{ val('pan') }}" maxlength="10"
+                           placeholder="10-character PAN" style="font-family:monospace; text-transform:uppercase;">
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Contact ────────────────────────────────────────── -->
+            <h6 class="form-section-title">Contact</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-md-4">
+                    <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+                    <input type="tel" name="phone" class="form-control {{ 'is-invalid' if errors.phone }}"
+                           value="{{ val('phone') }}" maxlength="10"
+                           placeholder="10-digit mobile" required>
+                    {% if errors.phone %}
+                    <div class="invalid-feedback">{{ errors.phone }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Alternate Phone</label>
+                    <input type="tel" name="alternate_phone" class="form-control"
+                           value="{{ val('alternate_phone') }}" maxlength="10"
+                           placeholder="Optional">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email" class="form-control {{ 'is-invalid' if errors.email }}"
+                           value="{{ val('email') }}" placeholder="email@example.com">
+                    {% if errors.email %}
+                    <div class="invalid-feedback">{{ errors.email }}</div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Billing Address ────────────────────────────────── -->
+            <h6 class="form-section-title">Billing Address</h6>
+            <div class="row g-3 mb-2">
+
+                <div class="col-12">
+                    <label class="form-label">Address <span class="text-danger">*</span></label>
+                    <textarea name="billing_address" rows="2"
+                              class="form-control {{ 'is-invalid' if errors.billing_address }}"
+                              placeholder="Street, area, landmark…" required>{{ val('billing_address') }}</textarea>
+                    {% if errors.billing_address %}
+                    <div class="invalid-feedback">{{ errors.billing_address }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">City <span class="text-danger">*</span></label>
+                    <input type="text" name="city" class="form-control {{ 'is-invalid' if errors.city }}"
+                           value="{{ val('city') }}" placeholder="City" required>
+                    {% if errors.city %}
+                    <div class="invalid-feedback">{{ errors.city }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">State <span class="text-danger">*</span></label>
+                    <select id="state" name="state"
+                            class="form-select {{ 'is-invalid' if errors.state }}"
+                            onchange="updateStateCode()" required>
+                        <option value="">Select state</option>
+                        {% for state_name in states %}
+                        <option value="{{ state_name }}" {{ 'selected' if val('state') == state_name }}>
+                            {{ state_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.state %}
+                    <div class="invalid-feedback">{{ errors.state }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">State Code</label>
+                    <input type="text" id="state_code" name="state_code" class="form-control"
+                           value="{{ val('state_code') }}" readonly
+                           style="background:#f4f7f5; font-family:monospace;">
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label">Pincode</label>
+                    <input type="text" name="pincode" class="form-control"
+                           value="{{ val('pincode') }}" maxlength="6" placeholder="6 digits">
+                </div>
+
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Shipping Address ───────────────────────────────── -->
+            <h6 class="form-section-title">
+                Shipping Address
+                <span style="font-weight:400; color:#aaa; font-size:11px; margin-left:6px;">optional — leave blank if same as billing</span>
+            </h6>
+            <div class="row g-3 mb-2">
+                <div class="col-12">
+                    <textarea name="shipping_address" rows="2" class="form-control"
+                              placeholder="Street, area, landmark…">{{ val('shipping_address') }}</textarea>
+                </div>
+            </div>
+
+            <hr class="form-section-divider">
+
+            <!-- ── Remarks ────────────────────────────────────────── -->
+            <h6 class="form-section-title">Remarks</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <textarea name="remarks" rows="2" class="form-control"
+                              placeholder="Any notes about this party…">{{ val('remarks') }}</textarea>
+                </div>
+            </div>
+
+            <!-- ── Actions ───────────────────────────────────────── -->
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="/party" class="btn-erp-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <button type="submit" class="btn-erp-primary">
+                    <i class="bi bi-check-lg"></i>
+                    {{ 'Update Party' if mode == 'edit' else 'Save Party' }}
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const states = {{ states | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/party.js') }}"></script>
+{% endblock %}

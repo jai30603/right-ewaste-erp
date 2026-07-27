@@ -1,0 +1,188 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Payslip – {{ rec.full_name }} ({{ month_name }}) – Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+
+  <!-- Header Actions -->
+  <div class="d-flex align-items-center justify-content-between mb-4 d-print-none">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('employees.payroll_dashboard') }}">Payroll</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('employees.payroll_records') }}">Records</a></li>
+          <li class="breadcrumb-item active">Payslip</li>
+        </ol>
+      </nav>
+      <h3 class="fw-bold mb-0 text-dark">
+        <i class="bi bi-file-earmark-text text-primary me-2"></i>Payslip: {{ rec.full_name }} ({{ month_name }})
+      </h3>
+    </div>
+    <div class="d-flex gap-2">
+      <button onclick="window.print()" class="btn btn-outline-secondary px-3">
+        <i class="bi bi-printer me-1"></i>Print Payslip
+      </button>
+      <a href="{{ url_for('employees.download_payslip_pdf', payroll_id=rec.id) }}" class="btn btn-danger px-3 shadow-sm">
+        <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Payslip Document Card -->
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-9">
+      <div class="card border shadow-sm rounded-3 p-4 bg-white" id="printablePayslip">
+
+        <!-- Company Header -->
+        <div class="text-center border-bottom pb-3 mb-4">
+          <h3 class="fw-bold text-primary mb-1" style="letter-spacing: 1px;">RIGHT EWASTE ERP</h3>
+          <p class="text-muted small mb-0">Authorized Electronic Waste Processing & Recycling ERP Platform</p>
+          <div class="badge bg-primary-subtle text-primary border border-primary-subtle mt-2 px-3 py-1 font-monospace fs-6">
+            SALARY PAYSLIP FOR {{ month_name|upper }}
+          </div>
+        </div>
+
+        <!-- Employee Info Table -->
+        <div class="border rounded-3 p-3 mb-4 bg-light">
+          <div class="row g-3">
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">Employee Code</small>
+              <span class="fw-bold text-dark font-monospace">{{ rec.employee_code }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">Employee Name</small>
+              <span class="fw-bold text-dark">{{ rec.full_name }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">Department</small>
+              <span class="fw-semibold text-dark">{{ rec.department or 'N/A' }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">Designation</small>
+              <span class="fw-semibold text-dark">{{ rec.designation or 'Staff' }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">Bank Name</small>
+              <span class="fw-semibold text-dark">{{ rec.bank_name or 'N/A' }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">Account Number</small>
+              <span class="fw-semibold text-dark font-monospace">{{ rec.account_number or 'N/A' }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">IFSC Code</small>
+              <span class="fw-semibold text-dark font-monospace">{{ rec.ifsc_code or 'N/A' }}</span>
+            </div>
+            <div class="col-6 col-md-3">
+              <small class="text-muted d-block" style="font-size: 0.75rem;">PAN Number</small>
+              <span class="fw-semibold text-dark font-monospace">{{ rec.pan_number or 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Summary Box -->
+        <div class="border rounded-3 p-3 mb-4">
+          <h6 class="fw-bold text-dark mb-2" style="font-size: 0.85rem;">
+            <i class="bi bi-clock-history text-primary me-2"></i>Attendance Summary
+          </h6>
+          <div class="row text-center g-2">
+            <div class="col-3">
+              <div class="p-2 bg-light rounded">
+                <small class="text-muted d-block">Working Days</small>
+                <strong class="text-dark fs-6">{{ rec.working_days }}</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 bg-success-subtle rounded">
+                <small class="text-success d-block">Present Days</small>
+                <strong class="text-success fs-6">{{ rec.present_days }}</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 bg-primary-subtle rounded">
+                <small class="text-primary d-block">Leave Days</small>
+                <strong class="text-primary fs-6">{{ rec.leave_days }}</strong>
+              </div>
+            </div>
+            <div class="col-3">
+              <div class="p-2 bg-danger-subtle rounded">
+                <small class="text-danger d-block">Absent Days</small>
+                <strong class="text-danger fs-6">{{ rec.absent_days }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Earnings & Deductions Table -->
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="table-light text-uppercase" style="font-size: 0.75rem;">
+              <tr>
+                <th>Earnings Component</th>
+                <th class="text-end">Amount (INR)</th>
+                <th>Deductions Component</th>
+                <th class="text-end">Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Basic Salary</td>
+                <td class="text-end">₹{{ "{:,.2f}".format(rec.basic_salary or 0) }}</td>
+                <td>Provident Fund (PF)</td>
+                <td class="text-end text-danger">₹{{ "{:,.2f}".format(rec.provident_fund or 0) }}</td>
+              </tr>
+              <tr>
+                <td>House Rent Allowance (HRA)</td>
+                <td class="text-end">₹{{ "{:,.2f}".format(rec.hra or 0) }}</td>
+                <td>Professional Tax (PT)</td>
+                <td class="text-end text-danger">₹{{ "{:,.2f}".format(rec.professional_tax or 0) }}</td>
+              </tr>
+              <tr>
+                <td>Conveyance Allowance</td>
+                <td class="text-end">₹{{ "{:,.2f}".format(rec.conveyance_allowance or 0) }}</td>
+                <td>Income Tax (TDS)</td>
+                <td class="text-end text-danger">₹{{ "{:,.2f}".format(rec.income_tax or 0) }}</td>
+              </tr>
+              <tr>
+                <td>Special Allowance</td>
+                <td class="text-end">₹{{ "{:,.2f}".format(rec.special_allowance or 0) }}</td>
+                <td>Other Deductions</td>
+                <td class="text-end text-danger">₹{{ "{:,.2f}".format(rec.other_deductions or 0) }}</td>
+              </tr>
+              <tr>
+                <td>Other Allowances</td>
+                <td class="text-end">₹{{ "{:,.2f}".format(rec.other_allowances or 0) }}</td>
+                <td>-</td>
+                <td class="text-end">-</td>
+              </tr>
+              <tr class="table-active fw-bold">
+                <td>Gross Earnings</td>
+                <td class="text-end text-primary">₹{{ "{:,.2f}".format(rec.gross_salary) }}</td>
+                <td>Total Deductions</td>
+                <td class="text-end text-danger">₹{{ "{:,.2f}".format(rec.total_deductions) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Net Take Home Box -->
+        <div class="card border-0 shadow-none rounded-3 p-3 mb-4 bg-success bg-opacity-10 border border-success border-opacity-25 text-center">
+          <small class="text-success text-uppercase fw-bold" style="letter-spacing: 0.5px;">NET PAYABLE SALARY</small>
+          <h2 class="fw-bold text-success text-darken-3 my-1">₹{{ "{:,.2f}".format(rec.net_salary) }}</h2>
+          <small class="text-muted">Direct Bank Transfer / Account Disbursed</small>
+        </div>
+
+        <!-- Footer Sign-off -->
+        <div class="d-flex align-items-center justify-content-between pt-4 border-top text-muted small">
+          <div>Generated by: <strong>{{ rec.generated_by or 'System' }}</strong></div>
+          <div>Status: <strong class="text-success">{{ rec.payroll_status }}</strong></div>
+          <div>Computer-generated payslip. No signature required.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -79,7 +79,7 @@ class PurchaseEnhancementsTest(unittest.TestCase):
         
         if party_row:
             party_id, party_state = party_row
-            items = [{"material_id": 1, "qty": 10.0, "weight": 5.0, "pieces": 0, "rate": 100.0, "amount": 1000.0, "gst_percentage": 18.0}]
+            items = [{"material_id": 1, "qty": 10.0, "weight": 5.0, "rate": 100.0, "amount": 1000.0, "gst_percentage": 18.0}]
             
             invoice_id = create_purchase_invoice(
                 party_id=party_id,
@@ -114,19 +114,19 @@ class PurchaseEnhancementsTest(unittest.TestCase):
             errors = {}
             if tracking == "WEIGHT_ONLY":
                 # Missing weight should trigger error
-                items = [{"material_id": mid, "qty": 1.0, "weight": 0.0, "pieces": 10, "rate": 50.0, "amount": 50.0}]
+                items = [{"material_id": mid, "qty": 1.0, "weight": 0.0, "rate": 50.0, "amount": 50.0}]
                 validate_purchase_items(items, errors)
                 self.assertTrue(any("Weight is required" in msg for msg in errors.values()))
-            elif tracking == "PIECES_ONLY":
-                # Missing pieces should trigger error
-                items = [{"material_id": mid, "qty": 1.0, "weight": 5.0, "pieces": 0, "rate": 50.0, "amount": 50.0}]
+            elif tracking == "QUANTITY_ONLY":
+                # Missing quantity should trigger error.
+                items = [{"material_id": mid, "qty": 0.0, "weight": 5.0, "rate": 50.0, "amount": 50.0}]
                 validate_purchase_items(items, errors)
-                self.assertTrue(any("Pieces quantity is required" in msg for msg in errors.values()))
+                self.assertTrue(any("Quantity is required" in msg for msg in errors.values()))
             elif tracking == "BOTH":
                 # Missing either should trigger error
-                items = [{"material_id": mid, "qty": 1.0, "weight": 0.0, "pieces": 10, "rate": 50.0, "amount": 50.0}]
+                items = [{"material_id": mid, "qty": 1.0, "weight": 0.0, "rate": 50.0, "amount": 50.0}]
                 validate_purchase_items(items, errors)
-                self.assertTrue(any("Both Weight and Pieces are required" in msg for msg in errors.values()))
+                self.assertTrue(any("Weight is required" in msg for msg in errors.values()))
 
 
 

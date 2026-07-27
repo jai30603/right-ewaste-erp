@@ -1,0 +1,533 @@
+{% extends "shared/base.html" %}
+{% from "shared/_page_header.html" import page_header %}
+
+{% block title %}EDMS Admin & Repository | Right Ewaste ERP{% endblock %}
+
+{% block page_title %}EDMS Repository Administration{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/">Home</a></li>
+<li class="breadcrumb-item"><a href="#">EDMS</a></li>
+<li class="breadcrumb-item active">Repository Admin</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+
+  <!-- Page Header -->
+  {{ page_header(
+      title="EDMS Repository Administration",
+      subtitle="Super Admin control center for repository health, diagnostics, maintenance, and backup configurations",
+      back_url="/",
+      actions=[
+          {'label': 'Run Health Diagnostics', 'icon': 'bi-shield-check', 'class': 'btn-primary', 'onclick': 'loadHealthDiagnostics()'},
+          {'label': 'Maintenance Tasks', 'icon': 'bi-tools', 'class': 'btn-outline-secondary', 'onclick': 'switchAdminTab("maintenance")'}
+      ]
+  ) }}
+
+  <!-- KPI Summary Cards Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-blue">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="kpi-label">Total Documents</span>
+          <i class="bi bi-file-earmark-stack kpi-icon"></i>
+        </div>
+        <div class="kpi-value" id="kpiAdminTotalDocs">0</div>
+        <div class="kpi-subtext">Active vault & attachment files</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-teal">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="kpi-label">Repository Size</span>
+          <i class="bi bi-hdd-stack kpi-icon"></i>
+        </div>
+        <div class="kpi-value" id="kpiAdminTotalMB">0.0 MB</div>
+        <div class="kpi-subtext">Local storage provider</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-amber">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="kpi-label">Active Provider</span>
+          <i class="bi bi-cpu kpi-icon"></i>
+        </div>
+        <div class="kpi-value fs-6 mt-1">Local Provider</div>
+        <div class="kpi-subtext"><span class="badge bg-success-subtle text-success border">ONLINE</span></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card kpi-purple">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="kpi-label">Repository Health</span>
+          <i class="bi bi-activity kpi-icon"></i>
+        </div>
+        <div class="kpi-value" id="kpiAdminHealthScore">100%</div>
+        <div class="kpi-subtext" id="kpiAdminHealthStatus">System Operational</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Navigation Tabs -->
+  <ul class="nav nav-tabs nav-tabs-modern mb-3" id="adminTabs">
+    <li class="nav-item">
+      <button class="nav-link active" onclick="switchAdminTab('diagnostics')"><i class="bi bi-speedometer2 me-1.5"></i>Diagnostics & Health</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchAdminTab('maintenance')"><i class="bi bi-tools me-1.5"></i>Maintenance Utilities</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchAdminTab('configs')"><i class="bi bi-sliders me-1.5"></i>System Configs</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchAdminTab('backup')"><i class="bi bi-shield-lock me-1.5"></i>Backup & Retention</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchAdminTab('explorer')"><i class="bi bi-diagram-3 me-1.5"></i>Repository Explorer</button>
+    </li>
+  </ul>
+
+  <!-- Tab 1: Diagnostics & Health -->
+  <div class="admin-tab-content" id="tabDiagnostics">
+    <div class="row g-3">
+      <div class="col-12 col-md-8">
+        <div class="card bg-surface border">
+          <div class="card-header py-2.5 bg-surface-raised border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-journal-check me-1"></i>Health Diagnostic Audit Findings</h6>
+            <button class="btn btn-xs btn-outline-primary" onclick="loadHealthDiagnostics()"><i class="bi bi-arrow-clockwise"></i> Re-Run Audit</button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table erp-table align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th style="width: 100px;">Severity</th>
+                    <th>Diagnostic Issue</th>
+                    <th>Details & Description</th>
+                  </tr>
+                </thead>
+                <tbody id="healthFindingsTbody">
+                  <tr>
+                    <td colspan="3" class="text-center py-4 text-muted small"><div class="spinner-border spinner-border-sm text-primary"></div> Running diagnostics...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <div class="card bg-surface border">
+          <div class="card-header py-2.5 bg-surface-raised border-bottom">
+            <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-pie-chart me-1"></i>Storage by Module</h6>
+          </div>
+          <div class="card-body p-3" id="storageByModuleContainer">
+            <div class="text-muted small">Loading module storage...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Maintenance Utilities -->
+  <div class="admin-tab-content d-none" id="tabMaintenance">
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-4 col-lg-2.4">
+        <button class="btn btn-outline-primary w-100 p-3 text-start" onclick="runMaintenance('rebuild_search_index')">
+          <i class="bi bi-search display-6 d-block mb-2 text-primary"></i>
+          <span class="fw-bold d-block small">Rebuild Index</span>
+          <small class="text-muted" style="font-size: 11px;">Re-index metadata</small>
+        </button>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2.4">
+        <button class="btn btn-outline-secondary w-100 p-3 text-start" onclick="runMaintenance('clean_empty_folders')">
+          <i class="bi bi-folder-x display-6 d-block mb-2 text-warning"></i>
+          <span class="fw-bold d-block small">Clean Folders</span>
+          <small class="text-muted" style="font-size: 11px;">Purge empty folders</small>
+        </button>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2.4">
+        <button class="btn btn-outline-info w-100 p-3 text-start" onclick="runMaintenance('recalculate_storage_stats')">
+          <i class="bi bi-calculator display-6 d-block mb-2 text-info"></i>
+          <span class="fw-bold d-block small">Recalculate Stats</span>
+          <small class="text-muted" style="font-size: 11px;">Re-verify storage MB</small>
+        </button>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2.4">
+        <button class="btn btn-outline-danger w-100 p-3 text-start" onclick="runMaintenance('clean_temp_storage')">
+          <i class="bi bi-trash display-6 d-block mb-2 text-danger"></i>
+          <span class="fw-bold d-block small">Clean Temp</span>
+          <small class="text-muted" style="font-size: 11px;">Purge /temp files</small>
+        </button>
+      </div>
+      <div class="col-6 col-md-4 col-lg-2.4">
+        <button class="btn btn-outline-success w-100 p-3 text-start" onclick="runMaintenance('verify_file_checksums')">
+          <i class="bi bi-shield-check display-6 d-block mb-2 text-success"></i>
+          <span class="fw-bold d-block small">Verify Checksums</span>
+          <small class="text-muted" style="font-size: 11px;">Validate SHA-256</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- Maintenance Executions Log -->
+    <div class="card bg-surface border">
+      <div class="card-header py-2.5 bg-surface-raised border-bottom">
+        <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-journal-text me-1"></i>Recent Maintenance Logs</h6>
+      </div>
+      <div class="card-body p-0">
+        <table class="table erp-table align-middle mb-0">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Task Action</th>
+              <th>Status</th>
+              <th>Execution Details</th>
+              <th>Executed Date</th>
+            </tr>
+          </thead>
+          <tbody id="maintenanceLogsTbody">
+            <tr><td colspan="5" class="text-center py-3 text-muted small">No maintenance execution logs recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 3: System Configurations -->
+  <div class="admin-tab-content d-none" id="tabConfigs">
+    <div class="card bg-surface border">
+      <div class="card-header py-2.5 bg-surface-raised border-bottom">
+        <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-sliders me-1"></i>Database-Driven EDMS Settings</h6>
+      </div>
+      <div class="card-body p-4">
+        <form id="systemConfigForm" onsubmit="submitSystemConfigs(event)">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold">Max File Upload Size (MB)</label>
+              <input type="number" id="cfgMaxUploadMB" class="form-control" value="100">
+              <small class="text-muted">Maximum single file upload limit</small>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold">Duplicate File Policy</label>
+              <select id="cfgDuplicatePolicy" class="form-select">
+                <option value="WARN">WARN (Log alert on duplicate hash)</option>
+                <option value="ALLOW">ALLOW (Upload quietly)</option>
+                <option value="BLOCK">BLOCK (Reject upload if checksum exists)</option>
+              </select>
+              <small class="text-muted">Behavior when duplicate SHA-256 hash is detected</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Allowed File Extensions (Comma Separated)</label>
+              <textarea id="cfgAllowedTypes" class="form-control font-monospace" rows="2">pdf,png,jpg,jpeg,gif,webp,svg,xls,xlsx,csv,doc,docx,txt,json,xml,md,zip,rar</textarea>
+              <small class="text-muted">Permitted file format extensions for security validation</small>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold">Default Document Classification</label>
+              <select id="cfgDefaultClass" class="form-select">
+                <option value="INTERNAL">INTERNAL</option>
+                <option value="PUBLIC">PUBLIC</option>
+                <option value="CONFIDENTIAL">CONFIDENTIAL</option>
+                <option value="RESTRICTED">RESTRICTED</option>
+                <option value="FINANCIAL">FINANCIAL</option>
+                <option value="LEGAL">LEGAL</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold">Default Lifecycle Status</label>
+              <select id="cfgDefaultLifecycle" class="form-select">
+                <option value="UPLOADED">UPLOADED</option>
+                <option value="DRAFT">DRAFT</option>
+                <option value="UNDER_REVIEW">UNDER REVIEW</option>
+              </select>
+            </div>
+            <div class="col-12 text-end pt-3">
+              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Save Configuration</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 4: Backup & Retention -->
+  <div class="admin-tab-content d-none" id="tabBackup">
+    <div class="card bg-surface border">
+      <div class="card-header py-2.5 bg-surface-raised border-bottom">
+        <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-shield-lock me-1"></i>Repository Backup & Retention Policy</h6>
+      </div>
+      <div class="card-body p-4">
+        <form id="backupConfigForm" onsubmit="submitBackupConfig(event)">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold">Backup Frequency Schedule</label>
+              <select id="cfgBackupFreq" class="form-select">
+                <option value="DAILY">DAILY (Every night at midnight)</option>
+                <option value="WEEKLY">WEEKLY (Every Sunday)</option>
+                <option value="MONTHLY">MONTHLY (1st of each month)</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label fw-semibold">Retention Period (Days)</label>
+              <input type="number" id="cfgBackupRetention" class="form-control" value="30">
+              <small class="text-muted">Automatic cleanup period for historical backups</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Storage Location Target</label>
+              <input type="text" id="cfgBackupTarget" class="form-control font-monospace" value="storage/backups" readonly>
+            </div>
+            <div class="col-12 text-end pt-3">
+              <button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i> Update Backup Schedule</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 5: Repository Explorer -->
+  <div class="admin-tab-content d-none" id="tabExplorer">
+    <div class="card bg-surface border">
+      <div class="card-header py-2.5 bg-surface-raised border-bottom">
+        <h6 class="fw-bold mb-0 text-secondary" style="font-size: 13px;"><i class="bi bi-diagram-3 me-1"></i>Administrative Repository Structure Tree</h6>
+      </div>
+      <div class="card-body p-3" id="repoExplorerContainer">
+        <div class="text-muted small">Loading repository tree...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  loadAdminDashboard();
+  loadHealthDiagnostics();
+  loadSystemConfigs();
+  loadBackupConfig();
+});
+
+function switchAdminTab(tabName) {
+  document.querySelectorAll('#adminTabs .nav-link').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('d-none'));
+
+  if (tabName === 'diagnostics') {
+    document.getElementById('tabDiagnostics').classList.remove('d-none');
+    event.target.classList.add('active');
+  } else if (tabName === 'maintenance') {
+    document.getElementById('tabMaintenance').classList.remove('d-none');
+    event.target.classList.add('active');
+  } else if (tabName === 'configs') {
+    document.getElementById('tabConfigs').classList.remove('d-none');
+    event.target.classList.add('active');
+  } else if (tabName === 'backup') {
+    document.getElementById('tabBackup').classList.remove('d-none');
+    event.target.classList.add('active');
+  } else if (tabName === 'explorer') {
+    document.getElementById('tabExplorer').classList.remove('d-none');
+    event.target.classList.add('active');
+    loadRepoExplorer();
+  }
+}
+
+function loadAdminDashboard() {
+  fetch('/api/v1/documents/admin/dashboard')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      const s = data.stats;
+      document.getElementById('kpiAdminTotalDocs').innerText = s.total_documents;
+      document.getElementById('kpiAdminTotalMB').innerText = s.total_storage_mb + ' MB';
+      document.getElementById('kpiAdminHealthScore').innerText = s.health_score + '%';
+
+      renderStorageByModule(s.by_module || []);
+    });
+}
+
+function renderStorageByModule(byModule) {
+  const container = document.getElementById('storageByModuleContainer');
+  if (!byModule || byModule.length === 0) {
+    container.innerHTML = '<span class="text-muted small">No module attachments linked.</span>';
+    return;
+  }
+  let html = '<ul class="list-group list-group-flush small">';
+  byModule.forEach(m => {
+    const mb = (m.total_bytes / (1024*1024)).toFixed(2);
+    html += `
+      <li class="list-group-item bg-transparent d-flex justify-content-between px-0">
+        <span class="fw-semibold text-capitalize">${escapeHtml(m.module_name)}</span>
+        <span>${m.file_count} files (${mb} MB)</span>
+      </li>
+    `;
+  });
+  html += '</ul>';
+  container.innerHTML = html;
+}
+
+function loadHealthDiagnostics() {
+  const tbody = document.getElementById('healthFindingsTbody');
+  tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-muted small"><div class="spinner-border spinner-border-sm text-primary"></div> Running diagnostics...</td></tr>';
+
+  fetch('/api/v1/documents/admin/health')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      const d = data.diagnostics;
+      document.getElementById('kpiAdminHealthScore').innerText = d.health_score + '%';
+      document.getElementById('kpiAdminHealthStatus').innerText = d.status;
+
+      tbody.innerHTML = '';
+      if (!d.findings || d.findings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>100% Healthy! No diagnostic issues or broken links detected.</td></tr>';
+        return;
+      }
+      d.findings.forEach(f => {
+        const badgeClass = f.severity === 'HIGH' ? 'bg-danger' : (f.severity === 'MEDIUM' ? 'bg-warning text-dark' : 'bg-secondary');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge ${badgeClass}">${f.severity}</span></td>
+          <td class="fw-semibold text-dark small">${escapeHtml(f.issue)}</td>
+          <td class="text-muted small">${escapeHtml(f.details)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function runMaintenance(actionKey) {
+  if (!confirm(`Execute maintenance task '${actionKey}'?`)) return;
+  fetch('/api/v1/documents/admin/maintenance', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ action: actionKey })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      alert(`Maintenance Successful:\n${data.result.details}`);
+      renderMaintenanceLogs(data.logs || []);
+      loadAdminDashboard();
+    } else alert(data.error);
+  });
+}
+
+function renderMaintenanceLogs(logs) {
+  const tbody = document.getElementById('maintenanceLogsTbody');
+  tbody.innerHTML = '';
+  if (!logs || logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted small">No logs recorded.</td></tr>';
+    return;
+  }
+  logs.forEach((l, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="small text-muted">${idx + 1}</td>
+      <td class="fw-semibold small font-monospace text-primary">${l.action}</td>
+      <td><span class="badge bg-success-subtle text-success border">SUCCESS</span></td>
+      <td class="small text-muted">${escapeHtml(l.details)}</td>
+      <td class="small text-muted">${l.executed_at}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadSystemConfigs() {
+  fetch('/api/v1/documents/admin/configs')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      const c = data.configs || {};
+      if (c.max_upload_size_mb) document.getElementById('cfgMaxUploadMB').value = c.max_upload_size_mb;
+      if (c.duplicate_policy) document.getElementById('cfgDuplicatePolicy').value = c.duplicate_policy;
+      if (c.allowed_file_types) document.getElementById('cfgAllowedTypes').value = c.allowed_file_types;
+      if (c.default_classification) document.getElementById('cfgDefaultClass').value = c.default_classification;
+      if (c.default_lifecycle) document.getElementById('cfgDefaultLifecycle').value = c.default_lifecycle;
+    });
+}
+
+function submitSystemConfigs(e) {
+  e.preventDefault();
+  const payload = {
+    max_upload_size_mb: document.getElementById('cfgMaxUploadMB').value,
+    duplicate_policy: document.getElementById('cfgDuplicatePolicy').value,
+    allowed_file_types: document.getElementById('cfgAllowedTypes').value,
+    default_classification: document.getElementById('cfgDefaultClass').value,
+    default_lifecycle: document.getElementById('cfgDefaultLifecycle').value
+  };
+
+  fetch('/api/v1/documents/admin/configs', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) alert('Configurations saved!');
+    else alert(data.error);
+  });
+}
+
+function loadBackupConfig() {
+  fetch('/api/v1/documents/admin/backup-config')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      const bc = data.backup_config || {};
+      document.getElementById('cfgBackupFreq').value = bc.backup_frequency || 'DAILY';
+      document.getElementById('cfgBackupRetention').value = bc.retention_days || 30;
+    });
+}
+
+function submitBackupConfig(e) {
+  e.preventDefault();
+  fetch('/api/v1/documents/admin/backup-config', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      backup_frequency: document.getElementById('cfgBackupFreq').value,
+      retention_days: document.getElementById('cfgBackupRetention').value
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) alert('Backup configuration updated!');
+    else alert(data.error);
+  });
+}
+
+function loadRepoExplorer() {
+  const container = document.getElementById('repoExplorerContainer');
+  fetch('/api/v1/documents/admin/explorer')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      container.innerHTML = '';
+      let html = '<div class="list-group font-monospace small">';
+      (data.tree || []).forEach(root => {
+        html += `
+          <div class="list-group-item bg-surface-raised fw-bold text-primary">
+            <i class="bi bi-folder-fill text-warning me-2"></i>${root.path} (${root.name})
+          </div>
+        `;
+        (root.subfolders || []).forEach(sub => {
+          html += `
+            <div class="list-group-item bg-surface ms-4 text-secondary">
+              <i class="bi bi-arrow-return-right me-2"></i><i class="bi bi-folder text-warning me-1"></i>${sub.path} (${sub.name})
+            </div>
+          `;
+        });
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    });
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m]));
+}
+</script>
+{% endblock %}

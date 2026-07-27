@@ -1,0 +1,319 @@
+{% extends "shared/base.html" %}
+
+{% block page_title %}
+  {% if job %}Edit Processing Job - {{ job.processing_number }}{% else %}New Processing Job{% endif %}
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/processing.css') }}">
+{% endblock %}
+
+{% from "shared/_page_header.html" import page_header %}
+
+{% block content %}
+
+{{ page_header(
+    title='Edit Processing Job: ' ~ job.processing_number if job else 'New Processing Job',
+    subtitle='Record input batches, classify outputs into Recoverable / Refurbishable / Disposal streams.',
+    back_url='/processing/dashboard',
+    actions=[
+        {'label': 'Cancel & Return', 'url': '/processing/dashboard', 'icon': 'bi-x-circle', 'class': 'btn-outline-secondary'}
+    ]
+) }}
+
+<form id="jobForm" method="POST" action="{% if job %}{{ url_for('material_processing.edit_job', job_id=job.id) }}{% else %}{{ url_for('material_processing.create_job') }}{% endif %}">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" id="inputs_json" name="inputs_json" value="[]">
+    <input type="hidden" id="outputs_json" name="outputs_json" value="[]">
+    <input type="hidden" id="losses_json" name="losses_json" value="[]">
+    <input type="hidden" id="weightToleranceVal" value="{{ config.PROCESSING_WEIGHT_TOLERANCE }}">
+
+    <div class="row g-3">
+      <!-- Left Column: Form details and Inputs -->
+      <div class="col-12 col-lg-8">
+        
+        <!-- Job Details Card -->
+        <div class="card shadow-sm border-0 mb-3">
+          <div class="card-header bg-white border-0 py-3">
+            <h5 class="fw-bold m-0"><i class="bi bi-info-circle text-primary me-2"></i>Job Information</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12 col-sm-6">
+                <label class="form-label fw-semibold">Processing Date</label>
+                <input type="date" name="processing_date" class="form-control" required value="{% if job %}{{ job.processing_date }}{% else %}{{ default_date }}{% endif %}">
+              </div>
+              
+              <div class="col-12 col-sm-6">
+                <label class="form-label fw-semibold">Operator</label>
+                <input type="text" name="operator_id" class="form-control" required placeholder="Name of operator" value="{% if job %}{{ job.operator_id }}{% else %}{{ session.get('user', {}).get('username', '') }}{% endif %}">
+              </div>
+
+              <div class="col-12 col-sm-6">
+                <label class="form-label fw-semibold">Priority</label>
+                <select name="priority" class="form-select">
+                  <option value="LOW" {% if job and job.priority == 'LOW' %}selected{% endif %}>Low</option>
+                  <option value="NORMAL" {% if not job or job.priority == 'NORMAL' %}selected{% endif %}>Normal</option>
+                  <option value="HIGH" {% if job and job.priority == 'HIGH' %}selected{% endif %}>High</option>
+                  <option value="URGENT" {% if job and job.priority == 'URGENT' %}selected{% endif %}>Urgent</option>
+                </select>
+              </div>
+
+              <div class="col-12 col-sm-6">
+                <label class="form-label fw-semibold">Job Status</label>
+                <select name="status" class="form-select" {% if not job %}disabled{% endif %}>
+                  <option value="DRAFT" {% if not job or job.status == 'DRAFT' %}selected{% endif %}>Draft</option>
+                  <option value="READY" {% if job and job.status == 'READY' %}selected{% endif %}>Ready</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Remarks</label>
+                <textarea name="remarks" class="form-control" rows="2" placeholder="Describe transformation job context...">{% if job %}{{ job.remarks or '' }}{% endif %}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inputs Section -->
+        <div class="card shadow-sm border-0 mb-3">
+          <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold m-0"><i class="bi bi-box-arrow-in-right text-primary me-2"></i>Input Materials (Reserved)</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#inputsModal">
+              <i class="bi bi-plus-circle me-1"></i>Select Raw Material
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Material</th>
+                    <th style="width: 120px;">Qty</th>
+                    <th style="width: 140px;">Weight</th>
+                    <th style="width: 200px;">Operation</th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="inputsTableBody">
+                  <!-- Javascript rendered rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {% if job %}
+        <!-- Outputs Section (Only show on Edit/Ready since Draft/Ready can prepare outputs) -->
+        <div class="card shadow-sm border-0 mb-3">
+          <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold m-0"><i class="bi bi-box-arrow-up-right text-primary me-2"></i>Output Materials</h5>
+            <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#outputsModal">
+              <i class="bi bi-plus-circle me-1"></i>Add Output Material
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Material</th>
+                    <th style="width: 120px;">Qty</th>
+                    <th style="width: 140px;">Weight</th>
+                    <th style="width: 150px;">State</th>
+                    <th style="width: 180px;">Genealogy (Source Input)</th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="outputsTableBody">
+                  <!-- Javascript rendered rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Losses Section -->
+        <div class="card shadow-sm border-0 mb-3">
+          <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold m-0"><i class="bi bi-trash3 text-primary me-2"></i>Processing Losses</h5>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="addLossRow()">
+              <i class="bi bi-plus-circle me-1"></i>Add Loss Row
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 180px;">Loss Weight</th>
+                    <th style="width: 250px;">Reason</th>
+                    <th>Remarks</th>
+                    <th style="width: 50px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="lossesTableBody">
+                  <!-- Javascript rendered rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+
+      <!-- Right Column: Weight Balance Summary and Save button -->
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+          <div class="card-body">
+            <h5 class="fw-bold mb-3"><i class="bi bi-sliders text-primary me-2"></i>Control Panel</h5>
+            
+            {% if job %}
+            <!-- Weight Balance Banner -->
+            <div class="weight-balance-banner mb-4">
+              <h6 class="text-uppercase text-secondary fw-bold" style="font-size: 11px;">Weight Balance Verification</h6>
+              <div class="row g-2 my-2" style="font-size: 13px;">
+                <div class="col-6 text-secondary">Total Inputs:</div>
+                <div id="totalInputWeight" class="col-6 text-end fw-bold">0.00 KG</div>
+                <div class="col-6 text-secondary">Total Outputs:</div>
+                <div id="totalOutputWeight" class="col-6 text-end fw-bold">0.00 KG</div>
+                <div class="col-6 text-secondary">Total Losses:</div>
+                <div id="totalLossWeight" class="col-6 text-end fw-bold">0.00 KG</div>
+                <div class="col-12 border-bottom border-secondary my-1"></div>
+                <div class="col-6 text-secondary">Difference:</div>
+                <div id="weightDifference" class="col-6 text-end fw-bold">0.00 KG</div>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top border-secondary">
+                <span>Status:</span>
+                <span id="balanceStatus">—</span>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary py-2 fw-bold">
+                <i class="bi bi-save me-1"></i>Save Job Draft
+              </button>
+              <a href="{% if job %}{{ url_for('material_processing.job_details', job_id=job.id) }}{% else %}{{ url_for('material_processing.jobs') }}{% endif %}" class="btn btn-light py-2">
+                Cancel
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+</div>
+
+<!-- Modal Inputs Selector -->
+<div class="modal fade" id="inputsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-boxes text-primary me-2"></i>Select Raw Material Input</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="list-group list-group-flush">
+          {% if queue %}
+            {% for item in queue %}
+            <button type="button" class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center"
+                    onclick="addInputRow({{ item.id }}, '{{ item.name|replace("'", "\\'") }}', '{{ item.code }}', {{ item.qty }}, {{ item.weight }}, '{{ item.unit }}'); bootstrap.Modal.getInstance(document.getElementById('inputsModal')).hide();">
+              <div>
+                <h6 class="fw-bold m-0">{{ item.name }}</h6>
+                <small class="text-muted">{{ item.code }} | {{ item.category }}</small>
+              </div>
+              <div class="text-end">
+                <span class="fw-bold">{{ item.qty }} {{ item.unit }}</span>
+              </div>
+            </button>
+            {% endfor %}
+          {% else %}
+            <div class="p-4 text-center text-muted">No raw materials in stock. Please complete a Purchase Invoice first.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Outputs Selector -->
+<div class="modal fade" id="outputsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-box-seam text-success me-2"></i>Add Output Material</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
+        <div class="list-group list-group-flush">
+          {% if materials %}
+            {% for item in materials %}
+            <button type="button" class="list-group-item list-group-item-action p-3 d-flex justify-content-between align-items-center"
+                    onclick="addOutputRow({{ item.id }}, '{{ item.material_name|replace("'", "\\'") }}', '{{ item.material_code }}', '{{ item.uom }}'); bootstrap.Modal.getInstance(document.getElementById('outputsModal')).hide();">
+              <div>
+                <h6 class="fw-bold m-0">{{ item.material_name }}</h6>
+                <small class="text-muted">{{ item.material_code }} | {{ item.category }}</small>
+              </div>
+              <span class="badge bg-secondary">{{ item.uom }}</span>
+            </button>
+            {% endfor %}
+          {% else %}
+            <div class="p-4 text-center text-muted">No materials found in Material Master.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/processing.js') }}"></script>
+<script>
+  // Initialize dynamic arrays if editing
+  {% if job %}
+    window.processingInputs = {{ job.inputs|tojson|safe }};
+    window.processingOutputs = {{ job.outputs|tojson|safe }};
+    window.processingLosses = {{ job.losses|tojson|safe }};
+    
+    // Fix fields format
+    window.processingInputs.forEach(item => {
+      item.material_id = item.material_id;
+      item.quantity = parseFloat(item.quantity || 0);
+      item.weight = parseFloat(item.weight || 0);
+    });
+    window.processingOutputs.forEach(item => {
+      item.material_id = item.material_id;
+      item.quantity = parseFloat(item.quantity || 0);
+      item.weight = parseFloat(item.weight || 0);
+    });
+    window.processingLosses.forEach(item => {
+      item.loss_weight = parseFloat(item.loss_weight || 0);
+    });
+
+    renderInputsTable();
+    renderOutputsTable();
+    renderLossesTable();
+    updateWeightBalance();
+  {% else %}
+    window.processingInputs = [];
+    window.processingOutputs = [];
+    window.processingLosses = [];
+
+    // Pre-populate input if material passed in URL query
+    {% if request.args.get('pre_material_id') %}
+      const preId = {{ request.args.get('pre_material_id')|int }};
+      const items = {{ queue|tojson|safe }};
+      const match = items.find(x => x.id === preId);
+      if (match) {
+        addInputRow(match.id, match.name, match.code, match.qty, match.weight, match.unit);
+      }
+    {% endif %}
+  {% endif %}
+</script>
+{% endblock %}

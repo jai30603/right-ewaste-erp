@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Right Ewaste ERP{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d1f16">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Right Ewaste">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/pwa/apple-touch-icon.png') }}">
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/shared.css') }}" rel="stylesheet">
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+
+<div class="erp-wrapper">
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="erp-sidebar">
+
+        <div class="sidebar-brand d-flex align-items-center gap-2.5">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Right Ewaste Logo" width="42" height="42" class="rounded-circle shadow-sm me-1">
+            <div>
+                <h6 class="mb-0 fw-bold">Right Ewaste</h6>
+                <small style="opacity: 0.65; font-size: 11px;">ERP System V5.0</small>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-label">Navigation</div>
+            <ul class="sidebar-nav">
+
+                <!-- 🏠 Dashboard -->
+                <li>
+                    <a href="/" class="{{ 'active' if request.path == '/' else '' }}">
+                        <i class="bi bi-grid-1x2 nav-icon"></i>
+                        Dashboard
+                    </a>
+                </li>
+
+                <!-- 📂 Masters -->
+                <li class="nav-module {{ 'is-expanded' if request.path in ['/company', '/party', '/material', '/masters/disposal-materials', '/masters/disposal-types'] else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path in ['/company', '/party', '/material', '/masters/disposal-materials', '/masters/disposal-types'] else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-folder2-open nav-icon"></i>
+                        <span>Masters</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/company" class="{{ 'active' if request.path.startswith('/company') else '' }}"><i class="bi bi-building me-2"></i>Company Profile</a></li>
+                        <li><a href="/party" class="{{ 'active' if request.path.startswith('/party') else '' }}"><i class="bi bi-people me-2"></i>Party</a></li>
+                        <li><a href="/material" class="{{ 'active' if request.path == '/material' else '' }}"><i class="bi bi-box-seam me-2"></i>Material</a></li>
+                        <li><a href="/masters/disposal-materials" class="{{ 'active' if request.path == '/masters/disposal-materials' else '' }}"><i class="bi bi-trash me-2"></i>Disposal Materials</a></li>
+                        <li><a href="/masters/disposal-types" class="{{ 'active' if request.path == '/masters/disposal-types' else '' }}"><i class="bi bi-diagram-3 me-2"></i>Disposal Types</a></li>
+                    </ul>
+                </li>
+
+                <!-- 👥 Employee Management -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/employees') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/employees') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-person-badge nav-icon"></i>
+                        <span>Employee Management</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/employees/dashboard" class="{{ 'active' if request.path == '/employees/dashboard' else '' }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a href="/employees" class="{{ 'active' if request.path == '/employees' or (request.path.startswith('/employees/') and 'attendance' not in request.path and 'dashboard' not in request.path and 'leave' not in request.path and 'payroll' not in request.path and 'analytics' not in request.path and 'reports' not in request.path) else '' }}"><i class="bi bi-people me-2"></i>Employees</a></li>
+                        
+                        <!-- Attendance Grouping -->
+                        <li class="nav-module {{ 'is-expanded' if 'attendance' in request.path else '' }}">
+                            <button type="button" class="module-header {{ 'has-active' if 'attendance' in request.path else '' }}" onclick="toggleModule(this)">
+                                <i class="bi bi-calendar-check me-2"></i>
+                                <span>Attendance</span>
+                                <i class="bi bi-chevron-right chevron-icon"></i>
+                            </button>
+                            <ul class="module-submenu">
+                                <li><a href="/employees/attendance/daily" class="{{ 'active' if request.path == '/employees/attendance/daily' else '' }}">Mark Attendance</a></li>
+                                <li><a href="/employees/attendance/register" class="{{ 'active' if request.path == '/employees/attendance/register' else '' }}">Register</a></li>
+                                <li><a href="/employees/attendance/reports" class="{{ 'active' if request.path == '/employees/attendance/reports' else '' }}">Reports</a></li>
+                            </ul>
+                        </li>
+
+                        <li><a href="/employees/leave/requests" class="{{ 'active' if request.path.startswith('/employees/leave') else '' }}"><i class="bi bi-calendar-event me-2"></i>Leave</a></li>
+                        <li><a href="/employees/payroll/dashboard" class="{{ 'active' if request.path.startswith('/employees/payroll') else '' }}"><i class="bi bi-cash-stack me-2"></i>Payroll</a></li>
+                    </ul>
+                </li>
+
+                <!-- 📦 Purchase -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/purchase') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/purchase') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-cart-check nav-icon"></i>
+                        <span>Purchase</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/purchase/dashboard" class="{{ 'active' if request.path == '/purchase/dashboard' else '' }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a href="/purchase" class="{{ 'active' if request.path == '/purchase' else '' }}"><i class="bi bi-file-earmark-text me-2"></i>Invoices</a></li>
+                        <li><a href="/purchase/register" class="{{ 'active' if request.path == '/purchase/register' else '' }}"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reports</a></li>
+                    </ul>
+                </li>
+
+                <!-- 📊 Inventory -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/inventory') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/inventory') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-boxes nav-icon"></i>
+                        <span>Inventory</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/inventory/dashboard" class="{{ 'active' if request.path == '/inventory/dashboard' else '' }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a href="/inventory" class="{{ 'active' if request.path == '/inventory' else '' }}"><i class="bi bi-box me-2"></i>Stock</a></li>
+                        <li><a href="/inventory/movements" class="{{ 'active' if request.path == '/inventory/movements' else '' }}"><i class="bi bi-arrow-left-right me-2"></i>Movements</a></li>
+                        <li><a href="/inventory/batches" class="{{ 'active' if request.path.startswith('/inventory/batch') else '' }}"><i class="bi bi-boxes me-2"></i>Material Batches</a></li>
+                        <li><a href="/inventory/timeline" class="{{ 'active' if request.path == '/inventory/timeline' else '' }}"><i class="bi bi-diagram-3 me-2"></i>Timeline &amp; Traceability</a></li>
+                        <li><a href="/inventory/material-flow-dashboard" class="{{ 'active' if request.path == '/inventory/material-flow-dashboard' else '' }}"><i class="bi bi-graph-up-arrow me-2"></i>Material Flow</a></li>
+                    </ul>
+                </li>
+
+                <!-- 🏭 Processing -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/processing') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/processing') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-cpu nav-icon"></i>
+                        <span>Processing</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/processing/dashboard" class="{{ 'active' if request.path == '/processing/dashboard' else '' }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a href="/processing/jobs" class="{{ 'active' if request.path.startswith('/processing/jobs') else '' }}"><i class="bi bi-gear-wide-connected me-2"></i>Jobs</a></li>
+                        <li><a href="/processing/disposal-queue" class="{{ 'active' if request.path.startswith('/processing/disposal-queue') else '' }}"><i class="bi bi-recycle me-2"></i>Disposal Queue</a></li>
+                    </ul>
+                </li>
+
+                <!-- 💰 Sales -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/sales') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/sales') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-receipt nav-icon"></i>
+                        <span>Sales</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/sales/dashboard" class="{{ 'active' if request.path == '/sales/dashboard' else '' }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a href="/sales" class="{{ 'active' if request.path == '/sales' else '' }}"><i class="bi bi-file-earmark-text me-2"></i>Invoices</a></li>
+                        <li><a href="/sales/register" class="{{ 'active' if request.path == '/sales/register' else '' }}"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reports</a></li>
+                    </ul>
+                </li>
+
+                <!-- 📜 Certificates -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/certificates') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/certificates') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-file-earmark-check nav-icon"></i>
+                        <span>Certificates</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/certificates/dashboard" class="{{ 'active' if request.path == '/certificates/dashboard' else '' }}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                        <li><a href="/certificates/register" class="{{ 'active' if request.path == '/certificates/register' else '' }}"><i class="bi bi-award me-2"></i>Certificates</a></li>
+                        <li><a href="/certificates/templates" class="{{ 'active' if request.path == '/certificates/templates' else '' }}"><i class="bi bi-palette me-2"></i>Templates</a></li>
+                        <li><a href="/certificates/analytics" class="{{ 'active' if request.path == '/certificates/analytics' else '' }}"><i class="bi bi-bar-chart-line me-2"></i>Reports</a></li>
+                    </ul>
+                </li>
+
+                <!-- 📁 Documents & Storage (EDMS) -->
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/documents') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/documents') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-folder-symlink nav-icon"></i>
+                        <span>Enterprise Document Management</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/documents/mydrive" class="{{ 'active' if request.path == '/documents/mydrive' else '' }}"><i class="bi bi-hdd-network me-2"></i>My Drive</a></li>
+                        <li><a href="/documents/companydrive" class="{{ 'active' if request.path == '/documents/companydrive' else '' }}"><i class="bi bi-building me-2"></i>Company</a></li>
+                        <li><a href="/documents/chatfiles" class="{{ 'active' if request.path == '/documents/chatfiles' else '' }}"><i class="bi bi-chat-left-text me-2"></i>Chat Files</a></li>
+                        {% if not auth_required or (session.get('user') and session.get('user', {}).get('role') in ['ADMIN', 'SUPER ADMIN', 'Super Admin', 'Admin']) %}
+                        <li><a href="/documents/storage-providers?v=1.1" class="{{ 'active' if request.path == '/documents/storage-providers' else '' }}"><i class="bi bi-cloud-check me-2"></i>Storage Providers</a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <!-- 💬 Communication -->
+                {% set u_count = unread_chat_count() %}
+                <li>
+                    <a href="/communication" class="{{ 'active' if request.path == '/communication' else '' }} d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-chat-dots nav-icon"></i>
+                            Communication
+                        </div>
+                        <span id="sidebar-communication-badge" class="badge bg-danger rounded-pill px-2 {% if u_count == 0 %}d-none{% endif %}" style="font-size: 10px;">
+                            {{ u_count if u_count <= 99 else '99+' }}
+                        </span>
+                    </a>
+                </li>
+
+                <!-- 📈 Reports Central Hub -->
+                <li class="nav-module {{ 'is-expanded' if request.path in ['/reports', '/factory-reports'] or request.path.startswith('/employees/reports') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path in ['/reports', '/factory-reports'] or request.path.startswith('/employees/reports') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-graph-up-arrow nav-icon"></i>
+                        <span>Reports</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/factory-reports" class="{{ 'active' if request.path.startswith('/factory-reports') else '' }}"><i class="bi bi-building me-1"></i>Factory Daily Report</a></li>
+                        <li><a href="/purchase/register" class="{{ 'active' if request.path == '/purchase/register' else '' }}">Purchase</a></li>
+                        <li><a href="/sales/register" class="{{ 'active' if request.path == '/sales/register' else '' }}">Sales</a></li>
+                        <li><a href="/inventory" class="{{ 'active' if request.path == '/inventory' else '' }}">Inventory</a></li>
+                        <li><a href="/employees/reports" class="{{ 'active' if request.path == '/employees/reports' else '' }}">Employee</a></li>
+                        <li><a href="/certificates/analytics" class="{{ 'active' if request.path == '/certificates/analytics' else '' }}">Certificates</a></li>
+                    </ul>
+                </li>
+
+                <!-- ⚙️ Settings -->
+                {% if not auth_required or (current_user and current_user.role == 'ADMIN') %}
+                <li class="nav-module {{ 'is-expanded' if request.path in ['/settings', '/users', '/users/permissions', '/audit-log'] or request.path.startswith('/platform') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path in ['/settings', '/users', '/users/permissions', '/audit-log'] or request.path.startswith('/platform') else '' }}" onclick="toggleModule(this)">
+                        <i class="bi bi-gear nav-icon"></i>
+                        <span>Settings</span>
+                        <i class="bi bi-chevron-right chevron-icon"></i>
+                    </button>
+                    <ul class="module-submenu">
+                        <li><a href="/settings" class="{{ 'active' if request.path == '/settings' else '' }}"><i class="bi bi-sliders me-2"></i>Company Settings</a></li>
+                        <li><a href="/users" class="{{ 'active' if request.path == '/users' else '' }}"><i class="bi bi-person-lock me-2"></i>User Management</a></li>
+                        <li><a href="/audit-log" class="{{ 'active' if request.path == '/audit-log' else '' }}"><i class="bi bi-journal-text me-2"></i>Audit Log</a></li>
+                        <li><a href="/platform/activities" class="{{ 'active' if request.path == '/platform/activities' else '' }}"><i class="bi bi-activity me-2"></i>Activity Center</a></li>
+                    </ul>
+                </li>
+                {% endif %}
+
+            </ul>
+        </div>
+
+        <div class="sidebar-footer">
+            &copy; 2026 Right Ewaste Recycle
+        </div>
+
+    </aside>
+
+    <!-- Main -->
+    <div class="erp-main">
+
+        <header class="erp-topbar">
+            <button class="sidebar-toggle-btn" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+                <i class="bi bi-list"></i>
+            </button>
+            <div>
+                <p class="page-title mb-0">{% block page_title %}{% endblock %}</p>
+                <nav aria-label="breadcrumb" class="d-none d-sm-block">
+                    <ol class="breadcrumb mb-0" style="font-size:12px;">
+                        {% block breadcrumb %}{% endblock %}
+                    </ol>
+                </nav>
+            </div>
+            <div class="topbar-right">
+                <button id="pwaInstallBtn" class="btn btn-sm btn-outline-success d-none me-1" onclick="installPWA()" title="Install Right Ewaste ERP as App">
+                    <i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Install App</span>
+                </button>
+                <span class="topbar-chip d-none d-md-inline-flex"><i class="bi bi-building me-1"></i>Right Ewaste ERP</span>
+                <span class="topbar-admin-chip d-none d-sm-inline-flex" title="Super Admin Mode — Full Access"><i class="bi bi-shield-lock-fill me-1"></i>Super Admin</span>
+                {% if auth_required and current_user %}
+                <a href="/profile" class="topbar-chip text-decoration-none text-dark" title="View Profile">
+                    <i class="bi bi-person-circle me-1"></i>{{ current_user.full_name or current_user.username }}
+                </a>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="d-inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm dark-mode-btn" title="Sign out" aria-label="Sign out">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </form>
+                {% endif %}
+                <!-- 💬 Communication Topbar Icon -->
+                {% set u_count = unread_chat_count() %}
+                <a href="/communication" class="btn btn-sm btn-outline-secondary position-relative me-1" title="Communication & Messaging">
+                    <i class="bi bi-chat-dots"></i>
+                    <span id="topbar-communication-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if u_count == 0 %}d-none{% endif %}" style="font-size: 9px;">
+                        {{ u_count if u_count <= 99 else '99+' }}
+                    </span>
+                </a>
+
+                <button id="darkModeToggle" class="btn btn-sm dark-mode-btn" title="Toggle Dark Mode" onclick="toggleDarkMode()">
+                    <i class="bi bi-moon-fill" id="darkModeIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show mb-2" role="alert">
+                {% if category == 'success' %}✅{% elif category == 'danger' %}❌{% elif category == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+                <span class="ms-1">{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <main class="erp-content">
+            {% block content %}{% endblock %}
+        </main>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/shared.js') }}"></script>
+
+<script>
+function toggleModule(headerEl) {
+    const navModule = headerEl.closest('.nav-module');
+    if (!navModule) return;
+
+    const isExpanded = navModule.classList.contains('is-expanded');
+    const parentContainer = navModule.parentElement;
+
+    // Single accordion open behavior: collapse sibling modules at the same level
+    if (parentContainer) {
+        const siblingModules = parentContainer.querySelectorAll(':scope > .nav-module');
+        siblingModules.forEach(mod => {
+            if (mod !== navModule) {
+                mod.classList.remove('is-expanded');
+            }
+        });
+    }
+
+    if (isExpanded) {
+        navModule.classList.remove('is-expanded');
+    } else {
+        navModule.classList.add('is-expanded');
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    function updateCommunicationBadges() {
+        fetch('/api/v1/communication/dashboard-stats')
+            .then(r => r.json())
+            .then(data => {
+                if (data && typeof data.unread_messages !== 'undefined') {
+                    const count = data.unread_messages;
+                    const val = count > 99 ? '99+' : count;
+
+                    // Update sidebar badge
+                    const sBadge = document.getElementById('sidebar-communication-badge');
+                    if (sBadge) {
+                        if (count > 0) {
+                            sBadge.innerText = val;
+                            sBadge.classList.remove('d-none');
+                        } else {
+                            sBadge.classList.add('d-none');
+                        }
+                    }
+
+                    // Update topbar badge
+                    const tBadge = document.getElementById('topbar-communication-badge');
+                    if (tBadge) {
+                        if (count > 0) {
+                            tBadge.innerText = val;
+                            tBadge.classList.remove('d-none');
+                        } else {
+                            tBadge.classList.add('d-none');
+                        }
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+    updateCommunicationBadges();
+    setInterval(updateCommunicationBadges, 5000);
+});
+</script>
+
+{% block scripts %}{% endblock %}
+
+</body>
+</html>
+
