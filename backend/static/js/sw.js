@@ -1,5 +1,5 @@
 // Right Ewaste ERP V5.0 – Progressive Web App Service Worker
-const CACHE_NAME = 'right-ewaste-v5.0-cache-v1';
+const CACHE_NAME = 'right-ewaste-v5.0-cache-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/offline',
