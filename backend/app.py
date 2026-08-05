@@ -30,6 +30,7 @@ from routes.users import users_bp
 from routes.platform import platform_bp
 from routes.factory_report import factory_report_bp
 from routes.disposal import disposal_bp
+from routes.masters import masters_bp
 from routes.traceability import traceability_bp
 from routes.documents import documents_bp
 from routes.communication import communication_bp
@@ -123,6 +124,7 @@ app.register_blueprint(inventory_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(material_processing_bp)
 app.register_blueprint(disposal_bp)
+app.register_blueprint(masters_bp)
 app.register_blueprint(certificates_bp)
 app.register_blueprint(reports_bp)
 app.register_blueprint(employees_bp)

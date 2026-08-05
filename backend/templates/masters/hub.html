@@ -1,0 +1,244 @@
+{% extends "shared/base.html" %}
+
+{% block title %}Masters Hub – Right Ewaste ERP{% endblock %}
+{% block page_title %}Masters Hub{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Masters</li>
+{% endblock %}
+
+{% block content %}
+<link href="/static/css/masters.css?v=2" rel="stylesheet">
+
+<!-- ── Page Header ────────────────────────────────────────────── -->
+<div class="mst-hub-header">
+    <div class="mst-hub-header-left">
+        <div class="mst-hub-icon-wrap">
+            <i class="bi bi-folder2-open"></i>
+        </div>
+        <div>
+            <h4 class="mst-hub-title">Master Data Management</h4>
+            <p class="mst-hub-sub">Foundation records used across all modules — parties, materials, categories, and configuration</p>
+        </div>
+    </div>
+    <div class="mst-hub-header-actions">
+        <a href="/party/add" class="mst-tb-btn primary"><i class="bi bi-person-plus"></i> Add Party</a>
+        <a href="/material/add" class="mst-tb-btn primary"><i class="bi bi-box-seam"></i> Add Material</a>
+    </div>
+</div>
+
+<!-- ── Stats Row ──────────────────────────────────────────────── -->
+<div class="mst-hub-stats">
+    <a href="/party" class="mst-stat-card" style="--accent:#3b82f6;">
+        <div class="mst-stat-icon" style="background:#dbeafe; color:#1e40af;">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="mst-stat-body">
+            <div class="mst-stat-value">{{ party_count }}</div>
+            <div class="mst-stat-label">Active Parties</div>
+        </div>
+        <i class="bi bi-arrow-right mst-stat-arrow"></i>
+    </a>
+    <a href="/material" class="mst-stat-card" style="--accent:#2e7d32;">
+        <div class="mst-stat-icon" style="background:#d1fae5; color:#065f46;">
+            <i class="bi bi-box-seam-fill"></i>
+        </div>
+        <div class="mst-stat-body">
+            <div class="mst-stat-value">{{ material_count }}</div>
+            <div class="mst-stat-label">Materials Defined</div>
+        </div>
+        <i class="bi bi-arrow-right mst-stat-arrow"></i>
+    </a>
+    <a href="/settings#categories" class="mst-stat-card" style="--accent:#f59e0b;">
+        <div class="mst-stat-icon" style="background:#fef3c7; color:#92400e;">
+            <i class="bi bi-tags-fill"></i>
+        </div>
+        <div class="mst-stat-body">
+            <div class="mst-stat-value">{{ category_count }}</div>
+            <div class="mst-stat-label">Categories</div>
+        </div>
+        <i class="bi bi-arrow-right mst-stat-arrow"></i>
+    </a>
+    <a href="/settings#units" class="mst-stat-card" style="--accent:#0ea5e9;">
+        <div class="mst-stat-icon" style="background:#e0f2fe; color:#075985;">
+            <i class="bi bi-rulers"></i>
+        </div>
+        <div class="mst-stat-body">
+            <div class="mst-stat-value">{{ unit_count }}</div>
+            <div class="mst-stat-label">Units of Measure</div>
+        </div>
+        <i class="bi bi-arrow-right mst-stat-arrow"></i>
+    </a>
+    <a href="/masters/disposal-materials" class="mst-stat-card" style="--accent:#ef4444;">
+        <div class="mst-stat-icon" style="background:#fee2e2; color:#991b1b;">
+            <i class="bi bi-trash3-fill"></i>
+        </div>
+        <div class="mst-stat-body">
+            <div class="mst-stat-value">{{ disposal_material_count }}</div>
+            <div class="mst-stat-label">Disposal Materials</div>
+        </div>
+        <i class="bi bi-arrow-right mst-stat-arrow"></i>
+    </a>
+    <a href="/masters/disposal-types" class="mst-stat-card" style="--accent:#8b5cf6;">
+        <div class="mst-stat-icon" style="background:#ede9fe; color:#5b21b6;">
+            <i class="bi bi-diagram-3-fill"></i>
+        </div>
+        <div class="mst-stat-body">
+            <div class="mst-stat-value">{{ disposal_type_count }}</div>
+            <div class="mst-stat-label">Disposal Types</div>
+        </div>
+        <i class="bi bi-arrow-right mst-stat-arrow"></i>
+    </a>
+</div>
+
+<!-- ── Navigation Cards ───────────────────────────────────────── -->
+<div class="mst-hub-section-label">Core Master Records</div>
+<div class="mst-nav-grid">
+
+    <a href="/party" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#1e40af,#3b82f6);">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Parties</div>
+            <div class="mst-nav-card-desc">Customers, suppliers, and combined party records with GSTIN and billing details</div>
+            <div class="mst-nav-card-count">{{ party_count }} active</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/material" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#065f46,#2e7d32);">
+            <i class="bi bi-box-seam-fill"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Materials</div>
+            <div class="mst-nav-card-desc">E-waste material definitions with HSN codes, GST rates, and tracking types</div>
+            <div class="mst-nav-card-count">{{ material_count }} active</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/company" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#1b5e20,#388e3c);">
+            <i class="bi bi-building-fill"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Company Profile</div>
+            <div class="mst-nav-card-desc">Legal name, registered address, GSTIN, PAN, CIN and contact details</div>
+            <div class="mst-nav-card-count">Appears on every invoice</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+</div>
+
+<div class="mst-hub-section-label" style="margin-top:28px;">Configuration & References</div>
+<div class="mst-nav-grid">
+
+    <a href="/settings" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#92400e,#f59e0b);">
+            <i class="bi bi-tags-fill"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Material Categories</div>
+            <div class="mst-nav-card-desc">Group materials by type — Copper Scrap, Lithium Batteries, PCBs, etc.</div>
+            <div class="mst-nav-card-count">{{ category_count }} categories</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/settings" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#075985,#0ea5e9);">
+            <i class="bi bi-rulers"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Units of Measure</div>
+            <div class="mst-nav-card-desc">Define measurement units used across purchases, sales, and inventory</div>
+            <div class="mst-nav-card-count">{{ unit_count }} units</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/settings" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#4c0519,#dc2626);">
+            <i class="bi bi-percent"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Tax &amp; GST Config</div>
+            <div class="mst-nav-card-desc">Default GST rates, rounding mode, and CGST/SGST vs IGST configuration</div>
+            <div class="mst-nav-card-count">System settings</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/masters/disposal-materials" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#7f1d1d,#ef4444);">
+            <i class="bi bi-trash3-fill"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Disposal Materials</div>
+            <div class="mst-nav-card-desc">Hazardous and non-saleable disposal material definitions with tracking</div>
+            <div class="mst-nav-card-count">{{ disposal_material_count }} defined</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/masters/disposal-types" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#3b0764,#8b5cf6);">
+            <i class="bi bi-diagram-3-fill"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">Disposal Types</div>
+            <div class="mst-nav-card-desc">Methods for e-waste disposal — recycling, landfill, third-party handover, etc.</div>
+            <div class="mst-nav-card-count">{{ disposal_type_count }} types</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+    <a href="/settings" class="mst-nav-card">
+        <div class="mst-nav-card-icon" style="background:linear-gradient(135deg,#1e293b,#475569);">
+            <i class="bi bi-sliders2-vertical"></i>
+        </div>
+        <div class="mst-nav-card-body">
+            <div class="mst-nav-card-title">System Settings</div>
+            <div class="mst-nav-card-desc">Number series, document prefixes, financial year, and platform configuration</div>
+            <div class="mst-nav-card-count">Global configuration</div>
+        </div>
+        <div class="mst-nav-card-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+    </a>
+
+</div>
+
+<!-- ── Quick Actions Footer ───────────────────────────────────── -->
+<div class="mst-hub-quick-actions">
+    <div class="mst-hub-section-label" style="margin-bottom:16px;">Quick Actions</div>
+    <div class="mst-qa-grid">
+        <a href="/party/add" class="mst-qa-btn">
+            <i class="bi bi-person-plus-fill"></i>
+            <span>Add Party</span>
+        </a>
+        <a href="/material/add" class="mst-qa-btn">
+            <i class="bi bi-box-seam"></i>
+            <span>Add Material</span>
+        </a>
+        <a href="/settings" class="mst-qa-btn">
+            <i class="bi bi-tags"></i>
+            <span>Add Category</span>
+        </a>
+        <a href="/settings" class="mst-qa-btn">
+            <i class="bi bi-rulers"></i>
+            <span>Add Unit</span>
+        </a>
+        <a href="/party" class="mst-qa-btn">
+            <i class="bi bi-list-ul"></i>
+            <span>View Parties</span>
+        </a>
+        <a href="/material" class="mst-qa-btn">
+            <i class="bi bi-list-ul"></i>
+            <span>View Materials</span>
+        </a>
+    </div>
+</div>
+
+{% endblock %}

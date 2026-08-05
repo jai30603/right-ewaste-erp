@@ -5,6 +5,7 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/masters" class="text-decoration-none text-muted">Masters</a></li>
 <li class="breadcrumb-item active">Party</li>
 {% endblock %}
 
@@ -220,6 +221,27 @@
     <input type="hidden" name="_method" value="DELETE">
 </form>
 
+<!-- Custom Delete Dialog -->
+<div class="mst-dialog-overlay" id="mst-delete-overlay">
+    <div class="mst-dialog" role="dialog" aria-modal="true" aria-labelledby="mst-dlg-title">
+        <div class="mst-dialog-icon">
+            <div class="mst-dialog-icon-circle"><i class="bi bi-person-dash-fill"></i></div>
+        </div>
+        <div class="mst-dialog-body">
+            <h5 class="mst-dialog-title" id="mst-dlg-title">Delete Party?</h5>
+            <p class="mst-dialog-msg">You are about to permanently delete:</p>
+            <span class="mst-dialog-name" id="mst-dlg-name"></span>
+            <p class="mst-dialog-msg" style="margin-top:10px;">This action <strong>cannot be undone</strong>. All linked records may be affected.</p>
+        </div>
+        <div class="mst-dialog-footer">
+            <button class="mst-dialog-cancel" onclick="mstCloseDialog()">Cancel</button>
+            <button class="mst-dialog-confirm" id="mst-dlg-confirm-btn" onclick="mstExecuteDelete()">
+                <i class="bi bi-trash3"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -258,12 +280,6 @@ function mstClearSelection() {
     document.getElementById('mst-select-all').checked = false;
     mstUpdateBulk();
 }
-function mstBulkDelete() {
-    const ids = [...document.querySelectorAll('.mst-row-check:checked')].map(c => c.value);
-    if (ids.length && confirm(`Delete ${ids.length} selected party record(s)? This cannot be undone.`)) {
-        alert('Bulk delete: ' + ids.join(', '));
-    }
-}
 
 /* ── Action dropdown ── */
 function mstToggleMenu(btn) {
@@ -278,14 +294,30 @@ document.addEventListener('click', function(e) {
     }
 });
 
-/* ── Delete ── */
+/* ── Custom Delete Dialog ── */
+let _pendingDeleteId = null;
 function mstConfirmDelete(id, name) {
-    if (confirm(`Delete "${name}"?\n\nThis action cannot be undone.`)) {
-        const form = document.getElementById('mst-delete-form');
-        form.action = `/party/${id}/delete`;
-        form.submit();
-    }
+    _pendingDeleteId = id;
+    document.getElementById('mst-dlg-name').textContent = name;
+    document.getElementById('mst-delete-overlay').classList.add('open');
+    document.getElementById('mst-dlg-confirm-btn').focus();
 }
+function mstCloseDialog() {
+    _pendingDeleteId = null;
+    document.getElementById('mst-delete-overlay').classList.remove('open');
+}
+function mstExecuteDelete() {
+    if (!_pendingDeleteId) return;
+    const form = document.getElementById('mst-delete-form');
+    form.action = `/party/${_pendingDeleteId}/delete`;
+    form.submit();
+}
+document.getElementById('mst-delete-overlay').addEventListener('click', function(e) {
+    if (e.target === this) mstCloseDialog();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') mstCloseDialog();
+});
 
 /* Auto-open filter if active */
 {% if party_type and party_type != 'all' %}

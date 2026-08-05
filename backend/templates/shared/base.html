@@ -57,16 +57,17 @@
                 </li>
 
                 <!-- 📂 Masters -->
-                <li class="nav-module {{ 'is-expanded' if request.path in ['/company', '/party', '/material', '/masters/disposal-materials', '/masters/disposal-types'] else '' }}">
-                    <button type="button" class="module-header {{ 'has-active' if request.path in ['/company', '/party', '/material', '/masters/disposal-materials', '/masters/disposal-types'] else '' }}" onclick="toggleModule(this)">
+                <li class="nav-module {{ 'is-expanded' if request.path.startswith('/masters') or request.path.startswith('/company') or request.path.startswith('/party') or request.path == '/material' or request.path.startswith('/material/') else '' }}">
+                    <button type="button" class="module-header {{ 'has-active' if request.path.startswith('/masters') or request.path.startswith('/company') or request.path.startswith('/party') or request.path == '/material' or request.path.startswith('/material/') else '' }}" onclick="toggleModule(this)">
                         <i class="bi bi-folder2-open nav-icon"></i>
                         <span>Masters</span>
                         <i class="bi bi-chevron-right chevron-icon"></i>
                     </button>
                     <ul class="module-submenu">
+                        <li><a href="/masters" class="{{ 'active' if request.path == '/masters' else '' }}"><i class="bi bi-grid-1x2 me-2"></i>Masters Hub</a></li>
                         <li><a href="/company" class="{{ 'active' if request.path.startswith('/company') else '' }}"><i class="bi bi-building me-2"></i>Company Profile</a></li>
                         <li><a href="/party" class="{{ 'active' if request.path.startswith('/party') else '' }}"><i class="bi bi-people me-2"></i>Party</a></li>
-                        <li><a href="/material" class="{{ 'active' if request.path == '/material' else '' }}"><i class="bi bi-box-seam me-2"></i>Material</a></li>
+                        <li><a href="/material" class="{{ 'active' if request.path == '/material' or request.path.startswith('/material/') else '' }}"><i class="bi bi-box-seam me-2"></i>Material</a></li>
                         <li><a href="/masters/disposal-materials" class="{{ 'active' if request.path == '/masters/disposal-materials' else '' }}"><i class="bi bi-trash me-2"></i>Disposal Materials</a></li>
                         <li><a href="/masters/disposal-types" class="{{ 'active' if request.path == '/masters/disposal-types' else '' }}"><i class="bi bi-diagram-3 me-2"></i>Disposal Types</a></li>
                     </ul>
