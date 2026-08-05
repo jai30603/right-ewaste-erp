@@ -5,13 +5,17 @@
 <title>{{ invoice.invoice_number }}</title>
 <style>
 
+  @page {
+    size: a4 portrait;
+    margin: 36pt 44pt;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 12px;
+    font-size: 11px;
     color: #1a1a1a;
     background: #fff;
-    padding: 36px 44px;
+    padding: 0;
   }
 
   /* ── Letterhead ─────────────────────────────────── */
@@ -20,7 +24,7 @@
     justify-content: space-between;
     align-items: flex-start;
     border-bottom: 2.5px solid #1a3a28;
-    padding-bottom: 16px;
+    padding-bottom: 12px;
     margin-bottom: 20px;
   }
   .company-name {
@@ -71,7 +75,7 @@
   .party-row {
     display: flex;
     gap: 32px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
   .party-col { flex: 1; }
   .section-label {
@@ -89,21 +93,21 @@
   table.items {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
-    margin-bottom: 0;
+    font-size: 10px;
+    margin-bottom: 24px;
   }
   table.items thead tr {
     background: #1a3a28;
     color: #fff;
   }
   table.items thead th {
-    padding: 8px 10px;
+    padding: 6px 8px;
     font-weight: 600;
     white-space: nowrap;
   }
   table.items tbody tr { border-bottom: 1px solid #eef2ef; }
   table.items tbody tr:nth-child(even) { background: #f9fafb; }
-  table.items tbody td { padding: 8px 10px; }
+  table.items tbody td { padding: 6px 8px; }
   .mono { font-family: monospace; }
   .gst-badge {
     background: #e8f5ee;
@@ -122,18 +126,18 @@
     border-top: 2px solid #1a3a28;
   }
   table.totals {
-    width: 280px;
-    font-size: 12px;
+    width: 250px;
+    font-size: 10.5px;
     border-collapse: collapse;
   }
-  table.totals td { padding: 7px 10px; }
+  table.totals td { padding: 5px 8px; }
   table.totals .label { color: #555; }
   table.totals .value { text-align: right; font-family: monospace; }
   table.totals .grand-row { background: #f4f7f5; border-top: 2px solid #1a3a28; }
-  table.totals .grand-label { font-weight: 700; font-size: 13px; color: #0f2318; }
+  table.totals .grand-label { font-weight: 700; font-size: 11.5px; color: #0f2318; }
   table.totals .grand-value {
     text-align: right; font-family: monospace;
-    font-weight: 700; font-size: 16px; color: #0f2318;
+    font-weight: 700; font-size: 14px; color: #0f2318;
   }
   .sep { border: none; border-bottom: 1px solid #eef2ef; }
 
@@ -170,6 +174,7 @@
     font-size: 11px;
     color: #3a5244;
     font-weight: 600;
+    margin: 0 auto;
   }
   .sig-company { font-size: 9.5px; color: #888; margin-top: 2px; }
 </style>
@@ -178,62 +183,72 @@
 
 <!-- Letterhead -->
 <div class="header">
-  <div>
-    <div class="company-name">{{ company.company_name if company else 'RIGHT EWASTE RECYCLE PVT LTD' }}</div>
-    {% if company %}
-    <div class="company-details">
-      {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
-      {{ company.city }}, {{ company.state }} – {{ company.pincode }}<br>
-      <strong>GSTIN:</strong> {{ company.gstin or '—' }} &nbsp;|&nbsp;
-      <strong>PAN:</strong> {{ company.pan or '—' }}
-      {% if company.phone %} &nbsp;|&nbsp; <strong>Ph:</strong> {{ company.phone }}{% endif %}
-    </div>
-    {% endif %}
-  </div>
-  <div>
-    <div class="invoice-title">TAX INVOICE</div>
-    <div class="invoice-meta">
-      <div class="invoice-num">{{ invoice.invoice_number }}</div>
-      <div><strong>Date:</strong> {{ invoice.invoice_date }}</div>
-      {% if invoice.status == 'CONFIRMED' %}
-      <div><span class="badge-confirmed">✓ CONFIRMED</span></div>
-      {% endif %}
-    </div>
-  </div>
+  <table style="width: 100%; border: none;">
+    <tr>
+      <td style="width: 60%; vertical-align: top; border: none;">
+        <div class="company-logo" style="margin-bottom: 8px;">
+          <img src="/static/images/company_logo.png" style="height: 75px; width: auto;" />
+        </div>
+        {% if company %}
+        <div class="company-details">
+          {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
+          {{ company.city }}, {{ company.state }} – {{ company.pincode }}<br>
+          <strong>GSTIN:</strong> {{ company.gstin or '—' }} &nbsp;|&nbsp;
+          <strong>PAN:</strong> {{ company.pan or '—' }}
+          {% if company.phone %} &nbsp;|&nbsp; <strong>Ph:</strong> {{ company.phone }}{% endif %}
+        </div>
+        {% endif %}
+      </td>
+      <td style="width: 40%; text-align: right; vertical-align: top; border: none;">
+        <div class="invoice-title">TAX INVOICE</div>
+        <div class="invoice-meta">
+          <div class="invoice-num">{{ invoice.invoice_number }}</div>
+          <div><strong>Date:</strong> {{ invoice.invoice_date }}</div>
+          {% if invoice.status == 'CONFIRMED' %}
+          <div><span class="badge-confirmed">✓ CONFIRMED</span></div>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  </table>
 </div>
 
 <!-- Bill To / Transport -->
 <div class="party-row">
-  <div class="party-col">
-    <div class="section-label">Bill To</div>
-    {% if party %}
-    <div class="party-name">{{ party.company_name }}</div>
-    <div class="party-detail">
-      {% if party.billing_address %}{{ party.billing_address }}<br>{% endif %}
-      {{ party.city }}{% if party.state %}, {{ party.state }}{% endif %}
-      {% if party.pincode %} – {{ party.pincode }}{% endif %}<br>
-      {% if party.gstin %}<strong>GSTIN:</strong> {{ party.gstin }}<br>{% endif %}
-      {% if party.phone %}<strong>Ph:</strong> {{ party.phone }}{% endif %}
-    </div>
-    {% endif %}
-  </div>
-  <div class="party-col">
-    <div class="section-label">Invoice Details & Transport</div>
-    <div class="party-detail">
-      <strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}<br>
-      <strong>Transporter:</strong> {{ invoice.transporter or '—' }}<br>
-      <strong>Vehicle No.:</strong> <span class="mono">{{ invoice.vehicle_number or '—' }}</span><br>
-      {% if invoice.eway_bill_number %}
-      <strong>E-Way Bill:</strong> <span class="mono">{{ invoice.eway_bill_number }}</span><br>
-      {% endif %}
-      {% if invoice.reference_number %}
-      <strong>Reference/PO No:</strong> {{ invoice.reference_number }}<br>
-      {% endif %}
-      <div style="margin-top:6px; color:#888; font-size:9.5px;">
-        Printed: {{ invoice.print_count or 0 }} | PDF: {{ invoice.pdf_download_count or 0 }}
-      </div>
-    </div>
-  </div>
+  <table style="width: 100%; border: none;">
+    <tr>
+      <td style="width: 50%; vertical-align: top; border: none;">
+        <div class="section-label">Bill To</div>
+        {% if party %}
+        <div class="party-name">{{ party.company_name }}</div>
+        <div class="party-detail">
+          {% if party.billing_address %}{{ party.billing_address }}<br>{% endif %}
+          {{ party.city }}{% if party.state %}, {{ party.state }}{% endif %}
+          {% if party.pincode %} – {{ party.pincode }}{% endif %}<br>
+          {% if party.gstin %}<strong>GSTIN:</strong> {{ party.gstin }}<br>{% endif %}
+          {% if party.phone %}<strong>Ph:</strong> {{ party.phone }}{% endif %}
+        </div>
+        {% endif %}
+      </td>
+      <td style="width: 50%; vertical-align: top; border: none;">
+        <div class="section-label">Invoice Details & Transport</div>
+        <div class="party-detail">
+          <strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}<br>
+          <strong>Transporter:</strong> {{ invoice.transporter or '—' }}<br>
+          <strong>Vehicle No.:</strong> <span class="mono">{{ invoice.vehicle_number or '—' }}</span><br>
+          {% if invoice.eway_bill_number %}
+          <strong>E-Way Bill:</strong> <span class="mono">{{ invoice.eway_bill_number }}</span><br>
+          {% endif %}
+          {% if invoice.reference_number %}
+          <strong>Reference/PO No:</strong> {{ invoice.reference_number }}<br>
+          {% endif %}
+          <div style="margin-top:6px; color:#888; font-size:9.5px;">
+            Printed: {{ invoice.print_count or 0 }} | PDF: {{ invoice.pdf_download_count or 0 }}
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
 </div>
 
 <!-- Items -->
@@ -242,8 +257,8 @@
     <tr>
       <th style="text-align:left; width:28px;">#</th>
       <th style="text-align:left;">Material / Description</th>
-      <th style="text-align:right;">Qty</th>
-      <th style="text-align:right;">Weight (kg)</th>
+      <th style="text-align:center;">Qty</th>
+      <th style="text-align:center;">Weight (kg)</th>
       <th style="text-align:right;">Rate (Rs.)</th>
       <th style="text-align:center;">GST %</th>
       <th style="text-align:right;">Amount (Rs.)</th>
@@ -257,8 +272,8 @@
         {{ item.material_name or '—' }}
         <span style="font-size:10px; color:#888;">({{ item.uom or '' }})</span>
       </td>
-      <td class="mono" style="text-align:right;">{{ "%.2f"|format(item.quantity or 0) }}</td>
-      <td class="mono" style="text-align:right;">{{ "%.3f"|format(item.weight or 0) }}</td>
+      <td class="mono" style="text-align:center;">{{ "%.2f"|format(item.quantity or 0) }}</td>
+      <td class="mono" style="text-align:center;">{{ "%.3f"|format(item.weight or 0) }}</td>
       <td class="mono" style="text-align:right;">{{ "%.2f"|format(item.rate or 0) }}</td>
       <td style="text-align:center;">
         <span class="gst-badge">{{ item.gst_percentage or 0 }}%</span>
@@ -275,15 +290,15 @@
 <div class="totals-wrap">
   <table class="totals">
     <tr class="sep"><td class="label">Subtotal</td>
-      <td class="value">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
+      <td class="value">Rs. {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
     {% if is_intra %}
     <tr class="sep"><td class="label">CGST</td>
-      <td class="value">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
+      <td class="value">Rs. {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
     <tr class="sep"><td class="label">SGST</td>
-      <td class="value">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td></tr>
+      <td class="value">Rs. {{ "%.2f"|format(invoice.sgst or 0) }}</td></tr>
     {% else %}
     <tr class="sep"><td class="label">IGST</td>
-      <td class="value">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td></tr>
+      <td class="value">Rs. {{ "%.2f"|format(invoice.igst or 0) }}</td></tr>
     {% endif %}
     {% if invoice.round_off %}
     <tr class="sep"><td class="label">Round Off</td>
@@ -293,7 +308,7 @@
     {% endif %}
     <tr class="grand-row">
       <td class="grand-label">Grand Total</td>
-      <td class="grand-value">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td>
+      <td class="grand-value">Rs. {{ "%.2f"|format(invoice.grand_total or 0) }}</td>
     </tr>
   </table>
 </div>
@@ -307,12 +322,23 @@
 {% endif %}
 
 <!-- Signature -->
-<div class="footer">
-  <div class="generated-note">This is a computer-generated invoice.</div>
-  <div class="sig-block">
-    <div class="sig-line">Authorised Signatory</div>
-    <div class="sig-company">{{ company.company_name if company }}</div>
-  </div>
+<div class="footer" style="margin-top: 30px; border-top: 1.5px solid #eef2ef; padding-top: 8px;">
+  <table style="width: 100%; border: none;">
+    <tr>
+      <td style="vertical-align: bottom; border: none; font-size: 9.5px; color: #bbb;">
+        This is a computer-generated invoice.
+      </td>
+      <td style="text-align: right; vertical-align: bottom; border: none; width: 220px;">
+        <div class="sig-block">
+          <div style="margin-bottom: -25px;">
+            <img src="/static/images/authorised_signatory.png" style="height: 70px; width: auto;" />
+          </div>
+          <div class="sig-line">Authorised Signatory</div>
+          <div class="sig-company">{{ company.company_name if company }}</div>
+        </div>
+      </td>
+    </tr>
+  </table>
 </div>
 
 </body>

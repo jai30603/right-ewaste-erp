@@ -558,6 +558,154 @@
   padding: 14px 0 18px;
   flex-wrap: wrap;
 }
+.sv3-inv-card {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 20px 24px;
+  background: var(--card-bg, #fafbfc);
+  height: 100%;
+}
+.sv3-inv-details-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.sv3-inv-details-table td {
+  padding: 6px 0;
+  vertical-align: top;
+  font-size: 12.5px;
+}
+.sv3-inv-details-table td.lbl {
+  width: 120px;
+  color: #7a8a82;
+  font-weight: 600;
+}
+.sv3-inv-details-table td.val {
+  color: #2e3d35;
+}
+[data-theme="dark"] .sv3-inv-card {
+  background: #19261e;
+  border-color: #2e3e32;
+}
+[data-theme="dark"] .sv3-inv-details-table td.lbl {
+  color: #8fa597;
+}
+[data-theme="dark"] .sv3-inv-details-table td.val {
+  color: #c0d4c8;
+}
+
+.sv3-inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+.sv3-inv-table thead tr {
+  background: #1a3a28;
+  color: #fff;
+}
+.sv3-inv-table thead th {
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+}
+.sv3-inv-table tbody tr {
+  border-bottom: 1px solid var(--border-color, #eef2ef);
+}
+.sv3-inv-table tbody tr:nth-child(even) {
+  background: var(--table-zebra, #f8fafc);
+}
+.sv3-inv-table tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.sv3-inv-totals {
+  width: 320px;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.sv3-inv-totals tr td {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.sv3-inv-totals tr {
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+.sv3-inv-totals td.lbl {
+  color: #64748b;
+  font-weight: 500;
+}
+.sv3-inv-totals td.val {
+  text-align: right;
+  font-family: monospace;
+  font-weight: 600;
+  color: #334155;
+}
+.sv3-inv-totals .grand-row {
+  background: var(--grand-total-bg, #f4f7f5);
+  border-top: 2px solid #1a3a28;
+  border-bottom: 2px solid #1a3a28;
+}
+.sv3-inv-totals .grand-row td {
+  padding: 14px 12px;
+}
+.sv3-inv-totals .grand-row td.grand-lbl {
+  font-weight: 800;
+  font-size: 14px;
+  color: #0f2318;
+}
+.sv3-inv-totals .grand-row td.grand-val {
+  text-align: right;
+  font-weight: 800;
+  font-size: 20px;
+  color: #0f2318;
+}
+
+.sv3-inv-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1.5px solid var(--border-color, #e2e8f0);
+}
+.sv3-inv-footer-row .generated-note {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.sv3-inv-footer-row .sig-block {
+  text-align: center;
+}
+.sv3-inv-footer-row .sig-image-container {
+  margin-bottom: -22px;
+}
+.sv3-inv-footer-row .sig-image-container img {
+  height: 80px;
+  width: auto;
+  mix-blend-mode: multiply;
+}
+.sv3-inv-footer-row .sig-line {
+  width: 170px;
+  border-top: 1px solid #1a3a28;
+  padding-top: 6px;
+  font-size: 12px;
+  color: #1a3a28;
+  font-weight: 700;
+  margin: 0 auto;
+}
+.sv3-inv-footer-row .sig-company {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 3px;
+}
+[data-theme="dark"] .sv3-inv-footer-row .sig-image-container img {
+  filter: brightness(0.9) contrast(1.1);
+  mix-blend-mode: normal;
+}
+
 .sv3-invoice-wrap {
   background: var(--card-bg, #fff);
   border-radius: 14px;

@@ -1,0 +1,193 @@
+.pur-invoice-wrap {
+  background: var(--card-bg, #fff);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  border: 1px solid var(--border-color, #e8eeeb);
+  padding: 48px 52px;
+  margin-bottom: 24px;
+}
+@media (max-width: 600px) { .pur-invoice-wrap { padding: 24px 20px; } }
+
+.pur-inv-letterhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+  border-bottom: 2.5px solid #1e3a8a;
+  gap: 20px;
+}
+.pur-inv-company-name { font-size: 22px; font-weight: 800; color: #0f2318; line-height: 1.1; }
+.pur-inv-company-sub  { font-size: 12px; color: #5a6a62; margin-top: 6px; line-height: 1.8; }
+.pur-inv-title { font-size: 28px; font-weight: 900; color: #2563eb; letter-spacing: 1px; text-align: right; }
+.pur-inv-meta  { text-align: right; font-size: 13px; color: #3a5244; margin-top: 8px; }
+.pur-inv-meta strong { font-weight: 700; }
+.pur-inv-num   { font-size: 15px; font-weight: 800; font-family: monospace; color: #0f2318; }
+
+.pur-inv-section-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2563eb;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.pur-inv-card {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 20px 24px;
+  background: var(--card-bg, #fafbfc);
+  height: 100%;
+}
+.pur-inv-details-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.pur-inv-details-table td {
+  padding: 6px 0;
+  vertical-align: top;
+  font-size: 12.5px;
+}
+.pur-inv-details-table td.lbl {
+  width: 120px;
+  color: #64748b;
+  font-weight: 600;
+}
+.pur-inv-details-table td.val {
+  color: #1e293b;
+}
+[data-theme="dark"] .pur-inv-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+[data-theme="dark"] .pur-inv-details-table td.lbl {
+  color: #94a3b8;
+}
+[data-theme="dark"] .pur-inv-details-table td.val {
+  color: #e2e8f0;
+}
+
+.pur-inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+.pur-inv-table thead tr {
+  background: #1e3a8a;
+  color: #fff;
+}
+.pur-inv-table thead th {
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+}
+.pur-inv-table tbody tr {
+  border-bottom: 1px solid var(--border-color, #eef2ef);
+}
+.pur-inv-table tbody tr:nth-child(even) {
+  background: var(--table-zebra, #f8fafc);
+}
+.pur-inv-table tbody td {
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+[data-theme="dark"] .pur-inv-table tbody tr:nth-child(even) {
+  background: #1e293b;
+}
+
+.pur-inv-totals {
+  width: 320px;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+.pur-inv-totals tr td {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.pur-inv-totals tr {
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+.pur-inv-totals td.lbl {
+  color: #64748b;
+  font-weight: 500;
+}
+.pur-inv-totals td.val {
+  text-align: right;
+  font-family: monospace;
+  font-weight: 600;
+  color: #334155;
+}
+.pur-inv-totals .grand-row {
+  background: var(--grand-total-bg, #f0f4ff);
+  border-top: 2px solid #1e3a8a;
+  border-bottom: 2px solid #1e3a8a;
+}
+.pur-inv-totals .grand-row td {
+  padding: 14px 12px;
+}
+.pur-inv-totals .grand-row td.grand-lbl {
+  font-weight: 800;
+  font-size: 14px;
+  color: #1e3a8a;
+}
+.pur-inv-totals .grand-row td.grand-val {
+  text-align: right;
+  font-weight: 800;
+  font-size: 20px;
+  color: #1e3a8a;
+}
+
+.pur-inv-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1.5px solid var(--border-color, #e2e8f0);
+}
+.pur-inv-footer-row .generated-note {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.pur-inv-footer-row .sig-block {
+  text-align: center;
+}
+.pur-inv-footer-row .sig-image-container {
+  margin-bottom: -22px;
+}
+.pur-inv-footer-row .sig-image-container img {
+  height: 80px;
+  width: auto;
+  mix-blend-mode: multiply;
+}
+.pur-inv-footer-row .sig-line {
+  width: 170px;
+  border-top: 1px solid #1e3a8a;
+  padding-top: 6px;
+  font-size: 12px;
+  color: #1e3a8a;
+  font-weight: 700;
+  margin: 0 auto;
+}
+.pur-inv-footer-row .sig-company {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 3px;
+}
+[data-theme="dark"] .pur-inv-footer-row .sig-image-container img {
+  filter: brightness(0.9) contrast(1.1);
+  mix-blend-mode: normal;
+}
+
+@media print {
+  .topbar, .sidebar, .breadcrumb-bar, .d-flex.align-items-center.gap-2, .btn-group { display: none !important; }
+  .main-content { margin-left: 0 !important; padding: 0 !important; }
+  .erp-card { box-shadow: none !important; border: none !important; }
+  .pur-invoice-wrap { box-shadow: none !important; border: none !important; padding: 0 !important; }
+  body { background: white !important; }
+}

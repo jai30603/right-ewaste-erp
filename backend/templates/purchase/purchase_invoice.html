@@ -12,6 +12,7 @@
 {% from "shared/_page_header.html" import page_header %}
 
 {% block content %}
+<link href="/static/css/purchase.css?v=2" rel="stylesheet">
 
 {{ page_header(
     title="Purchase Invoice: " ~ invoice.purchase_invoice_number,
@@ -23,123 +24,236 @@
     ]
 ) }}
 
-<div class="erp-card" id="invoice-printable">
-<div class="erp-card-body" style="padding:40px 48px;">
-    <div class="d-flex justify-content-between align-items-start mb-4 pb-3" style="border-bottom:2px solid #2563eb;">
+<div class="pur-invoice-wrap" id="invoice-printable">
+
+    <!-- Letterhead -->
+    <div class="pur-inv-letterhead">
         <div>
-            <div style="font-size:22px; font-weight:800; color:#0f2318; letter-spacing:-0.3px; line-height:1.1;">{{ company.company_name if company else 'RIGHT EWASTE RECYCLE PVT LTD' }}</div>
+            <div class="pur-inv-company-logo" style="margin-bottom: 8px;">
+                <img src="/static/images/company_logo.png" alt="Company Logo" style="height: 85px; width: auto; max-width: 100%;">
+            </div>
             {% if company %}
-            <div style="font-size:12px; color:#5a6a62; margin-top:5px; line-height:1.7;">{{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>{{ company.city }}, {{ company.state }} – {{ company.pincode }}<br><strong>GSTIN:</strong> {{ company.gstin or '—' }} &nbsp;|&nbsp; <strong>PAN:</strong> {{ company.pan or '—' }}{% if company.phone %}&nbsp;|&nbsp;<strong>Ph:</strong> {{ company.phone }}{% endif %}</div>
+            <div class="pur-inv-company-sub">
+                {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
+                {{ company.city }}, {{ company.state }} – {{ company.pincode }}<br>
+                <strong>GSTIN:</strong> {{ company.gstin or '—' }}
+                &nbsp;|&nbsp;<strong>PAN:</strong> {{ company.pan or '—' }}
+                {% if company.phone %}&nbsp;|&nbsp;<strong>Ph:</strong> {{ company.phone }}{% endif %}
+            </div>
             {% endif %}
         </div>
-        <div style="text-align:right;">
-            <div style="font-size:26px; font-weight:900; color:#2563eb; letter-spacing:1px;">PURCHASE INVOICE</div>
-            <div style="margin-top:8px; font-size:13px; color:#3a5244;">
-                <div><strong>Invoice No.</strong></div>
-                <div style="font-size:15px; font-weight:700; color:#0f2318; font-family:monospace;">{{ invoice.purchase_invoice_number }}</div>
-                <div style="margin-top:4px;"><strong>Date:</strong> {{ invoice.invoice_date }}</div>
+        <div>
+            <div class="pur-inv-title">PURCHASE INVOICE</div>
+            <div class="pur-inv-meta">
+                <div style="font-size:11px; color:#8aa09a; text-transform:uppercase; letter-spacing:.8px;">Invoice No.</div>
+                <div class="pur-inv-num">{{ invoice.purchase_invoice_number }}</div>
+                <div style="margin-top:6px;"><strong>Date:</strong> {{ invoice.invoice_date }}</div>
                 {% if invoice.status %}
-                <div style="margin-top:6px;">
-                    <span style="background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.5px;">
-                        ✓ {{ invoice.status }}
-                    </span>
-                    <span style="background:#f1f5f9; color:#475569; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; letter-spacing:.5px; margin-left:5px;">
-                        Intake: {{ invoice.intake_type or 'Purchase' }}
-                    </span>
+                <div style="margin-top:8px;">
+                    <span class="sv3-badge sv3-badge-confirmed" style="background:#e0f2fe; color:#0369a1;">✓ {{ invoice.status }}</span>
+                    <span class="sv3-badge sv3-badge-draft" style="margin-left:5px;">Intake: {{ invoice.intake_type or 'Purchase' }}</span>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
-    <div class="row mb-4">
+
+    <!-- Bill To + Transport -->
+    <div class="row g-4 mb-4">
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Source Party</div>
-            {% if supplier %}
-            <div style="font-size:14px; font-weight:700; color:#0f2318;">{{ supplier.company_name }}</div>
-            <div style="font-size:12px; color:#5a6a62; line-height:1.8; margin-top:4px;">{% if supplier.billing_address %}{{ supplier.billing_address }}<br>{% endif %}{{ supplier.city }}{% if supplier.state %}, {{ supplier.state }}{% endif %}{% if supplier.pincode %} – {{ supplier.pincode }}{% endif %}<br>{% if supplier.gstin %}<strong>GSTIN:</strong> {{ supplier.gstin }}<br>{% endif %}{% if supplier.phone %}<strong>Ph:</strong> {{ supplier.phone }}{% endif %}</div>
-            {% endif %}
+            <div class="pur-inv-card">
+                <div class="pur-inv-section-lbl">Supplier</div>
+                {% if supplier %}
+                <div class="pur-inv-company-name" style="font-size:15px; font-weight:700; color:#0f2318;">{{ supplier.company_name }}</div>
+                <div class="pur-inv-company-sub mt-2">
+                    <table class="pur-inv-details-table">
+                        <tr>
+                            <td class="lbl">Address:</td>
+                            <td class="val">
+                                {% if supplier.billing_address %}{{ supplier.billing_address }}, <br>{% endif %}
+                                {{ supplier.city }}{% if supplier.state %}, {{ supplier.state }}{% endif %}{% if supplier.pincode %} – {{ supplier.pincode }}{% endif %}
+                            </td>
+                        </tr>
+                        {% if supplier.gstin %}
+                        <tr>
+                            <td class="lbl">GSTIN:</td>
+                            <td class="val"><strong>{{ supplier.gstin }}</strong></td>
+                        </tr>
+                        {% endif %}
+                        {% if supplier.phone %}
+                        <tr>
+                            <td class="lbl">Phone:</td>
+                            <td class="val">{{ supplier.phone }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+                {% else %}
+                <div class="pur-inv-company-sub" style="color:#aaa;">No supplier information</div>
+                {% endif %}
+            </div>
         </div>
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px;">Invoice Details &amp; Transport</div>
-            <div style="font-size:12px; color:#5a6a62; line-height:1.8;">
-                <div><strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}</div>
-                <div><strong>Transporter:</strong> {{ invoice.transporter or '—' }}</div>
-                <div><strong>Vehicle No.:</strong> <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span></div>
-                {% if invoice.vehicle_type %}
-                <div><strong>Vehicle Type:</strong> {{ invoice.vehicle_type }}</div>
-                {% endif %}
-                {% if invoice.driver_name %}
-                <div><strong>Driver Name:</strong> {{ invoice.driver_name }}</div>
-                {% endif %}
-                {% if invoice.weight_slip_number %}
-                <div><strong>Weight Slip Ref.:</strong> <span style="font-family:monospace;">{{ invoice.weight_slip_number }}</span></div>
-                {% endif %}
-                {% if invoice.eway_bill_number %}
-                <div><strong>E-Way Bill:</strong> <span style="font-family:monospace;">{{ invoice.eway_bill_number }}</span></div>
-                {% endif %}
-                {% if invoice.reference_number %}
-                <div><strong>Reference/PO No:</strong> {{ invoice.reference_number }}</div>
-                {% endif %}
-                <div class="mt-2 text-muted" style="font-size:11px;">
-                    <span>Printed: {{ invoice.print_count or 0 }} times</span> &nbsp;|&nbsp;
-                    <span>Downloaded: {{ invoice.pdf_download_count or 0 }} times</span>
+            <div class="pur-inv-card">
+                <div class="pur-inv-section-lbl">Invoice Details &amp; Transport</div>
+                <div class="pur-inv-company-sub mt-2">
+                    <table class="pur-inv-details-table">
+                        <tr>
+                            <td class="lbl">Payment Mode:</td>
+                            <td class="val">{{ invoice.payment_mode or '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">Transporter:</td>
+                            <td class="val">{{ invoice.transporter or '—' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="lbl">Vehicle No.:</td>
+                            <td class="val"><span class="mono">{{ invoice.vehicle_number or '—' }}</span></td>
+                        </tr>
+                        {% if invoice.vehicle_type %}
+                        <tr>
+                            <td class="lbl">Vehicle Type:</td>
+                            <td class="val">{{ invoice.vehicle_type }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.driver_name %}
+                        <tr>
+                            <td class="lbl">Driver Name:</td>
+                            <td class="val">{{ invoice.driver_name }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.weight_slip_number %}
+                        <tr>
+                            <td class="lbl">Weight Slip Ref:</td>
+                            <td class="val"><span class="mono">{{ invoice.weight_slip_number }}</span></td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.eway_bill_number %}
+                        <tr>
+                            <td class="lbl">E-Way Bill:</td>
+                            <td class="val"><span class="mono">{{ invoice.eway_bill_number }}</span></td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.reference_number %}
+                        <tr>
+                            <td class="lbl">Reference/PO:</td>
+                            <td class="val">{{ invoice.reference_number }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="lbl">Activity:</td>
+                            <td class="val" style="color:#888; font-size:11px;">
+                                Printed: {{ invoice.print_count or 0 }} | PDF: {{ invoice.pdf_download_count or 0 }}
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-    
-    <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:0;">
+
+    <!-- Items Table -->
+    <table class="pur-inv-table">
         <thead>
-            <tr style="background:#1e3a8a; color:#fff;">
-                <th style="padding:10px 12px; text-align:left; font-weight:600;">#</th>
-                <th style="padding:10px 12px; text-align:left; font-weight:600;">Material / Description</th>
-                <th style="padding:10px 12px; text-align:center; font-weight:600;">HSN</th>
-                <th style="padding:10px 12px; text-align:center; font-weight:600;">Category</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Qty</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Weight (kg)</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Rate (₹)</th>
-                <th style="padding:10px 12px; text-align:center; font-weight:600;">GST %</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Amount (₹)</th>
+            <tr>
+                <th style="text-align:left; width:32px;">#</th>
+                <th style="text-align:left;">Material / Description</th>
+                <th style="text-align:center; width:80px;">HSN</th>
+                <th style="text-align:center; width:100px;">Category</th>
+                <th style="text-align:center; width:80px;">Qty</th>
+                <th style="text-align:center; width:100px;">Weight (kg)</th>
+                <th style="text-align:right; width:90px;">Rate (₹)</th>
+                <th style="text-align:center; width:75px;">GST %</th>
+                <th style="text-align:right; width:100px;">Amount (₹)</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
-            <tr style="border-bottom:1px solid #eef2ef; {{ 'background:#f9fafb;' if loop.index is even }}">
-                <td style="padding:10px 12px; color:#999;">{{ loop.index }}</td>
-                <td style="padding:10px 12px; font-weight:500; color:#0f2318;">
-                    {{ item.material_name or '—' }} 
-                    <span style="font-size:11px; color:#888;">({{ item.uom or '' }})</span>
+            <tr>
+                <td style="color:#999;">{{ loop.index }}</td>
+                <td style="font-weight:600; color:#0f2318;">
+                    {{ item.material_name or '—' }}
+                    <span style="font-size:11px; color:#666; font-weight:normal; font-family:monospace;">({{ item.uom or '' }})</span>
                 </td>
-                <td style="padding:10px 12px; text-align:center; font-family:monospace;">{{ item.hsn_code or '—' }}</td>
-                <td style="padding:10px 12px; text-align:center; color:#555;">{{ item.category or '—' }}</td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace;">{{ "%.2f"|format(item.quantity or 0) }}</td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace;">{{ "%.3f"|format(item.weight or 0) }}</td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace;">{{ "%.2f"|format(item.rate or 0) }}</td>
-                <td style="padding:10px 12px; text-align:center;"><span style="background:#e8f0ff; color:#2563eb; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px;">{{ item.gst_percentage or 0 }}%</span></td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace; font-weight:600;">{{ "%.2f"|format(item.amount or 0) }}</td>
+                <td style="text-align:center; font-family:monospace;">{{ item.hsn_code or '—' }}</td>
+                <td style="text-align:center; color:#555;">{{ item.category or '—' }}</td>
+                <td style="text-align:center; font-family:monospace;">{{ "%.2f"|format(item.quantity or 0) }}</td>
+                <td style="text-align:center; font-family:monospace;">{{ "%.3f"|format(item.weight or 0) }}</td>
+                <td style="text-align:right; font-family:monospace;">{{ "%.2f"|format(item.rate or 0) }}</td>
+                <td style="text-align:center;">
+                    <span class="sv3-badge" style="background:#e8f0ff; color:#2563eb; font-weight:700; border-radius:6px; padding:2px 6px;">
+                        {{ item.gst_percentage or 0 }}%
+                    </span>
+                </td>
+                <td style="text-align:right; font-family:monospace; font-weight:700; color:#0f2318;">
+                    {{ "%.2f"|format(item.amount or 0) }}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    
-    <div class="d-flex justify-content-end mt-0">
-        <table style="width:320px; font-size:13px; border-top:2px solid #2563eb;">
-            <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">Subtotal</td><td style="padding:8px 12px; text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
+
+    <!-- Totals -->
+    <div class="d-flex justify-content-end mt-4">
+        <table class="pur-inv-totals">
+            <tr>
+                <td class="lbl">Subtotal</td>
+                <td class="val">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td>
+            </tr>
             {% if is_intra %}
-            <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">CGST</td><td style="padding:8px 12px; text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
-            <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">SGST</td><td style="padding:8px 12px; text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td></tr>
+            <tr>
+                <td class="lbl">CGST</td>
+                <td class="val">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td>
+            </tr>
+            <tr>
+                <td class="lbl">SGST</td>
+                <td class="val">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td>
+            </tr>
             {% else %}
-            <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">IGST</td><td style="padding:8px 12px; text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td></tr>
+            <tr>
+                <td class="lbl">IGST</td>
+                <td class="val">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td>
+            </tr>
             {% endif %}
             {% if invoice.round_off %}
-            <tr style="border-bottom:1px solid #eef2ef;"><td style="padding:8px 12px; color:#5a6a62;">Round Off</td><td style="padding:8px 12px; text-align:right; font-family:monospace; color:{{ '#dc3545' if invoice.round_off < 0 else '#198754' }};">{{ '+' if invoice.round_off >= 0 else '' }}{{ "%.2f"|format(invoice.round_off) }}</td></tr>
+            <tr>
+                <td class="lbl">Round Off</td>
+                <td class="val" style="color:{{ '#dc3545' if invoice.round_off < 0 else '#198754' }};">
+                    {{ '+' if invoice.round_off >= 0 else '' }}{{ "%.2f"|format(invoice.round_off) }}
+                </td>
+            </tr>
             {% endif %}
-            <tr style="background:#f4f7f5; border-top:2px solid #2563eb;"><td style="padding:12px 12px; font-weight:700; font-size:14px; color:#0f2318;">Grand Total</td><td style="padding:12px 12px; text-align:right; font-weight:700; font-size:17px; font-family:monospace; color:#1e40af;">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td></tr>
+            <tr class="grand-row">
+                <td class="grand-lbl">Grand Total</td>
+                <td class="grand-val">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td>
+            </tr>
         </table>
     </div>
-    {% if invoice.remarks %}<div style="margin-top:28px; padding:12px 16px; background:#f9fafb; border-left:3px solid #2563eb; border-radius:4px;"><div style="font-size:11px; font-weight:700; color:#2563eb; margin-bottom:4px; letter-spacing:1px; text-transform:uppercase;">Remarks</div><div style="font-size:13px; color:#3a5244;">{{ invoice.remarks }}</div></div>{% endif %}
-    <div class="d-flex justify-content-between align-items-end mt-5 pt-4" style="border-top:1px solid #eef2ef;"><div style="font-size:11px; color:#aaa;">This is a computer-generated purchase invoice.</div><div style="text-align:center;"><div style="width:160px; border-top:1px solid #3a5244; padding-top:8px; font-size:12px; color:#3a5244; font-weight:600;">Authorised Signatory</div><div style="font-size:11px; color:#888; margin-top:2px;">{{ company.company_name if company }}</div></div></div>
-</div>
+
+    <!-- Remarks -->
+    {% if invoice.remarks %}
+    <div style="margin-top:30px; padding:15px 20px; background:#f8fafc;
+                border-left:3.5px solid #2563eb; border-radius:6px; font-size:13px; color:#2d3748;">
+        <div style="font-size:10px; font-weight:700; color:#2563eb; letter-spacing:1px;
+                    text-transform:uppercase; margin-bottom:5px;">Remarks</div>
+        <div>{{ invoice.remarks }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Footer/Signature row -->
+    <div class="pur-inv-footer-row mt-5 pt-4">
+        <div class="generated-note">
+            This is a computer-generated purchase invoice.<br>
+            Thank you for your business!
+        </div>
+        <div class="sig-block">
+            <div class="sig-image-container">
+                <img src="/static/images/authorised_signatory.png" alt="Signature">
+            </div>
+            <div class="sig-line">Authorised Signatory</div>
+            <div class="sig-company">{{ company.company_name if company }}</div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 {% block scripts %}

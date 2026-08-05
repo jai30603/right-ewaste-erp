@@ -4,13 +4,17 @@
 <meta charset="UTF-8">
 <title>{{ cert.certificate_number }}</title>
 <style>
+  @page {
+    size: a4 portrait;
+    margin: 36pt 44pt;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-size: 11px;
     color: #1a1a1a;
     background: #fff;
-    padding: {{ template.margin_top }}pt {{ template.margin_right }}pt {{ template.margin_bottom }}pt {{ template.margin_left }}pt;
+    padding: 0;
   }
   .header {
     border-bottom: 2.5px solid #2563eb;
@@ -155,7 +159,9 @@
     <table class="header-table">
       <tr>
         <td>
-          <div class="company-name">{{ company.company_name }}</div>
+          <div class="company-logo" style="margin-bottom: 8px;">
+            <img src="/static/images/company_logo.png" style="height: 75px; width: auto;" />
+          </div>
           <div class="company-details">
             {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
             {{ company.city }}, {{ company.state }} – {{ company.pincode }}<br>
