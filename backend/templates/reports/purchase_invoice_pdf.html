@@ -4,166 +4,648 @@
 <meta charset="UTF-8">
 <title>{{ invoice.purchase_invoice_number }}</title>
 <style>
+/* ── Page ───────────────────────────────────────────────────────── */
+@page {
+  size: A4 portrait;
+  margin: 18mm 16mm 18mm 16mm;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  color: #1a1a1a;
+  background: #fff;
+}
 
-  @page {
-    size: a4 portrait;
-    margin: 36pt 44pt;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff; padding: 0; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2.5px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
-  .company-name { font-size: 18px; font-weight: 900; color: #0f2318; letter-spacing: -0.3px; }
-  .company-details { font-size: 10.5px; color: #555; line-height: 1.75; margin-top: 4px; }
-  .invoice-title { font-size: 22px; font-weight: 900; color: #2563eb; letter-spacing: 1.5px; text-align: right; }
-  .invoice-meta { text-align: right; font-size: 11px; color: #444; line-height: 1.8; margin-top: 6px; }
-  .invoice-num { font-size: 14px; font-weight: 700; color: #0f2318; font-family: monospace; }
-  .party-row { display: flex; gap: 32px; margin-bottom: 24px; }
-  .party-col { flex: 1; }
-  .section-label { font-size: 9px; font-weight: 700; color: #2563eb; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
-  .party-name { font-size: 13px; font-weight: 700; color: #0f2318; }
-  .party-detail { font-size: 10.5px; color: #555; line-height: 1.75; margin-top: 3px; }
-  table.items { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 24px; }
-  table.items thead tr { background: #1e3a8a; color: #fff; }
-  table.items thead th { padding: 6px 8px; font-weight: 600; white-space: nowrap; }
-  table.items tbody tr { border-bottom: 1px solid #eef2ef; }
-  table.items tbody tr:nth-child(even) { background: #f9fafb; }
-  table.items tbody td { padding: 6px 8px; }
-  .mono { font-family: monospace; }
-  .gst-badge { background: #e8f0ff; color: #2563eb; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; }
-  .totals-wrap { display: flex; justify-content: flex-end; margin-top: 0; border-top: 2px solid #2563eb; }
-  table.totals { width: 250px; font-size: 10.5px; border-collapse: collapse; }
-  table.totals td { padding: 5px 8px; }
-  table.totals .label { color: #555; }
-  table.totals .value { text-align: right; font-family: monospace; }
-  table.totals .grand-row { background: #f0f4ff; border-top: 2px solid #2563eb; border-bottom: 2px solid #2563eb; }
-  table.totals .grand-label { font-weight: 700; font-size: 11.5px; color: #1e3a8a; }
-  table.totals .grand-value { text-align: right; font-family: monospace; font-weight: 700; font-size: 14px; color: #2563eb; }
-  .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 36px; padding-top: 14px; border-top: 1px solid #eef2ef; }
-  .generated-note { font-size: 9.5px; color: #bbb; }
-  .sig-block { text-align: center; }
-  .sig-line { width: 150px; border-top: 1px solid #2563eb; padding-top: 6px; font-size: 11px; color: #2563eb; font-weight: 600; margin: 0 auto; }
-  .sig-company { font-size: 9.5px; color: #888; margin-top: 2px; }
+/* ── Colour tokens (Purchase = Blue) ───────────────────────────── */
+:root {
+  --accent:   #1e40af;
+  --accent2:  #2563eb;
+  --light:    #eff6ff;
+  --mid:      #bfdbfe;
+  --badge-bg: #dbeafe;
+  --badge-fg: #1e40af;
+}
+
+/* ── Utility ────────────────────────────────────────────────────── */
+.mono { font-family: 'Courier New', monospace; }
+table { border-collapse: collapse; }
+td, th { border: none; }
+
+/* ── Outer border frame ─────────────────────────────────────────── */
+.invoice-frame {
+  border: 1.5px solid #bfdbfe;
+  border-radius: 3px;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 1. HEADER BAND                                                    */
+/* ──────────────────────────────────────────────────────────────── */
+.header-band {
+  background: #fff;
+  border-bottom: 2.5px solid #1e40af;
+  padding: 14px 16px 12px 16px;
+}
+.header-table { width: 100%; }
+.header-table td { vertical-align: top; padding: 0; }
+.logo-cell { width: 72px; padding-right: 12px !important; }
+.logo-cell img { height: 72px; width: auto; display: block; }
+.company-name {
+  font-size: 17px;
+  font-weight: 900;
+  color: #0c1a3a;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+.company-tagline {
+  font-size: 8.5px;
+  color: #2563eb;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-top: 1px;
+  margin-bottom: 5px;
+}
+.company-info {
+  font-size: 9.5px;
+  color: #444;
+  line-height: 1.7;
+}
+.company-info strong { color: #222; }
+.title-cell { text-align: right; width: 200px; }
+.inv-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #1e40af;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.inv-number {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0c1a3a;
+  font-family: 'Courier New', monospace;
+  margin-top: 4px;
+}
+.inv-date {
+  font-size: 10px;
+  color: #555;
+  margin-top: 3px;
+}
+.inv-date strong { color: #222; }
+.status-badge {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 2. SUPPLIER / INVOICE DETAILS (two-column band)                  */
+/* ──────────────────────────────────────────────────────────────── */
+.info-band {
+  border-bottom: 1px solid #bfdbfe;
+}
+.info-band-table { width: 100%; }
+.info-band-table td { vertical-align: top; padding: 12px 16px; }
+.info-band-table .divider-col { width: 1px; padding: 0; background: #bfdbfe; }
+
+.section-cap {
+  font-size: 8px;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+  padding-bottom: 3px;
+  border-bottom: 1.5px solid #1e40af;
+  display: block;
+}
+.party-name-lg {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0c1a3a;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.info-line {
+  font-size: 9.5px;
+  color: #444;
+  line-height: 1.75;
+}
+.info-line strong { color: #1a1a1a; }
+
+.detail-grid { width: 100%; }
+.detail-grid td { padding: 1.5px 0; vertical-align: top; }
+.detail-grid .dlabel { font-size: 9px; color: #666; font-weight: 600; width: 110px; }
+.detail-grid .dvalue { font-size: 9.5px; color: #1a1a1a; font-weight: 500; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 3. MATERIAL TABLE                                                 */
+/* ──────────────────────────────────────────────────────────────── */
+.table-section { padding: 0; border-bottom: 1px solid #bfdbfe; }
+table.items {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5px;
+}
+table.items thead tr {
+  background: #1e40af;
+  color: #fff;
+}
+table.items thead th {
+  padding: 8px 10px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+table.items tbody tr {
+  border-bottom: 1px solid #e8f0fe;
+}
+table.items tbody tr:nth-child(even) {
+  background: #f5f8ff;
+}
+table.items tbody td {
+  padding: 7px 10px;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+table.items tfoot tr {
+  background: #e8f0fe;
+  border-top: 1.5px solid #1e40af;
+}
+table.items tfoot td {
+  padding: 6px 10px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #0c1a3a;
+}
+.gst-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+.row-number { color: #bbb; font-size: 9px; }
+.mat-name { font-weight: 600; color: #0c1a3a; }
+.mat-uom { font-size: 8.5px; color: #888; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 4. REMARKS + TOTALS (two-column)                                  */
+/* ──────────────────────────────────────────────────────────────── */
+.totals-band {
+  border-bottom: 1px solid #bfdbfe;
+}
+.totals-band-table { width: 100%; }
+.totals-band-table td { vertical-align: top; }
+.totals-band-table .divider-col { width: 1px; background: #bfdbfe; padding: 0; }
+.remarks-col { padding: 12px 16px; }
+.totals-col { padding: 12px 16px; width: 280px; }
+
+.remarks-box {
+  background: #f5f8ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 9.5px;
+  color: #3a4a6a;
+  line-height: 1.65;
+  min-height: 50px;
+}
+
+.words-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+}
+.words-label {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.words-text {
+  font-size: 9px;
+  color: #0c1a3a;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+table.totals {
+  width: 100%;
+  font-size: 9.5px;
+  border-collapse: collapse;
+}
+table.totals td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e8f0fe;
+}
+table.totals .t-label { color: #555; font-size: 9px; }
+table.totals .t-value { text-align: right; font-family: 'Courier New', monospace; color: #1a1a1a; }
+table.totals .grand-row {
+  background: #1e40af;
+  border-top: 2px solid #0c1a3a;
+}
+table.totals .grand-row td { border-bottom: none; }
+table.totals .grand-label {
+  font-weight: 700;
+  font-size: 10.5px;
+  color: #fff;
+  padding: 7px 6px;
+}
+table.totals .grand-value {
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  padding: 7px 6px;
+}
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 5. TERMS & BANK DETAILS (two-column)                              */
+/* ──────────────────────────────────────────────────────────────── */
+.bottom-band {
+  border-bottom: 1px solid #bfdbfe;
+}
+.bottom-band-table { width: 100%; }
+.bottom-band-table td { vertical-align: top; }
+.bottom-band-table .divider-col { width: 1px; background: #bfdbfe; padding: 0; }
+.terms-col { padding: 12px 16px; }
+.bank-col { padding: 12px 16px; width: 230px; }
+
+.terms-list {
+  font-size: 9px;
+  color: #444;
+  line-height: 1.8;
+  padding-left: 12px;
+}
+.terms-list li { margin-bottom: 1px; }
+
+.bank-grid { width: 100%; }
+.bank-grid td { padding: 2px 0; font-size: 9px; vertical-align: top; }
+.bank-grid .blabel { color: #666; font-weight: 600; width: 90px; }
+.bank-grid .bvalue { color: #0c1a3a; font-weight: 500; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 6. SIGNATURE BAND                                                 */
+/* ──────────────────────────────────────────────────────────────── */
+.sig-band {
+  padding: 14px 16px 10px 16px;
+  border-bottom: 1px solid #bfdbfe;
+}
+.sig-band-table { width: 100%; }
+.sig-band-table td { vertical-align: bottom; padding: 0; }
+.sig-left { font-size: 9px; color: #888; }
+.sig-right { text-align: center; width: 200px; }
+.sig-image img { height: 68px; width: auto; display: block; margin: 0 auto; }
+.sig-line {
+  border-top: 1.5px solid #1e40af;
+  padding-top: 5px;
+  margin-top: 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: 0.3px;
+}
+.sig-company { font-size: 8.5px; color: #888; margin-top: 2px; }
+
+/* ──────────────────────────────────────────────────────────────── */
+/* 7. FOOTER                                                         */
+/* ──────────────────────────────────────────────────────────────── */
+.footer-band {
+  background: #1e40af;
+  padding: 6px 16px;
+  border-radius: 0 0 2px 2px;
+}
+.footer-band-table { width: 100%; }
+.footer-band-table td { vertical-align: middle; padding: 0; }
+.footer-left {
+  font-size: 8.5px;
+  color: #bfdbfe;
+  line-height: 1.6;
+}
+.footer-left strong { color: #fff; }
+.footer-right {
+  text-align: right;
+  font-size: 8px;
+  color: #93c5fd;
+  line-height: 1.6;
+}
+
+@media print {
+  .invoice-frame { border: 1px solid #bbb; }
+}
 </style>
 </head>
 <body>
-<!-- Letterhead -->
-<div class="header">
-  <table style="width: 100%; border: none;">
-    <tr>
-      <td style="width: 60%; vertical-align: top; border: none;">
-        <div class="company-logo" style="margin-bottom: 8px;">
-          <img src="/static/images/company_logo.png" style="height: 75px; width: auto;" />
-        </div>
-        {% if company %}<div class="company-details">{{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>{{ company.city }}, {{ company.state }} – {{ company.pincode }}<br><strong>GSTIN:</strong> {{ company.gstin or '—' }} &nbsp;|&nbsp; <strong>PAN:</strong> {{ company.pan or '—' }}{% if company.phone %} &nbsp;|&nbsp; <strong>Ph:</strong> {{ company.phone }}{% endif %}</div>{% endif %}
-      </td>
-      <td style="width: 40%; text-align: right; vertical-align: top; border: none;">
-        <div class="invoice-title">PURCHASE INVOICE</div>
-        <div class="invoice-meta">
-          <div class="invoice-num">{{ invoice.purchase_invoice_number }}</div>
-          <div><strong>Date:</strong> {{ invoice.invoice_date }}</div>
-          {% if invoice.status %}
-          <div style="margin-top:4px;"><span class="badge-confirmed" style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:20px; font-size:9px; font-weight:700;">✓ {{ invoice.status }}</span></div>
-          {% endif %}
-        </div>
-      </td>
-    </tr>
-  </table>
-</div>
 
-<!-- Bill To / Transport -->
-<div class="party-row">
-  <table style="width: 100%; border: none;">
-    <tr>
-      <td style="width: 50%; vertical-align: top; border: none;">
-        <div class="section-label">Supplier</div>
-        {% if supplier %}<div class="party-name">{{ supplier.company_name }}</div><div class="party-detail">{% if supplier.billing_address %}{{ supplier.billing_address }}<br>{% endif %}{{ supplier.city }}{% if supplier.state %}, {{ supplier.state }}{% endif %}{% if supplier.pincode %} – {{ supplier.pincode }}{% endif %}<br>{% if supplier.gstin %}<strong>GSTIN:</strong> {{ supplier.gstin }}<br>{% endif %}{% if supplier.phone %}<strong>Ph:</strong> {{ supplier.phone }}{% endif %}</div>{% endif %}
-      </td>
-      <td style="width: 50%; vertical-align: top; border: none;">
-        <div class="section-label">Invoice Details &amp; Transport</div>
-        <div class="party-detail">
-          <strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}<br>
-          <strong>Transporter:</strong> {{ invoice.transporter or '—' }}<br>
-          <strong>Vehicle No.:</strong> <span class="mono">{{ invoice.vehicle_number or '—' }}</span><br>
-          {% if invoice.eway_bill_number %}
-          <strong>E-Way Bill:</strong> <span class="mono">{{ invoice.eway_bill_number }}</span><br>
-          {% endif %}
-          {% if invoice.reference_number %}
-          <strong>Reference/PO No:</strong> {{ invoice.reference_number }}<br>
-          {% endif %}
-          <div style="margin-top:6px; color:#888; font-size:9.5px;">
-            Printed: {{ invoice.print_count or 0 }} | PDF: {{ invoice.pdf_download_count or 0 }}
+<div class="invoice-frame">
+
+  <!-- ① HEADER ─────────────────────────────────────────────────── -->
+  <div class="header-band">
+    <table class="header-table">
+      <tr>
+        <td class="logo-cell">
+          <img src="/static/images/company_logo.png" alt="Logo" />
+        </td>
+        <td>
+          {% if company %}
+          <div class="company-name">{{ company.company_name }}</div>
+          <div class="company-tagline">ITAD &amp; E-Waste Recycling</div>
+          <div class="company-info">
+            {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
+            {{ company.city }}{% if company.state %}, {{ company.state }}{% endif %}{% if company.pincode %} – {{ company.pincode }}{% endif %}<br>
+            <strong>GSTIN:</strong> {{ company.gstin or '—' }} &nbsp;|&nbsp;
+            <strong>PAN:</strong> {{ company.pan or '—' }}
+            {% if company.cin %} &nbsp;|&nbsp; <strong>CIN:</strong> {{ company.cin }}{% endif %}<br>
+            {% if company.phone %}<strong>Ph:</strong> {{ company.phone }}{% endif %}
+            {% if company.email %} &nbsp;|&nbsp; {{ company.email }}{% endif %}
           </div>
-        </div>
-      </td>
-    </tr>
-  </table>
-</div>
-<table class="items">
-  <thead>
-    <tr>
-      <th style="text-align:left; width:28px;">#</th>
-      <th style="text-align:left;">Material / Description</th>
-      <th style="text-align:center;">HSN</th>
-      <th style="text-align:center;">Category</th>
-      <th style="text-align:center;">Qty</th>
-      <th style="text-align:center;">Weight (kg)</th>
-      <th style="text-align:right;">Rate (Rs.)</th>
-      <th style="text-align:center;">GST %</th>
-      <th style="text-align:right;">Amount (Rs.)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for item in items %}
-    <tr>
-      <td style="color:#999;">{{ loop.index }}</td>
-      <td style="font-weight:500;">
-        {{ item.material_name or '—' }} 
-        <span style="font-size:9.5px; color:#888;">({{ item.uom or '' }})</span>
-      </td>
-      <td class="mono" style="text-align:center;">{{ item.hsn_code or '—' }}</td>
-      <td style="text-align:center; color:#555;">{{ item.category or '—' }}</td>
-      <td class="mono" style="text-align:center;">{{ "%.2f"|format(item.quantity or 0) }}</td>
-      <td class="mono" style="text-align:center;">{{ "%.3f"|format(item.weight or 0) }}</td>
-      <td class="mono" style="text-align:right;">{{ "%.2f"|format(item.rate or 0) }}</td>
-      <td style="text-align:center;"><span class="gst-badge">{{ item.gst_percentage or 0 }}%</span></td>
-      <td class="mono" style="text-align:right; font-weight:600;">{{ "%.2f"|format(item.amount or 0) }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<div class="totals-wrap">
-  <table class="totals">
-    <tr><td class="label">Subtotal</td><td class="value">Rs. {{ "%.2f"|format(invoice.subtotal or 0) }}</td></tr>
-    {% if is_intra %}
-    <tr><td class="label">CGST</td><td class="value">Rs. {{ "%.2f"|format(invoice.cgst or 0) }}</td></tr>
-    <tr><td class="label">SGST</td><td class="value">Rs. {{ "%.2f"|format(invoice.sgst or 0) }}</td></tr>
-    {% else %}
-    <tr><td class="label">IGST</td><td class="value">Rs. {{ "%.2f"|format(invoice.igst or 0) }}</td></tr>
-    {% endif %}
-    {% if invoice.round_off %}
-    <tr><td class="label">Round Off</td><td class="value">{{ '+' if invoice.round_off >= 0 else '' }}{{ "%.2f"|format(invoice.round_off) }}</td></tr>
-    {% endif %}
-    <tr class="grand-row"><td class="grand-label">Grand Total</td><td class="grand-value">Rs. {{ "%.2f"|format(invoice.grand_total or 0) }}</td></tr>
-  </table>
-</div>
-{% if invoice.remarks %}<div style="margin-top:20px; padding:10px 14px; background:#f9fafb; border-left:3px solid #2563eb; border-radius:4px; font-size:11px; color:#3a5244;"><div style="font-size:9px; font-weight:700; color:#2563eb; margin-bottom:3px; letter-spacing:1px; text-transform:uppercase;">Remarks</div><div>{{ invoice.remarks }}</div></div>{% endif %}
-<div class="footer" style="margin-top: 30px; border-top: 1.5px solid #eef2ef; padding-top: 8px;">
-  <table style="width: 100%; border: none;">
-    <tr>
-      <td style="vertical-align: bottom; border: none; font-size: 9.5px; color: #bbb;">
-        This is a computer-generated purchase invoice.
-      </td>
-      <td style="text-align: right; vertical-align: bottom; border: none; width: 220px;">
-        <div class="sig-block">
-          <div style="margin-bottom: -25px;">
-            <img src="/static/images/authorised_signatory.png" style="height: 70px; width: auto;" />
+          {% endif %}
+        </td>
+        <td class="title-cell">
+          <div class="inv-title">PURCHASE INVOICE</div>
+          <div class="inv-number">{{ invoice.purchase_invoice_number }}</div>
+          <div class="inv-date"><strong>Date:</strong> {{ invoice.invoice_date }}</div>
+          {% if invoice.payment_mode %}
+          <div class="inv-date"><strong>Mode:</strong> {{ invoice.payment_mode }}</div>
+          {% endif %}
+          {% if invoice.status %}
+          <div><span class="status-badge">✓ {{ invoice.status }}</span></div>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div><!-- /header-band -->
+
+  <!-- ② SUPPLIER / INVOICE DETAILS ────────────────────────────── -->
+  <div class="info-band">
+    <table class="info-band-table">
+      <tr>
+        <td style="width:50%;">
+          <span class="section-cap">Supplier</span>
+          {% if supplier %}
+          <div class="party-name-lg">{{ supplier.company_name }}</div>
+          <div class="info-line">
+            {% if supplier.billing_address %}{{ supplier.billing_address }}<br>{% endif %}
+            {{ supplier.city }}{% if supplier.state %}, {{ supplier.state }}{% endif %}{% if supplier.pincode %} – {{ supplier.pincode }}{% endif %}<br>
+            {% if supplier.gstin %}<strong>GSTIN:</strong> {{ supplier.gstin }}<br>{% endif %}
+            {% if supplier.phone %}<strong>Phone:</strong> {{ supplier.phone }}{% endif %}
+          </div>
+          {% endif %}
+        </td>
+        <td class="divider-col"></td>
+        <td style="width:50%;">
+          <span class="section-cap">Invoice Details</span>
+          <table class="detail-grid">
+            <tr>
+              <td class="dlabel">Invoice Number</td>
+              <td class="dvalue mono">{{ invoice.purchase_invoice_number }}</td>
+            </tr>
+            <tr>
+              <td class="dlabel">Invoice Date</td>
+              <td class="dvalue">{{ invoice.invoice_date }}</td>
+            </tr>
+            <tr>
+              <td class="dlabel">Payment Mode</td>
+              <td class="dvalue">{{ invoice.payment_mode or '—' }}</td>
+            </tr>
+            <tr>
+              <td class="dlabel">Transporter</td>
+              <td class="dvalue">{{ invoice.transporter or '—' }}</td>
+            </tr>
+            <tr>
+              <td class="dlabel">Vehicle No.</td>
+              <td class="dvalue mono">{{ invoice.vehicle_number or '—' }}</td>
+            </tr>
+            {% if invoice.eway_bill_number %}
+            <tr>
+              <td class="dlabel">E-Way Bill</td>
+              <td class="dvalue mono">{{ invoice.eway_bill_number }}</td>
+            </tr>
+            {% endif %}
+            {% if invoice.reference_number %}
+            <tr>
+              <td class="dlabel">Reference / PO</td>
+              <td class="dvalue">{{ invoice.reference_number }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td class="dlabel">GST Type</td>
+              <td class="dvalue">{{ 'Intra-State (CGST + SGST)' if is_intra else 'Inter-State (IGST)' }}</td>
+            </tr>
+            <tr>
+              <td class="dlabel" style="color:#bbb; font-size:8px;">Printed / PDF</td>
+              <td class="dvalue" style="color:#bbb; font-size:8px;">{{ invoice.print_count or 0 }} / {{ invoice.pdf_download_count or 0 }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div><!-- /info-band -->
+
+  <!-- ③ MATERIAL TABLE ─────────────────────────────────────────── -->
+  <div class="table-section">
+    <table class="items">
+      <thead>
+        <tr>
+          <th style="text-align:center; width:26px;">#</th>
+          <th style="text-align:left;">Material / Description</th>
+          <th style="text-align:center;">HSN</th>
+          <th style="text-align:center;">Category</th>
+          <th style="text-align:center;">Qty</th>
+          <th style="text-align:center;">Weight (kg)</th>
+          <th style="text-align:right;">Rate (₹)</th>
+          <th style="text-align:center;">GST %</th>
+          <th style="text-align:right;">Amount (₹)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="row-number" style="text-align:center;">{{ loop.index }}</td>
+          <td>
+            <span class="mat-name">{{ item.material_name or '—' }}</span>
+            {% if item.uom %}<br><span class="mat-uom">{{ item.uom }}</span>{% endif %}
+          </td>
+          <td class="mono" style="text-align:center; font-size:9px;">{{ item.hsn_code or '—' }}</td>
+          <td style="text-align:center; color:#555; font-size:9px;">{{ item.category or '—' }}</td>
+          <td class="mono" style="text-align:center;">{{ "%.2f"|format(item.quantity or 0) }}</td>
+          <td class="mono" style="text-align:center;">{{ "%.3f"|format(item.weight or 0) }}</td>
+          <td class="mono" style="text-align:right;">{{ "%.2f"|format(item.rate or 0) }}</td>
+          <td style="text-align:center;"><span class="gst-badge">{{ item.gst_percentage or 0 }}%</span></td>
+          <td class="mono" style="text-align:right; font-weight:700;">{{ "%.2f"|format(item.amount or 0) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align:right; font-size:8.5px; color:#666;">Total Items: {{ items|length }}</td>
+          <td class="mono" style="text-align:center; font-weight:700;">
+            {{ "%.2f"|format(items|sum(attribute='quantity') or 0) }}
+          </td>
+          <td class="mono" style="text-align:center; font-weight:700;">
+            {{ "%.3f"|format(items|sum(attribute='weight') or 0) }}
+          </td>
+          <td></td>
+          <td></td>
+          <td class="mono" style="text-align:right; font-weight:700;">
+            {{ "%.2f"|format(items|sum(attribute='amount') or 0) }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div><!-- /table-section -->
+
+  <!-- ④ REMARKS + TOTALS ───────────────────────────────────────── -->
+  <div class="totals-band">
+    <table class="totals-band-table">
+      <tr>
+        <td class="remarks-col">
+          <span class="section-cap">Remarks</span>
+          <div class="remarks-box">
+            {% if invoice.remarks %}
+            {{ invoice.remarks }}
+            {% else %}
+            <span style="color:#bbb; font-style:italic;">No remarks.</span>
+            {% endif %}
+          </div>
+        </td>
+        <td class="divider-col"></td>
+        <td class="totals-col">
+          <span class="section-cap">Amount Summary</span>
+          <!-- Amount in Words -->
+          <div class="words-box">
+            <div class="words-label">Amount in Words</div>
+            <div class="words-text">{{ invoice.grand_total | inr_words }}</div>
+          </div>
+          <!-- Totals -->
+          <table class="totals">
+            <tr>
+              <td class="t-label">Subtotal</td>
+              <td class="t-value">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td>
+            </tr>
+            {% if is_intra %}
+            <tr>
+              <td class="t-label">CGST</td>
+              <td class="t-value">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td>
+            </tr>
+            <tr>
+              <td class="t-label">SGST</td>
+              <td class="t-value">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td class="t-label">IGST</td>
+              <td class="t-value">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td>
+            </tr>
+            {% endif %}
+            {% if invoice.discount %}
+            <tr>
+              <td class="t-label">Discount</td>
+              <td class="t-value" style="color:#c0392b;">– ₹ {{ "%.2f"|format(invoice.discount or 0) }}</td>
+            </tr>
+            {% endif %}
+            {% if invoice.round_off %}
+            <tr>
+              <td class="t-label">Round Off</td>
+              <td class="t-value" style="color:{{ '#198754' if (invoice.round_off or 0) >= 0 else '#c0392b' }};">
+                {{ '+' if (invoice.round_off or 0) >= 0 else '' }}{{ "%.2f"|format(invoice.round_off or 0) }}
+              </td>
+            </tr>
+            {% endif %}
+            <tr class="grand-row">
+              <td class="grand-label">Grand Total</td>
+              <td class="grand-value">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div><!-- /totals-band -->
+
+  <!-- ⑤ TERMS & CONDITIONS / BANK DETAILS ─────────────────────── -->
+  <div class="bottom-band">
+    <table class="bottom-band-table">
+      <tr>
+        <td class="terms-col">
+          <span class="section-cap">Terms &amp; Conditions</span>
+          <ol class="terms-list">
+            <li>Goods once purchased and received cannot be returned without prior written approval.</li>
+            <li>Payment is due as per agreed terms; interest applicable on delayed payments.</li>
+            <li>All disputes are subject to local jurisdiction only.</li>
+            <li>E-waste materials are recycled in compliance with E-Waste (Management) Rules.</li>
+            <li>No warranty implied unless expressly stated in writing.</li>
+          </ol>
+        </td>
+        <td class="divider-col"></td>
+        <td class="bank-col">
+          {% if company %}
+          <span class="section-cap">Bank Details</span>
+          <table class="bank-grid">
+            <tr><td class="blabel">Bank Name</td><td class="bvalue">—</td></tr>
+            <tr><td class="blabel">Account No.</td><td class="bvalue mono">—</td></tr>
+            <tr><td class="blabel">IFSC Code</td><td class="bvalue mono">—</td></tr>
+            <tr><td class="blabel">Branch</td><td class="bvalue">—</td></tr>
+            <tr><td class="blabel">Account Type</td><td class="bvalue">Current</td></tr>
+          </table>
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div><!-- /bottom-band -->
+
+  <!-- ⑥ SIGNATURE BAND ────────────────────────────────────────── -->
+  <div class="sig-band">
+    <table class="sig-band-table">
+      <tr>
+        <td class="sig-left">
+          This is a computer-generated invoice and does not require a physical signature<br>
+          unless accompanied by an authorised stamp.
+        </td>
+        <td class="sig-right">
+          <div class="sig-image">
+            <img src="/static/images/authorised_signatory.png" alt="Signature" />
           </div>
           <div class="sig-line">Authorised Signatory</div>
-          <div class="sig-company">{{ company.company_name if company }}</div>
-        </div>
-      </td>
-    </tr>
-  </table>
-</div>
+          <div class="sig-company">{{ company.company_name if company else '' }}</div>
+        </td>
+      </tr>
+    </table>
+  </div><!-- /sig-band -->
+
+  <!-- ⑦ FOOTER ─────────────────────────────────────────────────── -->
+  <div class="footer-band">
+    <table class="footer-band-table">
+      <tr>
+        <td class="footer-left">
+          <strong>{{ company.company_name if company else 'Right Ewaste Recycle Pvt. Ltd.' }}</strong>
+          {% if company and company.website %} &nbsp;|&nbsp; {{ company.website }}{% endif %}
+          {% if company and company.email %} &nbsp;|&nbsp; {{ company.email }}{% endif %}
+          {% if company and company.phone %} &nbsp;|&nbsp; {{ company.phone }}{% endif %}
+        </td>
+        <td class="footer-right">
+          Computer Generated Invoice &nbsp;|&nbsp; Right Ewaste ERP v5.0
+        </td>
+      </tr>
+    </table>
+  </div><!-- /footer-band -->
+
+</div><!-- /invoice-frame -->
+
 </body>
 </html>

@@ -39,6 +39,38 @@ from security import auth_bp, configure_security
 from config.business import PROCESSING_WEIGHT_TOLERANCE
 
 app = Flask(__name__)
+
+
+def _inr_words(amount):
+    """Convert a number to Indian Rupees in words (display helper)."""
+    try:
+        amount = float(amount or 0)
+        rupees = int(amount)
+        paise = round((amount - rupees) * 100)
+        ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
+                'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen',
+                'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen']
+        tens_w = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty',
+                  'Sixty', 'Seventy', 'Eighty', 'Ninety']
+
+        def two_dig(n):
+            return ones[n] if n < 20 else tens_w[n // 10] + (' ' + ones[n % 10] if n % 10 else '')
+
+        def conv(n):
+            if n == 0:        return ''
+            if n < 20:        return ones[n]
+            if n < 100:       return two_dig(n)
+            if n < 1_000:     return ones[n // 100] + ' Hundred' + (' ' + conv(n % 100) if n % 100 else '')
+            if n < 1_00_000:  return conv(n // 1_000) + ' Thousand' + (' ' + conv(n % 1_000) if n % 1_000 else '')
+            if n < 1_00_00_000: return conv(n // 1_00_000) + ' Lakh' + (' ' + conv(n % 1_00_000) if n % 1_00_000 else '')
+            return conv(n // 1_00_00_000) + ' Crore' + (' ' + conv(n % 1_00_00_000) if n % 1_00_00_000 else '')
+
+        result = 'INR ' + (conv(rupees) or 'Zero') + ' Rupees'
+        if paise:
+            result += ' and ' + two_dig(paise) + ' Paise'
+        return result + ' Only'
+    except Exception:
+        return ''
 environment = os.environ.get("APP_ENV", "development").strip().lower()
 session_secret = os.environ.get("SESSION_SECRET")
 if not session_secret:
@@ -48,6 +80,7 @@ if not session_secret:
 app.config["SECRET_KEY"] = session_secret
 app.config["PROCESSING_WEIGHT_TOLERANCE"] = PROCESSING_WEIGHT_TOLERANCE
 configure_security(app)
+app.jinja_env.filters['inr_words'] = _inr_words
 initialize_database()
 
 @app.route('/sw.js')
