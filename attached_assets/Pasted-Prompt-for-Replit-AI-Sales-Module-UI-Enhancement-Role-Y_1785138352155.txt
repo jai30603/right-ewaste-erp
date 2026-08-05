@@ -1,0 +1,522 @@
+Prompt for Replit AI – Sales Module UI Enhancement
+Role
+
+You are a Senior Enterprise UX Designer and Senior React + Tailwind CSS Frontend Engineer.
+
+Your task is to redesign the Sales Module of the Right Ewaste ERP into a professional enterprise-grade experience.
+
+This is STRICTLY a frontend UI/UX enhancement.
+
+Do NOT modify:
+
+Backend
+APIs
+Database
+Business Logic
+Validation
+Invoice Generation
+Authentication
+Permissions
+Existing functionality
+
+Improve only the presentation and user experience.
+
+Design Goal
+
+The Sales Module should feel comparable to:
+
+SAP Sales
+Oracle Fusion
+Odoo Enterprise
+Zoho Books
+Microsoft Dynamics 365
+Stripe Dashboard
+
+The interface should be optimized for users creating and managing invoices all day.
+
+Sales Module Layout
+
+Redesign the page using a clean enterprise layout.
+
+-------------------------------------------------------
+
+Breadcrumb
+
+Sales
+
+Create Invoice Button
+
+Search
+
+Filters
+
+-------------------------------------------------------
+
+Sales Summary Cards
+
+-------------------------------------------------------
+
+Sales Invoice Table
+
+-------------------------------------------------------
+
+Pagination
+
+-------------------------------------------------------
+Sales Dashboard Cards
+
+Create modern KPI cards.
+
+Examples:
+
+Total Sales
+Today's Sales
+Pending Invoices
+Paid Invoices
+Cancelled Invoices
+Monthly Revenue
+
+Each card should include:
+
+Large value
+Label
+Icon
+Trend percentage
+Mini chart
+Hover animation
+Toolbar
+
+Modern toolbar.
+
+Include:
+
+Search
+
+Filter
+
+Export
+
+Refresh
+
+Create Invoice
+
+Bulk Actions
+
+Column Visibility
+
+Responsive layout.
+
+Sales Table
+
+Modern enterprise data table.
+
+Columns:
+
+Invoice Number
+
+Customer
+
+Invoice Date
+
+Amount
+
+Status
+
+Payment Status
+
+Created By
+
+Actions
+
+Features:
+
+Sticky Header
+
+Column Sorting
+
+Filtering
+
+Search
+
+Pagination
+
+Hover Effect
+
+Status Badges
+
+Row Selection
+
+Bulk Actions
+
+Responsive
+
+Status Badges
+
+Replace plain text with badges.
+
+Examples:
+
+Draft
+
+Pending
+
+Paid
+
+Cancelled
+
+Approved
+
+Use subtle enterprise colors.
+
+Row Actions
+
+Modern action menu.
+
+Include:
+
+View
+
+Edit
+
+Duplicate
+
+Print
+
+Download PDF
+
+Delete
+
+Use a clean dropdown menu.
+
+Create Invoice Page
+
+Completely redesign the form.
+
+Layout:
+
+-------------------------------------------------------
+
+Customer Information
+
+-------------------------------------------------------
+
+Invoice Details
+
+-------------------------------------------------------
+
+Materials Table
+
+-------------------------------------------------------
+
+Totals
+
+-------------------------------------------------------
+
+Notes
+
+-------------------------------------------------------
+
+Attachments
+
+-------------------------------------------------------
+
+Save
+
+Save & Print
+
+Save & Send
+
+-------------------------------------------------------
+Customer Section
+
+Modern card.
+
+Include:
+
+Customer Search
+
+Customer Details
+
+GST Number
+
+Contact
+
+Address
+
+Quick Customer Creation
+
+Material Table
+
+Professional editable grid.
+
+Columns:
+
+Material
+
+Description
+
+Quantity
+
+Unit
+
+Rate
+
+Tax
+
+Amount
+
+Features:
+
+Inline editing
+
+Auto calculations
+
+Keyboard navigation
+
+Row duplication
+
+Delete row
+
+Add row
+
+Responsive
+
+Sticky totals
+
+Totals Card
+
+Beautiful summary card.
+
+Show:
+
+Subtotal
+
+Discount
+
+Tax
+
+Round Off
+
+Grand Total
+
+Use clear typography.
+
+Attachments
+
+Modern upload component.
+
+Drag & Drop
+
+Browse
+
+Upload Progress
+
+File Preview
+
+Multiple Upload
+
+Invoice Preview
+
+Professional preview.
+
+A4 layout.
+
+Print friendly.
+
+Download PDF.
+
+Sales Details Page
+
+Modern invoice viewer.
+
+Cards:
+
+Customer
+
+Invoice
+
+Payment
+
+Timeline
+
+Attachments
+
+Activity Log
+
+Filters
+
+Advanced filter panel.
+
+Date Range
+
+Status
+
+Customer
+
+Amount
+
+Created By
+
+Payment Status
+
+Reset Filters
+
+Search
+
+Instant search.
+
+Placeholder:
+
+Search by invoice number, customer or material...
+
+Empty State
+
+Example:
+
+No Sales Invoices Found
+
+Create your first sales invoice to start recording sales.
+
+Loading State
+
+Use skeleton loaders.
+
+Avoid generic spinners.
+
+Buttons
+
+Primary
+
+Secondary
+
+Outline
+
+Danger
+
+Ghost
+
+Loading
+
+Disabled
+
+Cards
+
+Rounded
+
+Clean shadows
+
+Consistent padding
+
+Professional spacing
+
+Tables
+
+Enterprise quality.
+
+Sticky Header
+
+Search
+
+Filter
+
+Sort
+
+Pagination
+
+Bulk Selection
+
+Column Resize (if possible)
+
+Responsive
+
+Animations
+
+Subtle only.
+
+Hover
+
+Dropdown
+
+Modal
+
+Table
+
+Cards
+
+Dark Mode
+
+Fully supported.
+
+Professional appearance.
+
+Accessibility
+
+Keyboard friendly
+
+Focus states
+
+Proper contrast
+
+ARIA labels
+
+Performance
+
+Reuse components.
+
+Optimize rendering.
+
+Lazy loading.
+
+Reusable Components
+
+Create reusable UI where possible.
+
+Examples:
+
+Sales Card
+
+Invoice Status Badge
+
+Invoice Table
+
+Toolbar
+
+Customer Card
+
+Totals Card
+
+Upload Component
+
+Invoice Header
+
+Page Header
+
+Confirmation Dialog
+
+Preserve Existing Functionality
+
+Everything currently working must continue working.
+
+Do NOT change:
+
+Invoice logic
+
+Tax calculation
+
+Database
+
+Backend
+
+Business rules
+
+Validation
+
+Routes
+
+APIs
+
+Only redesign the interface.
+
+Final Goal
+
+The Sales Module should feel like premium ERP software used by finance teams every day. Users should be able to create, search, manage, and review invoices efficiently with a clean, modern, responsive, and enterprise-grade interface that follows the Right Ewaste ERP design system.

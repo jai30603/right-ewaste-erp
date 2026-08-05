@@ -5,92 +5,102 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="/sales" class="text-decoration-none text-muted">Sales Invoice</a></li>
+<li class="breadcrumb-item"><a href="/sales" class="text-decoration-none text-muted">Sales Invoices</a></li>
 <li class="breadcrumb-item active">{{ invoice.invoice_number }}</li>
 {% endblock %}
 
-{% from "shared/_page_header.html" import page_header %}
-
 {% block content %}
+<link href="/static/css/sales.css?v=1" rel="stylesheet">
 
-{{ page_header(
-    title="Sales Invoice: " ~ invoice.invoice_number,
-    subtitle="Official outward tax invoice and material dispatch record.",
-    back_url="/sales",
-    actions=[
-        {'label': 'Print Invoice', 'url': 'javascript:window.print()', 'icon': 'bi-printer', 'class': 'btn-outline-secondary'},
-        {'label': 'Download PDF', 'url': '/sales/' ~ invoice.id ~ '/pdf', 'icon': 'bi-file-earmark-pdf', 'class': 'btn-primary'}
-    ]
-) }}
+<!-- ── Action Bar ─────────────────────────────────────────────── -->
+<div class="sv3-invoice-action-bar">
+    <a href="/sales" class="sv3-tb-btn">
+        <i class="bi bi-arrow-left"></i> Back to List
+    </a>
+    <div class="sv3-tb-sep"></div>
+    <a href="/sales/{{ invoice.id }}/edit" class="sv3-tb-btn">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+    <a href="/sales/{{ invoice.id }}/duplicate" class="sv3-tb-btn">
+        <i class="bi bi-files"></i> Duplicate
+    </a>
+    <button class="sv3-tb-btn" onclick="window.print()">
+        <i class="bi bi-printer"></i> Print
+    </button>
+    <a href="/sales/{{ invoice.id }}/pdf" class="sv3-tb-btn primary" style="background:#dc3545; border-color:#dc3545; color:#fff;">
+        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+    </a>
+    <button class="sv3-tb-btn" onclick="document.getElementById('email-modal').style.display='flex'" style="margin-left:auto;">
+        <i class="bi bi-envelope"></i> Email
+    </button>
+</div>
 
-<!-- ── Invoice card ───────────────────────────────────────────────────── -->
-<div class="erp-card" id="invoice-printable">
-<div class="erp-card-body" style="padding:40px 48px;">
+<!-- ── Invoice Wrapper ────────────────────────────────────────── -->
+<div class="sv3-invoice-wrap" id="invoice-printable">
 
     <!-- Letterhead -->
-    <div class="d-flex justify-content-between align-items-start mb-4 pb-3"
-         style="border-bottom:2px solid #1a3a28;">
-
+    <div class="sv3-inv-letterhead">
         <div>
-            <div style="font-size:22px; font-weight:800; color:#0f2318; letter-spacing:-0.3px; line-height:1.1;">
+            <div class="sv3-inv-company-name">
                 {{ company.company_name if company else 'RIGHT EWASTE RECYCLE PVT LTD' }}
             </div>
             {% if company %}
-            <div style="font-size:12px; color:#5a6a62; margin-top:5px; line-height:1.7;">
+            <div class="sv3-inv-company-sub">
                 {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
                 {{ company.city }}, {{ company.state }} – {{ company.pincode }}<br>
                 <strong>GSTIN:</strong> {{ company.gstin or '—' }}
-                &nbsp;|&nbsp;
-                <strong>PAN:</strong> {{ company.pan or '—' }}
+                &nbsp;|&nbsp;<strong>PAN:</strong> {{ company.pan or '—' }}
                 {% if company.phone %}&nbsp;|&nbsp;<strong>Ph:</strong> {{ company.phone }}{% endif %}
             </div>
             {% endif %}
         </div>
-
-        <div style="text-align:right;">
-            <div style="font-size:26px; font-weight:900; color:#2d6a4f; letter-spacing:1px;">
-                TAX INVOICE
-            </div>
-            <div style="margin-top:8px; font-size:13px; color:#3a5244;">
-                <div><strong>Invoice No.</strong></div>
-                <div style="font-size:15px; font-weight:700; color:#0f2318; font-family:monospace;">
-                    {{ invoice.invoice_number }}
-                </div>
-                <div style="margin-top:4px;"><strong>Date:</strong> {{ invoice.invoice_date }}</div>
+        <div>
+            <div class="sv3-inv-title">TAX INVOICE</div>
+            <div class="sv3-inv-meta">
+                <div style="font-size:11px; color:#8aa09a; text-transform:uppercase; letter-spacing:.8px;">Invoice No.</div>
+                <div class="sv3-inv-num">{{ invoice.invoice_number }}</div>
+                <div style="margin-top:6px;"><strong>Date:</strong> {{ invoice.invoice_date }}</div>
                 {% if invoice.status == 'CONFIRMED' %}
-                <div style="margin-top:6px;">
-                    <span style="background:#d1fae5; color:#065f46; font-size:11px; font-weight:700;
-                                 padding:3px 10px; border-radius:20px; letter-spacing:.5px;">
-                        ✓ CONFIRMED
-                    </span>
+                <div style="margin-top:8px;">
+                    <span class="sv3-badge sv3-badge-confirmed">Confirmed</span>
+                </div>
+                {% elif invoice.status == 'PAID' %}
+                <div style="margin-top:8px;">
+                    <span class="sv3-badge sv3-badge-paid">Paid</span>
+                </div>
+                {% elif invoice.status == 'DRAFT' %}
+                <div style="margin-top:8px;">
+                    <span class="sv3-badge sv3-badge-draft">Draft</span>
+                </div>
+                {% elif invoice.status == 'CANCELLED' %}
+                <div style="margin-top:8px;">
+                    <span class="sv3-badge sv3-badge-cancelled">Cancelled</span>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Bill To / Transport -->
+    <!-- Bill To + Transport -->
     <div class="row mb-4">
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#3cb371; letter-spacing:1.5px;
-                        text-transform:uppercase; margin-bottom:8px;">Bill To</div>
+            <div class="sv3-inv-section-lbl">Bill To</div>
             {% if party %}
-            <div style="font-size:14px; font-weight:700; color:#0f2318;">
-                {{ party.company_name }}
-            </div>
-            <div style="font-size:12px; color:#5a6a62; line-height:1.8; margin-top:4px;">
+            <div class="sv3-inv-bill-name">{{ party.company_name }}</div>
+            <div class="sv3-inv-bill-sub">
                 {% if party.billing_address %}{{ party.billing_address }}<br>{% endif %}
                 {{ party.city }}{% if party.state %}, {{ party.state }}{% endif %}
-                {% if party.pincode %} – {{ party.pincode }}{% endif %}<br>
-                {% if party.gstin %}<strong>GSTIN:</strong> {{ party.gstin }}<br>{% endif %}
-                {% if party.phone %}<strong>Ph:</strong> {{ party.phone }}{% endif %}
+                {% if party.pincode %} – {{ party.pincode }}{% endif %}
+                {% if party.gstin %}<br><strong>GSTIN:</strong> {{ party.gstin }}{% endif %}
+                {% if party.phone %}<br><strong>Ph:</strong> {{ party.phone }}{% endif %}
             </div>
+            {% else %}
+            <div class="sv3-inv-bill-sub" style="color:#aaa;">No party information</div>
             {% endif %}
         </div>
         <div class="col-md-6">
-            <div style="font-size:10px; font-weight:700; color:#2e7d32; letter-spacing:1.5px;
-                        text-transform:uppercase; margin-bottom:8px;">Invoice Details & Transport</div>
-            <div style="font-size:12px; color:#5a6a62; line-height:1.8;">
+            <div class="sv3-inv-section-lbl">Invoice Details & Transport</div>
+            <div class="sv3-inv-bill-sub">
                 <div><strong>Payment Mode:</strong> {{ invoice.payment_mode or '—' }}</div>
                 <div><strong>Transporter:</strong> {{ invoice.transporter or '—' }}</div>
                 <div><strong>Vehicle No.:</strong> <span style="font-family:monospace;">{{ invoice.vehicle_number or '—' }}</span></div>
@@ -98,53 +108,46 @@
                 <div><strong>E-Way Bill:</strong> <span style="font-family:monospace;">{{ invoice.eway_bill_number }}</span></div>
                 {% endif %}
                 {% if invoice.reference_number %}
-                <div><strong>Reference/PO No:</strong> {{ invoice.reference_number }}</div>
+                <div><strong>Reference / PO:</strong> {{ invoice.reference_number }}</div>
                 {% endif %}
-                <div class="mt-2 text-muted" style="font-size:11px;">
-                    <span>Printed: {{ invoice.print_count or 0 }} times</span> &nbsp;|&nbsp;
-                    <span>Downloaded: {{ invoice.pdf_download_count or 0 }} times</span>
+                <div style="margin-top:8px; font-size:11px; color:#aaa;">
+                    Printed: {{ invoice.print_count or 0 }} &nbsp;|&nbsp; Downloaded: {{ invoice.pdf_download_count or 0 }}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Items table -->
-    <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:0;">
+    <!-- Items Table -->
+    <table class="sv3-inv-table">
         <thead>
-            <tr style="background:#1a3a28; color:#fff;">
-                <th style="padding:10px 12px; text-align:left;  font-weight:600; border-radius:0;">#</th>
-                <th style="padding:10px 12px; text-align:left;  font-weight:600;">Material / Description</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Qty</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Weight (kg)</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Rate (₹)</th>
-                <th style="padding:10px 12px; text-align:center; font-weight:600;">GST %</th>
-                <th style="padding:10px 12px; text-align:right; font-weight:600;">Amount (₹)</th>
+            <tr>
+                <th style="text-align:left;  width:32px;">#</th>
+                <th style="text-align:left;">Material / Description</th>
+                <th style="text-align:right; width:70px;">Qty</th>
+                <th style="text-align:right; width:90px;">Weight (kg)</th>
+                <th style="text-align:right; width:80px;">Rate (₹)</th>
+                <th style="text-align:center;width:65px;">GST %</th>
+                <th style="text-align:right; width:90px;">Amount (₹)</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
-            <tr style="border-bottom:1px solid #eef2ef; {{ 'background:#f9fafb;' if loop.index is even }}">
-                <td style="padding:10px 12px; color:#999;">{{ loop.index }}</td>
-                <td style="padding:10px 12px; font-weight:500; color:#0f2318;">
+            <tr>
+                <td style="color:#999;">{{ loop.index }}</td>
+                <td style="font-weight:500;">
                     {{ item.material_name or '—' }}
-                    <span style="font-size:11px; color:#888;">({{ item.uom or '' }})</span>
+                    <span style="font-size:11px; color:#888; font-family:monospace;">({{ item.uom or '' }})</span>
                 </td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace;">
-                    {{ "%.2f"|format(item.quantity or 0) }}
-                </td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace;">
-                    {{ "%.3f"|format(item.weight or 0) }}
-                </td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace;">
-                    {{ "%.2f"|format(item.rate or 0) }}
-                </td>
-                <td style="padding:10px 12px; text-align:center;">
+                <td style="text-align:right; font-family:monospace;">{{ "%.2f"|format(item.quantity or 0) }}</td>
+                <td style="text-align:right; font-family:monospace;">{{ "%.3f"|format(item.weight or 0) }}</td>
+                <td style="text-align:right; font-family:monospace;">{{ "%.2f"|format(item.rate or 0) }}</td>
+                <td style="text-align:center;">
                     <span style="background:#e8f5ee; color:#2d6a4f; font-size:11px; font-weight:700;
                                  padding:2px 8px; border-radius:12px;">
                         {{ item.gst_percentage or 0 }}%
                     </span>
                 </td>
-                <td style="padding:10px 12px; text-align:right; font-family:monospace; font-weight:600;">
+                <td style="text-align:right; font-family:monospace; font-weight:600;">
                     {{ "%.2f"|format(item.amount or 0) }}
                 </td>
             </tr>
@@ -154,49 +157,39 @@
 
     <!-- Totals -->
     <div class="d-flex justify-content-end mt-0">
-        <table style="width:320px; font-size:13px; border-top:2px solid #1a3a28;">
-            <tr style="border-bottom:1px solid #eef2ef;">
-                <td style="padding:8px 12px; color:#5a6a62;">Subtotal</td>
-                <td style="padding:8px 12px; text-align:right; font-family:monospace;">
-                    ₹ {{ "%.2f"|format(invoice.subtotal or 0) }}
-                </td>
+        <table class="sv3-inv-totals">
+            <tr>
+                <td style="color:#5a6a62;">Subtotal</td>
+                <td style="text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td>
             </tr>
             {% if is_intra %}
-            <tr style="border-bottom:1px solid #eef2ef;">
-                <td style="padding:8px 12px; color:#5a6a62;">CGST</td>
-                <td style="padding:8px 12px; text-align:right; font-family:monospace;">
-                    ₹ {{ "%.2f"|format(invoice.cgst or 0) }}
-                </td>
+            <tr>
+                <td style="color:#5a6a62;">CGST</td>
+                <td style="text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td>
             </tr>
-            <tr style="border-bottom:1px solid #eef2ef;">
-                <td style="padding:8px 12px; color:#5a6a62;">SGST</td>
-                <td style="padding:8px 12px; text-align:right; font-family:monospace;">
-                    ₹ {{ "%.2f"|format(invoice.sgst or 0) }}
-                </td>
+            <tr>
+                <td style="color:#5a6a62;">SGST</td>
+                <td style="text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td>
             </tr>
             {% else %}
-            <tr style="border-bottom:1px solid #eef2ef;">
-                <td style="padding:8px 12px; color:#5a6a62;">IGST</td>
-                <td style="padding:8px 12px; text-align:right; font-family:monospace;">
-                    ₹ {{ "%.2f"|format(invoice.igst or 0) }}
-                </td>
+            <tr>
+                <td style="color:#5a6a62;">IGST</td>
+                <td style="text-align:right; font-family:monospace;">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td>
             </tr>
             {% endif %}
             {% if invoice.round_off %}
-            <tr style="border-bottom:1px solid #eef2ef;">
-                <td style="padding:8px 12px; color:#5a6a62;">Round Off</td>
-                <td style="padding:8px 12px; text-align:right; font-family:monospace;
+            <tr>
+                <td style="color:#5a6a62;">Round Off</td>
+                <td style="text-align:right; font-family:monospace;
                            color:{{ '#dc3545' if invoice.round_off < 0 else '#198754' }};">
                     {{ '+' if invoice.round_off >= 0 else '' }}{{ "%.2f"|format(invoice.round_off) }}
                 </td>
             </tr>
             {% endif %}
-            <tr style="background:#f4f7f5; border-top:2px solid #1a3a28;">
-                <td style="padding:12px 12px; font-weight:700; font-size:14px; color:#0f2318;">
-                    Grand Total
-                </td>
-                <td style="padding:12px 12px; text-align:right; font-weight:700;
-                           font-size:17px; font-family:monospace; color:#0f2318;">
+            <tr class="grand-row">
+                <td style="font-weight:800; font-size:14px; color:#0f2318;">Grand Total</td>
+                <td style="text-align:right; font-weight:800; font-size:18px;
+                           font-family:monospace; color:#0f2318;">
                     ₹ {{ "%.2f"|format(invoice.grand_total or 0) }}
                 </td>
             </tr>
@@ -205,56 +198,51 @@
 
     <!-- Remarks -->
     {% if invoice.remarks %}
-    <div style="margin-top:28px; padding:12px 16px; background:#f9fafb;
-                border-left:3px solid #3cb371; border-radius:4px;">
-        <div style="font-size:11px; font-weight:700; color:#3cb371; margin-bottom:4px;
-                    letter-spacing:1px; text-transform:uppercase;">Remarks</div>
+    <div style="margin-top:28px; padding:13px 18px; background:#f9fafb;
+                border-left:3px solid #3cb371; border-radius:6px;">
+        <div style="font-size:10px; font-weight:700; color:#3cb371; letter-spacing:1px;
+                    text-transform:uppercase; margin-bottom:5px;">Remarks</div>
         <div style="font-size:13px; color:#3a5244;">{{ invoice.remarks }}</div>
     </div>
     {% endif %}
 
-    <!-- Signature -->
+    <!-- Signature row -->
     <div class="d-flex justify-content-between align-items-end mt-5 pt-4"
          style="border-top:1px solid #eef2ef;">
-        <div style="font-size:11px; color:#aaa;">
-            This is a computer-generated invoice.
-        </div>
+        <div style="font-size:11px; color:#bbb;">This is a computer-generated invoice.</div>
         <div style="text-align:center;">
-            <div style="width:160px; border-top:1px solid #3a5244; padding-top:8px;
+            <div style="width:170px; border-top:1px solid #3a5244; padding-top:8px;
                         font-size:12px; color:#3a5244; font-weight:600;">
                 Authorised Signatory
             </div>
-            <div style="font-size:11px; color:#888; margin-top:2px;">
+            <div style="font-size:11px; color:#888; margin-top:3px;">
                 {{ company.company_name if company }}
             </div>
         </div>
     </div>
 
-</div><!-- erp-card-body -->
-</div><!-- erp-card -->
+</div><!-- sv3-invoice-wrap -->
 
-<!-- ── Email modal ─────────────────────────────────────────────────────── -->
+<!-- ── Email Modal ───────────────────────────────────────────── -->
 <div id="email-modal"
      style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
             z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:#fff; border-radius:12px; padding:32px 36px;
+    <div style="background:var(--card-bg,#fff); border-radius:14px; padding:32px 36px;
                 max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.25);">
         <h5 style="margin:0 0 6px; color:#0f2318; font-weight:700;">
             <i class="bi bi-envelope" style="color:#3cb371;"></i> Email Invoice
         </h5>
         <p style="font-size:13px; color:#888; margin-bottom:20px;">
-            Enter the recipient's email address. This will open your default mail client
-            with the invoice details pre-filled.
+            Enter the recipient's email. This opens your default mail client with invoice details pre-filled.
         </p>
-        <label style="font-size:12px; font-weight:600; color:#3a5244;">Recipient Email</label>
+        <label style="font-size:12px; font-weight:700; color:#2e7d32; text-transform:uppercase; letter-spacing:.4px;">Recipient Email</label>
         <input id="email-to" type="email" class="form-control mt-1"
                value="{{ party.email or '' }}"
-               placeholder="customer@example.com" style="margin-bottom:20px;">
-
+               placeholder="customer@example.com" style="margin-bottom:20px; border-radius:8px;">
         <div class="d-flex gap-2 justify-content-end">
             <button onclick="document.getElementById('email-modal').style.display='none'"
-                    class="btn-erp-secondary">Cancel</button>
-            <button onclick="openMailto()" class="btn-erp-primary">
+                    class="sv3-btn sv3-btn-outline">Cancel</button>
+            <button onclick="openMailto()" class="sv3-btn sv3-btn-primary">
                 <i class="bi bi-send"></i> Open Email Client
             </button>
         </div>
@@ -264,16 +252,6 @@
 {% endblock %}
 
 {% block scripts %}
-<style>
-@media print {
-    .sidebar, .topbar, .breadcrumb-bar, #invoice-printable + *,
-    .d-flex.align-items-center.gap-2, #email-modal { display: none !important; }
-    .main-content { margin-left: 0 !important; padding: 0 !important; }
-    .erp-card { box-shadow: none !important; border: none !important; }
-    body { background: white !important; }
-}
-</style>
-
 <script>
 function openMailto() {
     const to      = document.getElementById('email-to').value.trim();
@@ -290,12 +268,10 @@ function openMailto() {
     document.getElementById('email-modal').style.display = 'none';
 }
 
-// Auto-open email modal if redirected from email route
 {% if open_email_modal %}
 document.getElementById('email-modal').style.display = 'flex';
 {% endif %}
 
-// Close modal on backdrop click
 document.getElementById('email-modal').addEventListener('click', function(e) {
     if (e.target === this) this.style.display = 'none';
 });
