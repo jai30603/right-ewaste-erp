@@ -626,6 +626,55 @@
 .sv3-inv-totals .grand-row { background: #f4f7f5; border-top: 2px solid #1a3a28; }
 .sv3-inv-totals .grand-row td { padding: 13px 14px; font-weight: 700; }
 
+/* ── Sales Dashboard Hero KPI Cards ────────────────────────────
+   These override the shared.css .card !important rules so the
+   gradient backgrounds and white text are preserved.
+─────────────────────────────────────────────────────────────── */
+.sd-hero-card {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.14) !important;
+  padding: 20px !important;
+  color: #fff !important;
+  border: none !important;
+  position: relative;
+  overflow: hidden;
+}
+.sd-hero-card .sd-hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  opacity: .78;
+  margin-bottom: 8px;
+}
+.sd-hero-card .sd-hero-value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff !important;
+}
+.sd-hero-card .sd-hero-sub {
+  font-size: 12px;
+  opacity: .7;
+  margin-top: 6px;
+}
+.sd-hero-card .sd-hero-watermark {
+  position: absolute;
+  right: -10px;
+  bottom: -20px;
+  font-size: 80px;
+  opacity: .10;
+  font-weight: 900;
+  line-height: 1;
+}
+.sd-hero-card .sd-hero-icon {
+  font-size: 22px;
+  opacity: .55;
+}
+.sd-hero-green  { background: linear-gradient(135deg, #1b5e20, #2e7d32) !important; }
+.sd-hero-teal   { background: linear-gradient(135deg, #0d5c3a, #148052) !important; }
+.sd-hero-cyan   { background: linear-gradient(135deg, #115e59, #0f766e) !important; }
+
 /* ── Dark Mode ───────────────────────────────────────────────── */
 [data-theme="dark"] .sv3-kpi,
 [data-theme="dark"] .sv3-form-card,

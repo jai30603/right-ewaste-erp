@@ -223,7 +223,8 @@ def sales():
         sort_by=sort_by,
         page=page,
         total_pages=total_pages,
-        total_items=total_items
+        total_items=total_items,
+        today=date.today().isoformat(),
     )
 
 

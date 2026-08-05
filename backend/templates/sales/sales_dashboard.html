@@ -10,6 +10,7 @@
 {% from "shared/_page_header.html" import page_header %}
 
 {% block content %}
+<link href="/static/css/sales.css?v=2" rel="stylesheet">
 
 {{ page_header(
     title="Sales Control Centre",
@@ -24,40 +25,40 @@
     <div class="row g-3 mb-4">
         <!-- Today's Sales -->
         <div class="col-12 col-sm-6 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white;">
+            <div class="sd-hero-card sd-hero-green h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Today's Sales</span>
-                    <i class="bi bi-calendar-event fs-4 opacity-50"></i>
+                    <span class="sd-hero-label">Today's Sales</span>
+                    <i class="bi bi-calendar-event sd-hero-icon"></i>
                 </div>
-                <h3 class="fw-bold mb-1">₹{{ "%.2f"|format(today_sales) }}</h3>
-                <span class="text-white-50 small">Updates in real-time</span>
-                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;">₹</div>
+                <div class="sd-hero-value">₹{{ "%.2f"|format(today_sales) }}</div>
+                <div class="sd-hero-sub">Updates in real-time</div>
+                <div class="sd-hero-watermark">₹</div>
             </div>
         </div>
 
         <!-- This Month's Sales -->
         <div class="col-12 col-sm-6 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #0d5c3a, #148052); color: white;">
+            <div class="sd-hero-card sd-hero-teal h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">This Month Sales</span>
-                    <i class="bi bi-calendar-month fs-4 opacity-50"></i>
+                    <span class="sd-hero-label">This Month Sales</span>
+                    <i class="bi bi-calendar-month sd-hero-icon"></i>
                 </div>
-                <h3 class="fw-bold mb-1">₹{{ "%.2f"|format(this_month_sales) }}</h3>
-                <span class="text-white-50 small">Current billing cycle</span>
-                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;">₹</div>
+                <div class="sd-hero-value">₹{{ "%.2f"|format(this_month_sales) }}</div>
+                <div class="sd-hero-sub">Current billing cycle</div>
+                <div class="sd-hero-watermark">₹</div>
             </div>
         </div>
 
         <!-- Total Invoices -->
         <div class="col-12 col-sm-6 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 p-3 h-100 position-relative overflow-hidden" style="background: linear-gradient(135deg, #115e59, #0f766e); color: white;">
+            <div class="sd-hero-card sd-hero-cyan h-100">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="text-white-50 small text-uppercase fw-bold" style="letter-spacing: 0.5px;">Number of Invoices</span>
-                    <i class="bi bi-file-earmark-text fs-4 opacity-50"></i>
+                    <span class="sd-hero-label">Number of Invoices</span>
+                    <i class="bi bi-file-earmark-text sd-hero-icon"></i>
                 </div>
-                <h3 class="fw-bold mb-1">{{ invoice_count }}</h3>
-                <span class="text-white-50 small">Active transactions</span>
-                <div class="position-absolute" style="right: -10px; bottom: -20px; font-size: 80px; opacity: 0.1; font-weight: 900;"><i class="bi bi-files"></i></div>
+                <div class="sd-hero-value">{{ invoice_count }}</div>
+                <div class="sd-hero-sub">Active transactions</div>
+                <div class="sd-hero-watermark"><i class="bi bi-files"></i></div>
             </div>
         </div>
     </div>
