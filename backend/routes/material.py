@@ -43,19 +43,32 @@ GST_RATES = ["0", "5", "12", "18", "28"]
 @material_bp.route("/material")
 def material():
     q = request.args.get("q", "").strip()
-    materials = search_materials(q) if q else get_all_materials()
-    
+    category_filter = request.args.get("category_filter", "all").strip()
+    gst_filter = request.args.get("gst_filter", "all").strip()
+
+    all_materials = search_materials(q) if q else get_all_materials()
+
+    # Filter by category / GST (URL-persistent, no backend change)
+    if category_filter and category_filter != "all":
+        all_materials = [m for m in all_materials if m["category"] == category_filter]
+    if gst_filter and gst_filter != "all":
+        all_materials = [m for m in all_materials if str(m["gst_percentage"]) == gst_filter]
+
     page = int(request.args.get("page", 1))
     per_page = 15
-    total_items = len(materials)
+    total_items = len(all_materials)
     total_pages = (total_items + per_page - 1) // per_page
     offset = (page - 1) * per_page
-    paginated_materials = materials[offset : offset + per_page]
-    
+    paginated_materials = all_materials[offset : offset + per_page]
+
     return render_template(
         "material/material.html",
         materials=paginated_materials,
         q=q,
+        category_filter=category_filter,
+        gst_filter=gst_filter,
+        categories=get_categories(),
+        gst_rates=GST_RATES,
         page=page,
         total_pages=total_pages,
         total_items=total_items

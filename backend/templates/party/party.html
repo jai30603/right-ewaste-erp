@@ -8,191 +8,214 @@
 <li class="breadcrumb-item active">Party</li>
 {% endblock %}
 
-{% from "shared/_page_header.html" import page_header %}
-
 {% block content %}
+<link href="/static/css/masters.css?v=1" rel="stylesheet">
 
-{{ page_header(
-    title="Party Management",
-    subtitle="Manage supplier and buyer master records — GSTIN, addresses, and ledger entries.",
-    back_url="/",
-    actions=[
-        {'label': 'Add New Party', 'url': '/party/add', 'icon': 'bi-person-plus', 'class': 'btn-primary'}
-    ]
-) }}
+<!-- ── Page Header ────────────────────────────────────────────── -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+        <h4 style="font-size:20px; font-weight:800; color:var(--text-primary,#0f2318); margin:0;">
+            <i class="bi bi-people me-2" style="color:#2e7d32;"></i> Party Master
+        </h4>
+        <div style="font-size:13px; color:var(--text-muted,#6c7a75); margin-top:3px;">
+            Customers, suppliers, and combined party records
+        </div>
+    </div>
+    <a href="/party/add" class="mst-tb-btn primary">
+        <i class="bi bi-plus-lg"></i> Add Party
+    </a>
+</div>
 
-<div class="erp-card">
+<!-- ── Main Card ──────────────────────────────────────────────── -->
+<div class="erp-card" style="border-radius:14px; overflow:hidden;">
 
-    <!-- Header -->
-    <div class="erp-card-header erp-card-header-accent">
-        <i class="bi bi-people" style="font-size:18px; color:var(--brand-accent);"></i>
-        <h5>Party Master</h5>
-        <span style="color:#aaa; font-size:13px; margin-left:4px;">
-            ({{ parties|length }} record{{ 's' if parties|length != 1 }})
-        </span>
-        <div class="ms-auto d-flex align-items-center gap-2">
-            <!-- Search -->
-            <form method="GET" action="/party" class="d-flex gap-2">
-                <div class="input-group" style="width:280px;">
-                    <span class="input-group-text" style="background:#f4f7f5; border-color:#dde8e2; border-right:none;">
-                        <i class="bi bi-search" style="font-size:13px; color:#6c7a75;"></i>
-                    </span>
-                    <input
-                        type="text"
-                        name="q"
-                        value="{{ q }}"
-                        class="form-control"
-                        placeholder="Search code, name, phone…"
-                        style="border-left:none; font-size:13px;">
-                    {% if q %}
-                    <a href="/party" class="btn btn-outline-secondary" style="font-size:12px; padding:6px 10px;" title="Clear search">
-                        <i class="bi bi-x"></i>
-                    </a>
-                    {% endif %}
-                </div>
-            </form>
-            <a href="/party/add" class="btn-erp-primary">
+    <!-- Toolbar -->
+    <div class="mst-toolbar">
+        <div class="mst-search-box">
+            <i class="bi bi-search"></i>
+            <input type="text" id="mst-live-search"
+                   placeholder="Search name, code, GSTIN, phone…"
+                   value="{{ q or '' }}"
+                   oninput="mstLiveSearch(this.value)">
+        </div>
+
+        <button class="mst-tb-btn" id="mst-filter-toggle" onclick="mstToggleFilter()" title="Filters">
+            <i class="bi bi-funnel"></i> Filters
+            {% if party_type and party_type != 'all' %}
+            <span class="mst-filter-badge">1</span>
+            {% endif %}
+        </button>
+
+        <div class="mst-tb-sep"></div>
+
+        <button class="mst-tb-btn" onclick="location.reload()" title="Refresh">
+            <i class="bi bi-arrow-clockwise"></i>
+        </button>
+
+        <div class="mst-tb-right">
+            <span style="font-size:12px; color:var(--text-muted,#8aa09a);">
+                {{ total_items }} record{{ 's' if total_items != 1 }}
+            </span>
+            <a href="/party/add" class="mst-tb-btn primary">
                 <i class="bi bi-plus-lg"></i> Add Party
             </a>
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="erp-card-body p-0">
-
-        {% if q %}
-        <div style="padding:10px 20px; background:#f8faf9; border-bottom:1px solid #eef2ef; font-size:12.5px; color:#6c7a75;">
-            Showing results for <strong>"{{ q }}"</strong>
-        </div>
-        {% endif %}
-
-        {% if parties %}
-        <div style="overflow-x:auto;">
-        <table class="erp-table">
-            <thead>
-                <tr>
-                    <th>Code</th>
-                    <th>Company Name</th>
-                    <th>Contact Person</th>
-                    <th>Type</th>
-                    <th>Phone</th>
-                    <th>GSTIN</th>
-                    <th>City</th>
-                    <th>State</th>
-                    <th style="text-align:right;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in parties %}
-                <tr>
-                    <td><code class="code-cell">{{ p.party_code }}</code></td>
-                    <td class="fw-semibold">{{ p.company_name }}</td>
-                    <td class="text-muted">{{ p.contact_person or '—' }}</td>
-                    <td>
-                        {% if p.party_type == 'CUSTOMER' %}
-                            <span class="badge-type badge-customer">Customer</span>
-                        {% elif p.party_type == 'SUPPLIER' %}
-                            <span class="badge-type badge-supplier">Supplier</span>
-                        {% else %}
-                            <span class="badge-type badge-both">Both</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ p.phone }}</td>
-                    <td><span style="font-family:monospace; font-size:12px;">{{ p.gstin or '—' }}</span></td>
-                    <td>{{ p.city }}</td>
-                    <td>{{ p.state }}</td>
-                    <td style="text-align:right; white-space:nowrap;">
-                        {% if p.party_type == 'CUSTOMER' %}
-                        <a href="/party/{{ p.id }}/ledger"
-                           class="btn btn-sm btn-outline-success"
-                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px;"
-                           title="Customer Ledger">
-                            <i class="bi bi-journal-text"></i> Customer Ledger
-                        </a>
-                        {% elif p.party_type == 'SUPPLIER' %}
-                        <a href="/purchase/party/{{ p.id }}/ledger"
-                           class="btn btn-sm btn-outline-info"
-                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px; color: #0891b2; border-color: #0891b2;"
-                           title="Supplier Ledger">
-                            <i class="bi bi-journal-text"></i> Supplier Ledger
-                        </a>
-                        {% elif p.party_type == 'BOTH' %}
-                        <a href="/party/{{ p.id }}/ledger"
-                           class="btn btn-sm btn-outline-success"
-                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px;"
-                           title="Customer Ledger">
-                            <i class="bi bi-journal-text"></i> Cust Ledger
-                        </a>
-                        <a href="/purchase/party/{{ p.id }}/ledger"
-                           class="btn btn-sm btn-outline-info"
-                           style="font-size:12px; padding:4px 10px; border-radius:6px; margin-right:4px; color: #0891b2; border-color: #0891b2;"
-                           title="Supplier Ledger">
-                            <i class="bi bi-journal-text"></i> Supp Ledger
-                        </a>
-                        {% endif %}
-                        <a href="/party/{{ p.id }}/edit"
-                           class="btn btn-sm btn-outline-warning"
-                           style="font-size:12px; padding:4px 10px; border-radius:6px;">
-                            <i class="bi bi-pencil"></i> Edit
-                        </a>
-                        <!-- Delete confirmation -->
-                        <button
-                            type="button"
-                            class="btn btn-sm btn-outline-danger"
-                            style="font-size:12px; padding:4px 10px; border-radius:6px; margin-left:4px;"
-                            onclick="confirmDelete({{ p.id }}, '{{ p.company_name | replace("'", "\\'") }}')">
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-        {% if total_pages > 1 %}
-        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
-            <div class="text-muted small" style="font-size:12.5px;">
-                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
+    <!-- Filter Panel -->
+    <div class="mst-filter-panel" id="mst-filter-panel">
+        <form method="GET" action="/party">
+            <div class="mst-filter-grid">
+                <div>
+                    <label>Party Type</label>
+                    <select name="party_type" class="form-select form-select-sm">
+                        <option value="all" {% if not party_type or party_type == 'all' %}selected{% endif %}>All Types</option>
+                        <option value="CUSTOMER" {% if party_type == 'CUSTOMER' %}selected{% endif %}>Customer</option>
+                        <option value="SUPPLIER" {% if party_type == 'SUPPLIER' %}selected{% endif %}>Supplier</option>
+                        <option value="BOTH"     {% if party_type == 'BOTH' %}selected{% endif %}>Both</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Search</label>
+                    <input type="text" name="q" class="form-control" value="{{ q or '' }}" placeholder="Name, code, GSTIN…">
+                </div>
             </div>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-                {% for p in range(1, total_pages + 1) %}
-                <li class="page-item {% if p == page %}active{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
-                </li>
-                {% endfor %}
-                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        {% endif %}
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">{% if q %}🔍{% else %}👥{% endif %}</div>
-            <p>
-                {% if q %}
-                    No parties match <strong>"{{ q }}"</strong>.
-                    <a href="/party" class="text-decoration-none" style="color:#3cb371;">Clear search →</a>
-                {% else %}
-                    No parties yet.
-                    <a href="/party/add" class="text-decoration-none" style="color:#3cb371;">Add the first one →</a>
-                {% endif %}
-            </p>
-        </div>
-        {% endif %}
-
+            <div class="mst-filter-actions">
+                <a href="/party" class="mst-tb-btn"><i class="bi bi-x-circle"></i> Reset</a>
+                <button type="submit" class="mst-tb-btn primary"><i class="bi bi-funnel-fill"></i> Apply</button>
+            </div>
+        </form>
     </div>
+
+    <!-- Table -->
+    {% if parties %}
+    <div class="mst-table-wrap">
+    <table class="mst-table" id="mst-main-table">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="mst-select-all" onchange="mstSelectAll(this)" style="cursor:pointer;"></th>
+                <th>Code</th>
+                <th>Company Name</th>
+                <th>Type</th>
+                <th>Phone</th>
+                <th>GSTIN</th>
+                <th>City / State</th>
+                <th>Contact</th>
+                <th style="text-align:center; width:120px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in parties %}
+            <tr data-search="{{ p.company_name }} {{ p.party_code }} {{ p.gstin or '' }} {{ p.phone }} {{ p.city or '' }}">
+                <td style="width:40px; text-align:center;">
+                    <input type="checkbox" class="mst-row-check" value="{{ p.id }}" onchange="mstUpdateBulk()" style="cursor:pointer;">
+                </td>
+                <td><span class="mst-code">{{ p.party_code }}</span></td>
+                <td>
+                    <div style="font-weight:600; color:var(--text-primary,#0f2318);">{{ p.company_name }}</div>
+                    {% if p.email %}
+                    <div style="font-size:11.5px; color:var(--text-muted,#8aa09a);">{{ p.email }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if p.party_type == 'CUSTOMER' %}
+                        <span class="mst-badge mst-badge-customer">Customer</span>
+                    {% elif p.party_type == 'SUPPLIER' %}
+                        <span class="mst-badge mst-badge-supplier">Supplier</span>
+                    {% else %}
+                        <span class="mst-badge mst-badge-both">Both</span>
+                    {% endif %}
+                </td>
+                <td style="font-family:monospace; font-size:12.5px;">{{ p.phone or '—' }}</td>
+                <td>
+                    <span style="font-family:monospace; font-size:12px; color:var(--text-muted,#6c7a75);">
+                        {{ p.gstin or '—' }}
+                    </span>
+                </td>
+                <td style="font-size:12.5px; color:var(--text-muted,#6c7a75);">
+                    {{ p.city or '' }}{% if p.city and p.state %}, {% endif %}{{ p.state or '—' }}
+                </td>
+                <td style="font-size:12.5px; color:var(--text-muted,#6c7a75);">
+                    {{ p.contact_person or '—' }}
+                </td>
+                <td style="text-align:center;">
+                    <div class="mst-action-wrap">
+                        <button class="mst-action-btn" onclick="mstToggleMenu(this)">
+                            Actions <i class="bi bi-chevron-down" style="font-size:10px;"></i>
+                        </button>
+                        <div class="mst-action-menu">
+                            <a href="/party/{{ p.id }}/edit"><i class="bi bi-pencil"></i> Edit</a>
+                            {% if p.party_type in ('CUSTOMER','BOTH') %}
+                            <a href="/party/{{ p.id }}/ledger"><i class="bi bi-journal-text"></i> Customer Ledger</a>
+                            {% endif %}
+                            {% if p.party_type in ('SUPPLIER','BOTH') %}
+                            <a href="/purchase/party/{{ p.id }}/ledger"><i class="bi bi-journal-bookmark"></i> Supplier Ledger</a>
+                            {% endif %}
+                            <hr>
+                            <button type="button" class="mst-danger"
+                                onclick="mstConfirmDelete({{ p.id }}, '{{ p.company_name | replace("'", "\\'") }}')">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="mst-pagination">
+        <div class="info">
+            Showing {{ (page-1)*15+1 }}–{{ page*15 if page*15 < total_items else total_items }} of {{ total_items }}
+        </div>
+        <div class="mst-pg-btns">
+            <a href="?{{ modify_query(page=page-1) }}" class="mst-pg-btn {% if page <= 1 %}disabled{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+            {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+            <a href="?{{ modify_query(page=p) }}" class="mst-pg-btn {% if p == page %}active{% endif %}">{{ p }}</a>
+            {% endfor %}
+            <a href="?{{ modify_query(page=page+1) }}" class="mst-pg-btn {% if page >= total_pages %}disabled{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="mst-empty">
+        <div class="mst-empty-icon">{% if q %}🔍{% else %}👥{% endif %}</div>
+        <h5>{% if q %}No parties matched "{{ q }}"{% else %}No Parties Yet{% endif %}</h5>
+        <p>{% if q %}Try a different search term or <a href="/party" style="color:#2e7d32;">clear filters</a>.{% else %}Start by creating your first customer or supplier record.{% endif %}</p>
+        {% if not q %}
+        <a href="/party/add" class="mst-tb-btn primary" style="margin-top:8px;">
+            <i class="bi bi-plus-lg"></i> Add First Party
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div><!-- erp-card -->
+
+<!-- Bulk action bar -->
+<div id="mst-bulk-bar" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+     background:#1b5e20; color:#fff; border-radius:12px; padding:12px 24px; box-shadow:0 8px 32px rgba(0,0,0,.2);
+     display:none; align-items:center; gap:16px; z-index:200;">
+    <span><strong id="mst-sel-count">0</strong> selected</span>
+    <div style="width:1px; height:20px; background:rgba(255,255,255,.3);"></div>
+    <button onclick="mstBulkDelete()" style="background:none; border:none; color:#fca5a5; font-weight:600; cursor:pointer; font-size:13px;">
+        <i class="bi bi-trash"></i> Delete Selected
+    </button>
+    <button onclick="mstClearSelection()" style="background:none; border:none; color:rgba(255,255,255,.7); cursor:pointer; font-size:13px;">
+        <i class="bi bi-x"></i>
+    </button>
 </div>
 
 <!-- Hidden delete form -->
-<form id="delete-form" method="POST" style="display:none;">
+<form id="mst-delete-form" method="POST" style="display:none;">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="_method" value="DELETE">
 </form>
@@ -201,12 +224,72 @@
 
 {% block scripts %}
 <script>
-function confirmDelete(partyId, partyName) {
-    if (confirm(`Are you sure you want to delete "${partyName}"?\n\nThis action cannot be undone.`)) {
-        const form = document.getElementById("delete-form");
-        form.action = `/party/${partyId}/delete`;
+/* ── Filter ── */
+function mstToggleFilter() {
+    document.getElementById('mst-filter-panel').classList.toggle('open');
+}
+
+/* ── Live search ── */
+function mstLiveSearch(q) {
+    const term = q.toLowerCase();
+    document.querySelectorAll('#mst-main-table tbody tr').forEach(tr => {
+        const hay = (tr.dataset.search || '').toLowerCase();
+        tr.style.display = (!term || hay.includes(term)) ? '' : 'none';
+    });
+}
+
+/* ── Row selection ── */
+function mstSelectAll(cb) {
+    document.querySelectorAll('.mst-row-check').forEach(c => c.checked = cb.checked);
+    mstUpdateBulk();
+}
+function mstUpdateBulk() {
+    const checked = document.querySelectorAll('.mst-row-check:checked');
+    document.getElementById('mst-sel-count').textContent = checked.length;
+    const bar = document.getElementById('mst-bulk-bar');
+    bar.style.display = checked.length ? 'flex' : 'none';
+    document.querySelectorAll('#mst-main-table tbody tr').forEach(tr => {
+        const cb = tr.querySelector('.mst-row-check');
+        tr.classList.toggle('selected', cb && cb.checked);
+    });
+}
+function mstClearSelection() {
+    document.querySelectorAll('.mst-row-check').forEach(c => c.checked = false);
+    document.getElementById('mst-select-all').checked = false;
+    mstUpdateBulk();
+}
+function mstBulkDelete() {
+    const ids = [...document.querySelectorAll('.mst-row-check:checked')].map(c => c.value);
+    if (ids.length && confirm(`Delete ${ids.length} selected party record(s)? This cannot be undone.`)) {
+        alert('Bulk delete: ' + ids.join(', '));
+    }
+}
+
+/* ── Action dropdown ── */
+function mstToggleMenu(btn) {
+    const menu = btn.nextElementSibling;
+    const isOpen = menu.classList.contains('open');
+    document.querySelectorAll('.mst-action-menu.open').forEach(m => m.classList.remove('open'));
+    if (!isOpen) menu.classList.add('open');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.mst-action-wrap')) {
+        document.querySelectorAll('.mst-action-menu.open').forEach(m => m.classList.remove('open'));
+    }
+});
+
+/* ── Delete ── */
+function mstConfirmDelete(id, name) {
+    if (confirm(`Delete "${name}"?\n\nThis action cannot be undone.`)) {
+        const form = document.getElementById('mst-delete-form');
+        form.action = `/party/${id}/delete`;
         form.submit();
     }
 }
+
+/* Auto-open filter if active */
+{% if party_type and party_type != 'all' %}
+document.getElementById('mst-filter-panel').classList.add('open');
+{% endif %}
 </script>
 {% endblock %}

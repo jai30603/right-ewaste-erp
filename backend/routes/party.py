@@ -22,19 +22,26 @@ party_bp = Blueprint("party", __name__)
 @party_bp.route("/party")
 def party():
     q = request.args.get("q", "").strip()
-    parties = search_parties(q) if q else get_all_parties()
-    
+    party_type = request.args.get("party_type", "all").strip()
+
+    all_parties = search_parties(q) if q else get_all_parties()
+
+    # Client-side type filter (no backend change — filter in Python for URL persistence)
+    if party_type and party_type != "all":
+        all_parties = [p for p in all_parties if p["party_type"] == party_type]
+
     page = int(request.args.get("page", 1))
     per_page = 15
-    total_items = len(parties)
+    total_items = len(all_parties)
     total_pages = (total_items + per_page - 1) // per_page
     offset = (page - 1) * per_page
-    paginated_parties = parties[offset : offset + per_page]
-    
+    paginated_parties = all_parties[offset : offset + per_page]
+
     return render_template(
         "party/party.html",
         parties=paginated_parties,
         q=q,
+        party_type=party_type,
         page=page,
         total_pages=total_pages,
         total_items=total_items

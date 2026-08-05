@@ -1,0 +1,366 @@
+Prompt for Replit AI — Master Module UI Enhancement
+Role
+
+You are a Senior Enterprise UX Designer and Senior React + Tailwind CSS Frontend Engineer.
+
+Your task is to redesign the Master Module of the Right Ewaste ERP into a modern, enterprise-grade master data management system.
+
+This is STRICTLY a frontend UI/UX enhancement.
+
+Do NOT modify:
+
+Backend
+Database
+APIs
+Business Logic
+Validation
+Authentication
+Permissions
+Existing functionality
+
+Improve only the UI, UX, layout, responsiveness, accessibility, and consistency.
+
+Objective
+
+The Master Module is the foundation of the ERP.
+
+It manages all reusable business entities used throughout the ERP.
+
+The UI should prioritize speed, clarity, and ease of maintenance, enabling administrators to manage master data efficiently.
+
+Modules Covered
+
+Redesign every master screen, including (but not limited to):
+
+Parties
+Materials
+Categories
+Material Categories
+Units of Measurement
+Warehouses
+GST / Tax Configuration
+Company Details
+Bank Accounts
+Employees (if currently under Master)
+Vehicle Master (if implemented)
+Any additional master entities
+
+All master screens should follow the same design language.
+
+Overall Layout
+----------------------------------------------------
+
+Breadcrumb
+
+Master
+
+Search
+
+Quick Add
+
+----------------------------------------------------
+
+Master Navigation
+
+(Content)
+
+----------------------------------------------------
+
+The layout should feel similar to Microsoft Dynamics 365 or Odoo Enterprise.
+
+Master Navigation
+
+Instead of a plain list, redesign the navigation using a modern approach.
+
+Options:
+
+Left sidebar
+Navigation cards
+Icon grid
+
+Each Master section should include:
+
+Icon
+Name
+Short description
+
+Example:
+
+📦 Materials
+
+Manage recyclable materials.
+
+👥 Parties
+
+Manage customers and suppliers.
+
+🏢 Company
+
+Manage company profile.
+
+Master Dashboard
+
+If the Master module has a landing page, redesign it as an overview.
+
+Display cards like:
+
+Total Parties
+Total Materials
+Categories
+Warehouses
+Units
+Active Records
+
+Provide quick actions:
+
+Add Party
+Add Material
+Add Category
+Add Warehouse
+Import Data
+List Pages
+
+Every Master list should use a consistent enterprise data table.
+
+Features:
+
+Sticky Header
+Search
+Sorting
+Filters
+Pagination
+Bulk Selection
+Column Visibility
+Export
+Import
+Refresh
+Search
+
+Every Master page should have an instant search.
+
+Examples:
+
+Search Party
+
+Search Material
+
+Search Category
+
+Search Warehouse
+
+Use placeholders relevant to the current module.
+
+Filters
+
+Provide advanced filters where applicable.
+
+Examples:
+
+Status
+
+Category
+
+GST Type
+
+Material Type
+
+Supplier
+
+Customer
+
+Warehouse
+
+Date Created
+
+Forms
+
+Redesign every Create/Edit form.
+
+Requirements:
+
+Two-column layout on desktop
+Single-column on mobile
+Clear labels
+Required field indicators
+Section grouping
+Better spacing
+Inline validation
+Sticky action buttons
+Cards
+
+Every section should use consistent enterprise cards.
+
+Features:
+
+Rounded corners
+Subtle shadows
+Clear headers
+Action menu
+Responsive layout
+Buttons
+
+Standardize:
+
+Primary
+Secondary
+Outline
+Danger
+Ghost
+Loading
+Disabled
+Empty States
+
+Every module should have meaningful empty states.
+
+Example:
+
+No Materials Found
+
+Start by creating your first recyclable material.
+
+Include an illustration or icon.
+
+Loading States
+
+Replace generic spinners with skeleton loaders wherever possible.
+
+Dialogs
+
+Modern confirmation dialogs.
+
+Examples:
+
+Delete
+
+Archive
+
+Restore
+
+Duplicate
+
+Use proper spacing and accessible actions.
+
+Material Master
+
+Enhance the Material screen.
+
+Include:
+
+Material image (if supported)
+Material code
+Category badge
+Unit badge
+Status badge
+Price (if applicable)
+Inventory indicator (future-ready)
+
+Use a professional card or table layout.
+
+Party Master
+
+Improve the Party screen.
+
+Display:
+
+Company Name
+Contact Person
+GST Number
+Phone
+Email
+Type (Customer/Supplier/Both)
+Address
+Status
+
+Use badges for party types.
+
+Company Details
+
+Redesign into a profile-style page.
+
+Include:
+
+Company Logo
+Business Details
+GST Information
+Contact Details
+Banking Information
+Address
+Edit button
+Import & Export
+
+Improve the experience for bulk operations.
+
+Features:
+
+Drag & Drop upload
+File validation
+Progress indicators
+Download sample templates
+Success/error summary
+Responsive Design
+
+Optimize for:
+
+Desktop
+Laptop
+Tablet
+Mobile
+
+Maintain usability across all screen sizes.
+
+Dark Mode
+
+Fully support dark mode.
+
+Maintain readability and professional appearance.
+
+Accessibility
+
+Ensure:
+
+Keyboard navigation
+Proper focus states
+ARIA labels
+High contrast
+Readable typography
+Performance
+
+Reuse components.
+
+Avoid duplicated layouts.
+
+Optimize rendering for large datasets.
+
+Reusable Components
+
+Create reusable components such as:
+
+Master Table
+Search Toolbar
+Filter Panel
+Page Header
+Empty State
+Status Badge
+Form Section
+Confirmation Dialog
+Import Dialog
+Export Dialog
+
+These should be shared across all Master screens.
+
+Preserve Existing Functionality
+
+Do not change:
+
+CRUD operations
+Database interactions
+Validation
+APIs
+Business rules
+Routing
+
+Only improve the presentation and user experience.
+
+Final Goal
+
+The Master Module should become a polished, enterprise-grade master data management system with a unified interface across all entities. Users should be able to quickly create, search, edit, and manage foundational business data through a clean, modern, responsive, and highly consistent UI that aligns with the Right Ewaste ERP design system.

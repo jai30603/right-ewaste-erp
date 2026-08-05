@@ -1,0 +1,466 @@
+/* ═══════════════════════════════════════════════════════════════
+   Masters Module — Right Ewaste ERP
+   Prefix: mst-   (no conflicts with shared / sales CSS)
+   Covers: Party, Material, Company, Disposal masters
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.mst-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-color, #e8eeeb);
+  flex-wrap: wrap;
+  background: var(--card-bg, #fff);
+}
+.mst-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 360px;
+}
+.mst-search-box .bi-search {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 14px;
+  pointer-events: none;
+}
+.mst-search-box input {
+  padding-left: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #dde5e0);
+  font-size: 13px;
+  height: 36px;
+  background: var(--input-bg, #f9fbf9);
+  color: var(--text-primary, #0f2318);
+  width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.mst-search-box input:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46,125,50,.12);
+  background: var(--card-bg, #fff);
+}
+
+/* Toolbar button */
+.mst-tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--border-color, #dde5e0);
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #3a5244);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.mst-tb-btn:hover { background: #f0f7f0; border-color: #2e7d32; color: #2e7d32; }
+.mst-tb-btn.primary { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.mst-tb-btn.primary:hover { background: #1b5e20; border-color: #1b5e20; color: #fff; }
+.mst-tb-btn.danger { background: #fdecea; color: #c62828; border-color: #f5c6cb; }
+.mst-tb-btn.danger:hover { background: #c62828; color: #fff; }
+.mst-tb-sep { width: 1px; height: 24px; background: var(--border-color, #e0e7e2); flex-shrink: 0; }
+.mst-tb-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ── Filter Panel ────────────────────────────────────────────── */
+.mst-filter-panel {
+  background: var(--bg-alt, #f8faf8);
+  border-bottom: 1px solid var(--border-color, #e8eeeb);
+  padding: 16px 20px;
+  display: none;
+}
+.mst-filter-panel.open { display: block; }
+.mst-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.mst-filter-panel label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.mst-filter-panel .form-control,
+.mst-filter-panel .form-select {
+  font-size: 12.5px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color, #dde5e0);
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #0f2318);
+  padding: 0 10px;
+}
+.mst-filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+.mst-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ── Table ───────────────────────────────────────────────────── */
+.mst-table-wrap { overflow-x: auto; }
+.mst-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.mst-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-alt, #f5f8f5);
+  color: var(--text-muted, #5a6a62);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--border-color, #dde5e0);
+  white-space: nowrap;
+  z-index: 2;
+}
+.mst-table tbody tr {
+  border-bottom: 1px solid var(--border-color, #eef2ef);
+  transition: background .12s;
+}
+.mst-table tbody tr:hover { background: var(--hover-bg, #f5faf5); }
+.mst-table tbody tr.selected { background: #e8f5e9; }
+.mst-table tbody td {
+  padding: 11px 14px;
+  color: var(--text-primary, #1a2b22);
+  vertical-align: middle;
+}
+
+/* Code cell */
+.mst-code {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  letter-spacing: .5px;
+}
+
+/* ── Status / Type Badges ─────────────────────────────────────── */
+.mst-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+.mst-badge::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.mst-badge-customer  { background: #d1fae5; color: #065f46; }
+.mst-badge-customer::before  { background: #10b981; }
+.mst-badge-supplier  { background: #dbeafe; color: #1e40af; }
+.mst-badge-supplier::before  { background: #3b82f6; }
+.mst-badge-both      { background: #ede9fe; color: #5b21b6; }
+.mst-badge-both::before      { background: #8b5cf6; }
+.mst-badge-category  { background: #d1fae5; color: #065f46; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.mst-badge-unit      { background: #e0f2fe; color: #075985; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.mst-badge-gst       { background: #fef3c7; color: #92400e; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.mst-badge-track     { background: #f3e8ff; color: #6b21a8; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+
+/* ── Row Action Dropdown ─────────────────────────────────────── */
+.mst-action-wrap { position: relative; display: inline-block; }
+.mst-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-color, #dde5e0);
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #3a5244);
+  cursor: pointer;
+  transition: all .12s;
+}
+.mst-action-btn:hover { background: #f0f7f0; border-color: #2e7d32; color: #2e7d32; }
+.mst-action-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e0e7e2);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  min-width: 170px;
+  z-index: 100;
+  overflow: hidden;
+  display: none;
+  animation: mstDropIn .15s ease;
+}
+@keyframes mstDropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mst-action-menu.open { display: block; }
+.mst-action-menu a,
+.mst-action-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 16px;
+  font-size: 12.5px;
+  color: var(--text-primary, #1a2b22);
+  text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background .1s;
+}
+.mst-action-menu a:hover,
+.mst-action-menu button:hover { background: #f5faf5; color: #2e7d32; }
+.mst-action-menu .mst-danger { color: #dc3545 !important; }
+.mst-action-menu .mst-danger:hover { background: #fdecea !important; }
+.mst-action-menu hr { margin: 4px 0; border-color: var(--border-color, #eef2ef); }
+
+/* ── Pagination ──────────────────────────────────────────────── */
+.mst-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color, #eef2ef);
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--card-bg, #fff);
+}
+.mst-pagination .info { font-size: 12.5px; color: var(--text-muted, #8aa09a); }
+.mst-pg-btns { display: flex; gap: 4px; }
+.mst-pg-btn {
+  min-width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--border-color, #dde5e0);
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #3a5244);
+  text-decoration: none;
+  transition: all .12s;
+}
+.mst-pg-btn:hover { background: #f0f7f0; border-color: #2e7d32; color: #2e7d32; }
+.mst-pg-btn.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.mst-pg-btn.disabled { opacity: .4; pointer-events: none; }
+
+/* ── Empty State ─────────────────────────────────────────────── */
+.mst-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  gap: 12px;
+}
+.mst-empty-icon { font-size: 48px; opacity: .25; line-height: 1; }
+.mst-empty h5 { font-size: 16px; font-weight: 700; color: var(--text-primary, #1a2b22); margin: 0; }
+.mst-empty p  { font-size: 13px; color: var(--text-muted, #8aa09a); margin: 0; }
+
+/* ── Form Cards ──────────────────────────────────────────────── */
+.mst-form-card {
+  background: var(--card-bg, #fff);
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,.07);
+  border: 1px solid var(--border-color, #e8eeeb);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.mst-form-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 22px;
+  border-bottom: 2px solid #2e7d32;
+  background: linear-gradient(135deg, #f9fafb 0%, #f1f8f1 100%);
+}
+.mst-form-header h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f2318;
+}
+.mst-form-header i { font-size: 17px; color: #2e7d32; }
+.mst-form-body { padding: 22px; }
+
+.mst-field-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #2e7d32;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: block;
+}
+.mst-field-label .req { color: #dc3545; }
+
+.mst-form-control,
+.mst-form-select {
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #dde5e0);
+  background: var(--input-bg, #f9fbf9);
+  color: var(--text-primary, #0f2318);
+  padding: 8px 12px;
+  width: 100%;
+  height: 38px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.mst-form-control:focus,
+.mst-form-select:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46,125,50,.12);
+  background: var(--card-bg, #fff);
+}
+.mst-form-control.is-invalid,
+.mst-form-select.is-invalid { border-color: #dc3545; }
+.mst-form-textarea {
+  height: auto;
+  resize: vertical;
+  padding: 10px 12px;
+  min-height: 80px;
+}
+
+.mst-readonly {
+  background: var(--bg-alt, #f5f8f5) !important;
+  color: var(--text-muted, #6c7a75);
+}
+
+/* Buttons */
+.mst-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  text-decoration: none;
+}
+.mst-btn-primary   { background: #2e7d32; color: #fff; }
+.mst-btn-primary:hover { background: #1b5e20; color: #fff; }
+.mst-btn-secondary {
+  background: var(--card-bg, #fff);
+  color: #3a5244;
+  border: 1.5px solid var(--border-color, #dde5e0);
+}
+.mst-btn-secondary:hover { border-color: #2e7d32; color: #2e7d32; background: #f0f7f0; }
+.mst-btn-outline {
+  background: transparent;
+  color: #6c7a75;
+  border: 1.5px solid var(--border-color, #dde5e0);
+}
+.mst-btn-outline:hover { border-color: #6c7a75; color: #3a5244; }
+
+/* ── Company Profile ─────────────────────────────────────────── */
+.mst-profile-hero {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  border-radius: 14px 14px 0 0;
+  padding: 28px 32px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.mst-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.mst-profile-name {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 4px;
+}
+.mst-profile-sub {
+  font-size: 12.5px;
+  opacity: .75;
+}
+
+/* ── Dark Mode ───────────────────────────────────────────────── */
+[data-theme="dark"] .mst-form-card { background: #1e2e24; border-color: #2d4030; }
+[data-theme="dark"] .mst-form-header { background: #182a1f; }
+[data-theme="dark"] .mst-form-header h5 { color: #d4e8d8; }
+[data-theme="dark"] .mst-toolbar,
+[data-theme="dark"] .mst-filter-panel,
+[data-theme="dark"] .mst-pagination { background: #1a2a1f; border-color: #2d4030; }
+[data-theme="dark"] .mst-tb-btn,
+[data-theme="dark"] .mst-action-btn,
+[data-theme="dark"] .mst-action-menu,
+[data-theme="dark"] .mst-pg-btn { background: #1e2e24; border-color: #2d4030; color: #c0d4c8; }
+[data-theme="dark"] .mst-tb-btn:hover,
+[data-theme="dark"] .mst-action-btn:hover,
+[data-theme="dark"] .mst-pg-btn:hover { background: #253c2b; border-color: #3cb371; color: #3cb371; }
+[data-theme="dark"] .mst-tb-btn.primary { background: #2e7d32; color: #fff; }
+[data-theme="dark"] .mst-search-box input,
+[data-theme="dark"] .mst-form-control,
+[data-theme="dark"] .mst-form-select,
+[data-theme="dark"] .mst-filter-panel .form-control,
+[data-theme="dark"] .mst-filter-panel .form-select { background: #152a1c; border-color: #2d4030; color: #c0d4c8; }
+[data-theme="dark"] .mst-table thead th { background: #182a1f; }
+[data-theme="dark"] .mst-table tbody tr:hover { background: #1e3028; }
+[data-theme="dark"] .mst-table tbody tr.selected { background: #1a3a1f; }
+[data-theme="dark"] .mst-action-menu a:hover,
+[data-theme="dark"] .mst-action-menu button:hover { background: #1e3028; }
+[data-theme="dark"] .mst-badge-customer { background: #0d3321; color: #6ee7b7; }
+[data-theme="dark"] .mst-badge-supplier { background: #0d2040; color: #93c5fd; }
+[data-theme="dark"] .mst-badge-both     { background: #1e1040; color: #c4b5fd; }
+[data-theme="dark"] .mst-code { background: #1b3a1f; color: #4ade80; }

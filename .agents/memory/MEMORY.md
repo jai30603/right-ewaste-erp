@@ -1,0 +1,2 @@
+- [Module CSS pattern](module-css-pattern.md) — each module gets a scoped CSS file with a prefix; shared.css uses !important so module CSS must too for gradients/colours.
+- [Dashboard hero card fix](dashboard-hero-card.md) — shared.css .card { background: !important } kills inline gradients; use dedicated CSS classes with !important instead.
