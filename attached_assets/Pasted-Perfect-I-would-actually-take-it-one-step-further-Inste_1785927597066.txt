@@ -1,0 +1,489 @@
+Perfect. I would actually take it one step further. Instead of treating **Dashboard, Stock, Movements, Material Batches, Timeline & Traceability, and Material Flow** as six completely separate pages, make them feel like **one connected Inventory Workspace**—similar to how Microsoft Dynamics 365 or SAP Fiori organizes related functions.
+
+Here's the revised prompt:
+
+---
+
+# Right Ewaste ERP V5.0
+
+# Inventory Module – Complete Enterprise Workspace UI/UX Enhancement
+
+## Role
+
+You are a Senior Enterprise UX Designer and Senior React + Tailwind CSS Frontend Engineer.
+
+Your task is to transform the **Inventory Module** into a premium enterprise inventory workspace.
+
+This is **STRICTLY a frontend UI/UX enhancement**.
+
+Do **NOT** modify:
+
+* Backend
+* Database
+* APIs
+* Stock calculations
+* Inventory logic
+* Material movement logic
+* Traceability logic
+* Business rules
+* Existing routes
+
+Only redesign the frontend.
+
+---
+
+# Objective
+
+The Inventory module should no longer feel like six unrelated pages.
+
+Instead, it should become **one integrated Inventory Workspace** where users can seamlessly move between inventory operations.
+
+The user should immediately understand that all inventory-related functions belong to one ecosystem.
+
+---
+
+# Workspace Navigation
+
+Keep the existing modules:
+
+```text
+Inventory
+
+├── Dashboard
+├── Stock
+├── Movements
+├── Material Batches
+├── Timeline & Traceability
+└── Material Flow
+```
+
+However, redesign them so they share:
+
+* identical page headers
+* identical toolbars
+* identical filter panels
+* identical search experience
+* identical cards
+* identical tables
+* identical spacing
+* identical typography
+* identical action menus
+* identical animations
+
+Every page should feel like part of one workspace.
+
+---
+
+# Unified Inventory Header
+
+Every Inventory page should begin with a consistent header.
+
+Example:
+
+```text
+Inventory
+
+Manage stock, traceability, warehouse movements and inventory analytics.
+
+------------------------------------------------
+
+Search
+
+Filters
+
+Quick Actions
+
+Export
+
+Refresh
+```
+
+This header should remain consistent across every Inventory page.
+
+---
+
+# Shared Filter Bar
+
+Instead of every page having different filters,
+
+Create one reusable Inventory Filter component.
+
+Support filters such as:
+
+* Material
+* Category
+* Warehouse
+* Batch
+* Processing Status
+* Stock Status
+* Date Range
+* Supplier
+* Purchase Source
+
+The filter component should be reusable across all Inventory pages.
+
+---
+
+# Shared Search
+
+Every Inventory page should use the same search component.
+
+Placeholder:
+
+```text
+Search material, SKU, batch, movement, warehouse...
+```
+
+Support instant search.
+
+---
+
+# Inventory Dashboard
+
+Transform it into an executive overview.
+
+Display:
+
+* Total Materials
+* Total Weight
+* Inventory Value
+* Low Stock
+* Reserved Stock
+* Processing Queue
+
+Charts:
+
+* Inventory Trend
+* Material Distribution
+* Warehouse Capacity
+* Daily Movements
+* Processing Output
+
+Recent Activities:
+
+* Recent Movements
+* Recently Added Materials
+* Low Stock Alerts
+
+---
+
+# Stock Page
+
+Modern warehouse view.
+
+Provide:
+
+Grid View
+
+List View
+
+Card View
+
+Table View
+
+Switch between layouts.
+
+Each material should display:
+
+* Material Image/Icon
+* Material Code
+* Category
+* Current Stock
+* Weight
+* Warehouse
+* Status Badge
+* Last Movement
+
+Allow quick actions directly from the card.
+
+---
+
+# Inventory Movements
+
+Instead of a simple table,
+
+Create a timeline-based movement history.
+
+Each movement card should display:
+
+* Material
+* Movement Type
+* Source
+* Destination
+* Quantity
+* Weight
+* Date
+* User
+* Reference
+
+Use icons and colors for movement types.
+
+---
+
+# Material Batches
+
+Create a modern batch management experience.
+
+Each batch card should include:
+
+* Batch Number
+* Material
+* Purchase Reference
+* Processing Status
+* Current Quantity
+* Current Weight
+* Warehouse
+* Creation Date
+* Age
+
+Allow both:
+
+Card View
+
+Table View
+
+---
+
+# Timeline & Traceability
+
+This should become the showcase page of the Inventory module.
+
+Visualize the complete lifecycle.
+
+Example:
+
+```text
+Purchase
+
+↓
+
+Receiving
+
+↓
+
+Segregation
+
+↓
+
+Processing
+
+↓
+
+Finished Inventory
+
+↓
+
+Sales
+
+↓
+
+Certificate
+```
+
+Display:
+
+* timestamps
+* responsible employee
+* linked documents
+* status
+* quantity changes
+
+Use connected timeline cards instead of plain tables.
+
+---
+
+# Material Flow
+
+Replace plain tables with an interactive flow.
+
+Example:
+
+```text
+Purchase
+
+↓
+
+Warehouse
+
+↓
+
+Processing
+
+↓
+
+Stock
+
+↓
+
+Sales
+
+↓
+
+Disposed
+```
+
+Represent each stage using connected nodes.
+
+Clicking a node should open details.
+
+---
+
+# Shared Components
+
+All Inventory pages should reuse the same components.
+
+Examples:
+
+* Inventory Header
+* Search Toolbar
+* Filter Bar
+* KPI Card
+* Inventory Table
+* Status Badge
+* Timeline Card
+* Batch Card
+* Flow Card
+* Empty State
+* Loading Skeleton
+* Confirmation Dialog
+
+No duplicate UI components should exist.
+
+---
+
+# Unified Design Language
+
+Every Inventory page must follow:
+
+* identical spacing
+* identical colors
+* identical typography
+* identical shadows
+* identical buttons
+* identical tables
+* identical cards
+* identical icons
+
+The user should never feel they have left the Inventory module.
+
+---
+
+# Navigation Experience
+
+Improve transitions between Inventory pages.
+
+Maintain:
+
+* current filters
+* search text
+* selected warehouse
+* selected category
+
+when navigating between Dashboard, Stock, Movements, Batches, Traceability, and Material Flow.
+
+This creates the feeling of a continuous workspace.
+
+---
+
+# Tables
+
+Every Inventory table should support:
+
+* Sticky Header
+* Search
+* Advanced Filters
+* Sorting
+* Pagination
+* Bulk Selection
+* Column Visibility
+* Export
+* Responsive Layout
+
+---
+
+# Cards
+
+Every card should include:
+
+* subtle shadow
+* rounded corners
+* icon
+* status
+* action menu
+* hover elevation
+
+Maintain consistent dimensions.
+
+---
+
+# Dark Mode
+
+Completely redesign the Inventory module for dark mode.
+
+Use:
+
+* charcoal backgrounds
+* soft borders
+* professional contrast
+* readable tables
+* consistent chart colors
+
+Avoid pure black backgrounds.
+
+---
+
+# Mobile Experience
+
+The Inventory module should work smoothly on:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+On mobile:
+
+* Filters become a slide-out drawer.
+* Tables convert to responsive cards.
+* Search remains fixed at the top.
+* Quick actions move into a floating action menu.
+
+---
+
+# Performance
+
+Optimize:
+
+* Large inventories
+* Thousands of movements
+* Large batch histories
+* Traceability timelines
+* Charts
+
+Reuse components.
+
+Use lazy loading where appropriate.
+
+---
+
+# Preserve Existing Functionality
+
+Do **NOT** modify:
+
+* Inventory calculations
+* Stock logic
+* Warehouse logic
+* Processing logic
+* Traceability logic
+* Database
+* APIs
+* Backend
+* Business rules
+
+Only redesign the user interface.
+
+---
+
+# Final Goal
+
+The Inventory module should feel like a dedicated **Inventory Workspace** rather than a collection of independent pages. Users should be able to move seamlessly between Dashboard, Stock, Movements, Material Batches, Timeline & Traceability, and Material Flow while experiencing a consistent, premium, enterprise-grade interface. The redesign should maximize usability, maintainability, and visual consistency without altering any existing functionality.

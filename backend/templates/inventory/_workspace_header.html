@@ -1,0 +1,60 @@
+{#
+  Inventory Workspace – Unified Header & Tab Navigation
+  Include in every inventory page: {% include 'inventory/_workspace_header.html' %}
+  Variables used: inv_active_tab (string: dashboard|stock|movements|batches|timeline|flow)
+#}
+<div class="inv-workspace-header">
+  <div class="inv-header-top">
+    <div class="inv-header-brand">
+      <div class="inv-header-icon"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <h1 class="inv-header-title">Inventory</h1>
+        <p class="inv-header-subtitle">Manage stock, traceability, warehouse movements and inventory analytics</p>
+      </div>
+    </div>
+    <div class="inv-header-actions">
+      <a href="/inventory/adjust" class="inv-btn inv-btn-outline d-none d-md-inline-flex">
+        <i class="bi bi-sliders"></i> Adjust
+      </a>
+      <button onclick="invRefresh()" class="inv-btn inv-btn-ghost" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+      <a href="/inventory/export" class="inv-btn inv-btn-outline d-none d-sm-inline-flex">
+        <i class="bi bi-download"></i> Export
+      </a>
+    </div>
+  </div>
+
+  <nav class="inv-tab-nav">
+    <a href="/inventory/dashboard"
+       class="inv-tab-link {{ 'active' if inv_active_tab == 'dashboard' else '' }}">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="/inventory"
+       class="inv-tab-link {{ 'active' if inv_active_tab == 'stock' else '' }}">
+      <i class="bi bi-boxes"></i>
+      <span>Stock</span>
+    </a>
+    <a href="/inventory/movements"
+       class="inv-tab-link {{ 'active' if inv_active_tab == 'movements' else '' }}">
+      <i class="bi bi-arrow-left-right"></i>
+      <span>Movements</span>
+    </a>
+    <a href="/inventory/batches"
+       class="inv-tab-link {{ 'active' if inv_active_tab == 'batches' else '' }}">
+      <i class="bi bi-stack"></i>
+      <span>Material Batches</span>
+    </a>
+    <a href="/inventory/timeline"
+       class="inv-tab-link {{ 'active' if inv_active_tab == 'timeline' else '' }}">
+      <i class="bi bi-diagram-3"></i>
+      <span>Timeline &amp; Traceability</span>
+    </a>
+    <a href="/inventory/material-flow-dashboard"
+       class="inv-tab-link {{ 'active' if inv_active_tab == 'flow' else '' }}">
+      <i class="bi bi-share"></i>
+      <span>Material Flow</span>
+    </a>
+  </nav>
+</div>

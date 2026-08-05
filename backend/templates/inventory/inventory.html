@@ -1,272 +1,312 @@
 {% extends "shared/base.html" %}
+{% block title %}Stock – Inventory Workspace{% endblock %}
 
-{% block title %}Stock Summary – Right Ewaste ERP{% endblock %}
-{% block page_title %}Inventory Summary{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item active">Stock Summary</li>
+{% block styles %}
+<link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
 {% endblock %}
 
-{% from "shared/_page_header.html" import page_header %}
-
 {% block content %}
+{% set inv_active_tab = 'stock' %}
+{% include 'inventory/_workspace_header.html' %}
 
-{{ page_header(
-    title="Inventory Stock Summary",
-    subtitle="Live warehouse balances, stock counts, and material status across all locations.",
-    back_url="/",
-    actions=[
-        {'label': 'Stock Movements', 'url': '/inventory/movements', 'icon': 'bi-arrow-left-right', 'class': 'btn-outline-secondary'},
-        {'label': 'Manual Adjustment', 'url': '/inventory/adjustment', 'icon': 'bi-sliders', 'class': 'btn-primary'}
-    ]
-) }}
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-md-6">
-        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #0d9488 !important;">
-            <div class="card-body py-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Total Materials</p>
-                        <h4 class="mb-0 font-monospace fw-bold" style="color:#0f766e;">{{ total_materials }}</h4>
-                    </div>
-                    <div class="bg-light p-2.5 rounded-circle text-teal" style="color:#0d9488; font-size:22px; line-height:1;">
-                        <i class="bi bi-box"></i>
-                    </div>
-                </div>
-            </div>
+<div class="inv-page-body">
+
+  <!-- KPI Strip ────────────────────────────────────────────────────────── -->
+  {# item fields from get_stock_summary → get_inventory: id, code, name, category, unit, current_stock, current_weight, rate, purchased_qty, sold_qty, stock_status #}
+  <div class="inv-kpi-grid" style="grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); margin-bottom:18px;">
+    <div class="inv-kpi-card kpi-teal">
+      <div class="inv-kpi-icon icon-teal"><i class="bi bi-boxes"></i></div>
+      <div class="inv-kpi-value">{{ total_materials or 0 }}</div>
+      <div class="inv-kpi-label">Total Materials</div>
+    </div>
+    <div class="inv-kpi-card {{ 'kpi-danger' if (low_stock_alerts or 0) > 0 else '' }}">
+      <div class="inv-kpi-icon {{ 'icon-danger' if (low_stock_alerts or 0) > 0 else 'icon-warning' }}">
+        <i class="bi bi-exclamation-triangle{{ '-fill' if (low_stock_alerts or 0) > 0 else '' }}"></i>
+      </div>
+      <div class="inv-kpi-value">{{ low_stock_alerts or 0 }}</div>
+      <div class="inv-kpi-label">Low Stock</div>
+    </div>
+    <div class="inv-kpi-card">
+      <div class="inv-kpi-icon icon-info"><i class="bi bi-cart-plus"></i></div>
+      <div class="inv-kpi-value">{{ "%.1f"|format(total_purchased or 0) }}</div>
+      <div class="inv-kpi-label">Total Purchased</div>
+    </div>
+    <div class="inv-kpi-card kpi-success">
+      <div class="inv-kpi-icon icon-green"><i class="bi bi-bag-check"></i></div>
+      <div class="inv-kpi-value">{{ "%.1f"|format(total_sold or 0) }}</div>
+      <div class="inv-kpi-label">Total Sold</div>
+    </div>
+    <div class="inv-kpi-card">
+      <div class="inv-kpi-icon icon-purple"><i class="bi bi-currency-rupee"></i></div>
+      <div class="inv-kpi-value">₹{{ "%.0f"|format(total_stock_value or 0) }}</div>
+      <div class="inv-kpi-label">Stock Value</div>
+    </div>
+  </div>
+
+  <!-- Toolbar ──────────────────────────────────────────────────────────── -->
+  <form method="get" action="/inventory" id="stockFilterForm">
+    <div class="inv-toolbar">
+      <div class="inv-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="inv-search-input"
+               placeholder="Search material, code, category…"
+               value="{{ q or '' }}" autocomplete="off">
+      </div>
+
+      <select name="category" class="inv-filter-select" data-inv-autosubmit>
+        <option value="all">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {{ 'selected' if category == cat else '' }}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+
+      <select name="date_filter" class="inv-filter-select"
+              onchange="invToggleDateRange(this,'customDateRange')">
+        <option value="all"        {{ 'selected' if date_filter == 'all' else '' }}>All Time</option>
+        <option value="today"      {{ 'selected' if date_filter == 'today' else '' }}>Today</option>
+        <option value="this_week"  {{ 'selected' if date_filter == 'this_week' else '' }}>This Week</option>
+        <option value="this_month" {{ 'selected' if date_filter == 'this_month' else '' }}>This Month</option>
+        <option value="custom"     {{ 'selected' if date_filter == 'custom' else '' }}>Custom Range</option>
+      </select>
+
+      <div class="inv-date-range" id="customDateRange"
+           style="display:{{ 'flex' if date_filter == 'custom' else 'none' }};">
+        <input type="date" name="start_date" class="inv-date-input" value="{{ start_date or '' }}">
+        <span style="color:var(--text-muted);font-size:12px;">to</span>
+        <input type="date" name="end_date" class="inv-date-input" value="{{ end_date or '' }}">
+      </div>
+
+      <div class="inv-toolbar-sep d-none d-md-block"></div>
+
+      <div class="inv-view-toggle d-none d-md-flex">
+        <button type="button" class="inv-view-btn" data-view="table" onclick="invSetView('table')" title="Table">
+          <i class="bi bi-table"></i>
+        </button>
+        <button type="button" class="inv-view-btn" data-view="grid" onclick="invSetView('grid')" title="Grid">
+          <i class="bi bi-grid"></i>
+        </button>
+      </div>
+
+      <button type="submit" class="inv-btn inv-btn-primary">
+        <i class="bi bi-funnel"></i> Filter
+      </button>
+      {% if q or (category and category != 'all') or (date_filter and date_filter != 'all') %}
+      <a href="/inventory" class="inv-btn inv-btn-outline"><i class="bi bi-x"></i> Clear</a>
+      {% endif %}
+      <a href="/inventory/export" class="inv-btn inv-btn-outline d-none d-md-inline-flex" title="Export Excel">
+        <i class="bi bi-file-earmark-excel"></i>
+      </a>
+      <a href="/inventory/export/pdf" class="inv-btn inv-btn-outline d-none d-md-inline-flex" title="Export PDF">
+        <i class="bi bi-file-earmark-pdf"></i>
+      </a>
+    </div>
+  </form>
+
+  <!-- ── TABLE VIEW ────────────────────────────────────────────────────── -->
+  <div data-inv-view="table">
+    <div class="inv-card">
+      {% if summary %}
+      <!-- Bulk bar -->
+      <div id="inv-bulk-bar" style="display:none; align-items:center; gap:12px; padding:10px 18px; background:var(--inv-primary-dim); border-bottom:1px solid var(--inv-tab-border);">
+        <span class="inv-badge inv-badge-teal bulk-count">0</span>
+        <span style="font-size:13px;color:var(--inv-primary);font-weight:600;">items selected</span>
+        <div style="margin-left:auto;">
+          <button class="inv-btn inv-btn-ghost" style="font-size:12px;"
+                  onclick="document.getElementById('inv-select-all').checked=false; invUpdateBulkBar();">
+            <i class="bi bi-x"></i> Deselect
+          </button>
         </div>
-    </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #d97706 !important;">
-            <div class="card-body py-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Low Stock Alerts</p>
-                        <h4 class="mb-0 font-monospace fw-bold {% if low_stock_alerts > 0 %}text-danger{% else %}text-muted{% endif %}">
-                            {{ low_stock_alerts }}
-                        </h4>
-                    </div>
-                    <div class="bg-light p-2.5 rounded-circle" style="color:#d97706; font-size:22px; line-height:1;">
-                        <i class="bi bi-exclamation-triangle"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #2563eb !important;">
-            <div class="card-body py-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Purchases / Sales (Qty)</p>
-                        <h5 class="mb-0 font-monospace fw-bold" style="color:#475569;">
-                            {{ "%.1f"|format(total_purchased) }} / {{ "%.1f"|format(total_sold) }}
-                        </h5>
-                    </div>
-                    <div class="bg-light p-2.5 rounded-circle" style="color:#2563eb; font-size:22px; line-height:1;">
-                        <i class="bi bi-arrow-down-up"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-md-6">
-        <div class="card h-100 border-0 shadow-sm" style="border-radius:12px; border-left: 4.5px solid #16a34a !important;">
-            <div class="card-body py-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <p class="text-muted mb-1" style="font-size:12.5px; font-weight:600;">Total Stock Value</p>
-                        <h4 class="mb-0 font-monospace fw-bold" style="color:#16a34a;">₹ {{ "%.2f"|format(total_stock_value) }}</h4>
-                    </div>
-                    <div class="bg-light p-2.5 rounded-circle" style="color:#16a34a; font-size:22px; line-height:1;">
-                        <i class="bi bi-currency-rupee"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+      </div>
 
-<div class="erp-card">
-    <div class="erp-card-header">
-        <i class="bi bi-box" style="font-size:18px; color:#0d9488;"></i>
-        <h5>Material Inventory Summary</h5>
-        <span style="color:#aaa; font-size:13px; margin-left:4px;">
-            ({{ summary|length }} item{{ 's' if summary|length != 1 }})
-        </span>
-    </div>
-
-    <!-- ── Filter Bar ────────────────────────────────────────────── -->
-    <div class="p-3 bg-light border-bottom">
-        <form method="GET" action="/inventory" class="row g-2 align-items-end" id="filter-form">
-            <div class="col-md-2 col-sm-6">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Search</label>
-                <input type="text" name="q" class="form-control form-control-sm" value="{{ q or '' }}" placeholder="Code, Name...">
-            </div>
-
-            <div class="col-md-2 col-sm-6">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Category</label>
-                <select name="category" id="category" class="form-select form-select-sm">
-                    <option value="all" {% if category == 'all' or not category %}selected{% endif %}>All Categories</option>
-                    {% for cat in categories %}
-                    <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-2 col-sm-6">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Quick Filter</label>
-                <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
-                    <option value="all" {% if date_filter == 'all' or not date_filter %}selected{% endif %}>All Time</option>
-                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
-                    <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
-                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
-                    <option value="last_6_months" {% if date_filter == 'last_6_months' %}selected{% endif %}>Last 6 Months</option>
-                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
-                </select>
-            </div>
-            
-            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Start Date</label>
-                <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ start_date }}">
-            </div>
-
-            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">End Date</label>
-                <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ end_date }}">
-            </div>
-
-            <div class="col-md-2 col-sm-12 d-flex gap-2">
-                <button type="submit" class="btn btn-sm text-white px-3 py-2 w-100" style="font-size:12.5px; background-color:#0d9488;">
-                    <i class="bi bi-filter"></i> Filter
-                </button>
-                <a href="/inventory" class="btn btn-sm btn-outline-secondary px-3 py-2 w-100" style="font-size:12.5px;">
-                    Reset
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th class="col-check">
+                <input type="checkbox" class="inv-check" id="inv-select-all">
+              </th>
+              <th data-sort>Code</th>
+              <th data-sort>Material</th>
+              <th data-sort>Category</th>
+              <th class="col-num" data-sort>Stock</th>
+              <th class="col-num" data-sort>Weight (kg)</th>
+              <th>Unit</th>
+              <th class="col-num" data-sort>Rate (₹)</th>
+              <th class="col-num" data-sort>Value (₹)</th>
+              <th>Status</th>
+              <th class="col-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in summary %}
+            {# item fields: id, code, name, category, unit, current_stock, current_weight, rate, stock_status #}
+            <tr>
+              <td class="col-check">
+                <input type="checkbox" class="inv-check inv-row-check" value="{{ item.id }}">
+              </td>
+              <td>
+                <span style="font-family:monospace;font-size:12px;color:var(--text-muted);">
+                  {{ item.code or '—' }}
+                </span>
+              </td>
+              <td>
+                <a href="/inventory/{{ item.id }}" style="font-weight:600;color:var(--text-primary);">
+                  {{ item.name or '—' }}
                 </a>
-            </div>
-        </form>
-    </div>
-
-    <!-- ── Summary Table ────────────────────────────────────────── -->
-    <div class="erp-card-body p-0">
-        {% if summary %}
-        <div style="overflow-x:auto;">
-        <table class="erp-table">
-            <thead>
-                <tr>
-                    <th>Material Code</th>
-                    <th>Material Name</th>
-                    <th>Category</th>
-                    <th style="text-align:right;">Purchased Quantity</th>
-                    <th style="text-align:right;">Sold Quantity</th>
-                    <th style="text-align:right;">Current Stock</th>
-                    <th style="text-align:center;">Unit</th>
-                    <th style="text-align:right;">Stock Value</th>
-                    <th style="text-align:center;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in summary %}
-                <tr>
-                    <td>
-                        <a href="/inventory/{{ item.id }}/ledger" class="text-decoration-none">
-                            <code class="code-cell">{{ item.code }}</code>
-                        </a>
-                    </td>
-                    <td class="fw-semibold">{{ item.name }}</td>
-                    <td><span class="badge bg-secondary">{{ item.category or '—' }}</span></td>
-                    <td style="text-align:right;" class="font-monospace">{{ "%.2f"|format(item.purchased_qty) }}</td>
-                    <td style="text-align:right;" class="font-monospace">{{ "%.2f"|format(item.sold_qty) }}</td>
-                    <td style="text-align:right;" class="font-monospace fw-semibold">
-                        <span class="{% if item.current_stock < 10 %}text-danger{% else %}text-success{% endif %}">
-                            {{ "%.2f"|format(item.current_stock) }}
-                        </span>
-                        {% if item.current_stock < 10 %}
-                        <span class="badge bg-danger ms-1" style="font-size:9px; padding:2px 5px;">LOW</span>
-                        {% endif %}
-                    </td>
-                    <td style="text-align:center;"><span class="badge bg-info-subtle">{{ item.unit }}</span></td>
-                    <td style="text-align:right;" class="font-monospace fw-semibold">
-                        ₹ {{ "%.2f"|format(item.current_stock * item.rate) }}
-                    </td>
-                    <td style="text-align:center;">
-                        <a href="/inventory/{{ item.id }}/ledger"
-                           class="btn btn-sm btn-outline-secondary" 
-                           style="font-size:11px; padding:3px 8px; border-radius:5px;"
-                           title="View Material Ledger">
-                            <i class="bi bi-journal-text me-1"></i> Ledger
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+              </td>
+              <td><span class="inv-badge inv-badge-gray">{{ item.category or '—' }}</span></td>
+              <td class="col-num">
+                {% set stock = item.current_stock or 0 %}
+                <span style="font-weight:700;color:{{ 'var(--danger)' if stock <= 0 else ('var(--warning)' if stock < 10 else 'var(--text-primary)') }};">
+                  {{ "%.2f"|format(stock) }}
+                </span>
+              </td>
+              <td class="col-num">{{ "%.3f"|format(item.current_weight or 0) }}</td>
+              <td style="color:var(--text-muted);font-size:12px;">{{ item.unit or '—' }}</td>
+              <td class="col-num">{{ "%.2f"|format(item.rate or 0) }}</td>
+              <td class="col-num">₹{{ "%.2f"|format((item.current_stock or 0) * (item.rate or 0)) }}</td>
+              <td>
+                {% if item.stock_status == 'Out of Stock' %}
+                  <span class="inv-badge inv-badge-danger">Out of Stock</span>
+                {% elif item.stock_status == 'Low Stock' %}
+                  <span class="inv-badge inv-badge-warning">Low Stock</span>
+                {% else %}
+                  <span class="inv-badge inv-badge-green">Available</span>
+                {% endif %}
+              </td>
+              <td class="col-center">
+                <div style="display:flex;gap:4px;justify-content:center;">
+                  <a href="/inventory/{{ item.id }}" class="inv-btn inv-btn-ghost" style="padding:4px 8px;" title="Details">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a href="/inventory/{{ item.id }}/ledger" class="inv-btn inv-btn-ghost" style="padding:4px 8px;" title="Ledger">
+                    <i class="bi bi-journal-text"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="color:var(--text-muted);">
+                Showing {{ summary|length }} of {{ total_items or summary|length }} material{{ 's' if (total_items or 1) != 1 else '' }}
+              </td>
+              <td class="col-num">{{ "%.2f"|format(summary|sum(attribute='current_stock') or 0) }}</td>
+              <td class="col-num">{{ "%.3f"|format(summary|sum(attribute='current_weight') or 0) }}</td>
+              <td></td>
+              <td></td>
+              <td class="col-num">₹{{ "%.2f"|format(total_stock_value or 0) }}</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tfoot>
         </table>
-        </div>
-        {% if total_pages > 1 %}
-        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
-            <div class="text-muted small" style="font-size:12.5px;">
-                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
-            </div>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-                {% for p in range(1, total_pages + 1) %}
-                <li class="page-item {% if p == page %}active{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
-                </li>
-                {% endfor %}
-                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        {% endif %}
+      </div>
 
-        <!-- Export Excel and PDF buttons -->
-        <div class="p-3 bg-light border-top d-flex justify-content-start gap-2">
-            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
-                <i class="bi bi-file-earmark-spreadsheet" style="color:#0d9488; font-size:15px;"></i> Export to Excel
-            </button>
-            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportPDF()" style="font-size:13px; font-weight:600; border-radius:8px;">
-                <i class="bi bi-file-earmark-pdf" style="color:#dc3545; font-size:15px;"></i> Export to PDF
-            </button>
+      <!-- Pagination -->
+      {% if total_pages and total_pages > 1 %}
+      <div class="inv-pagination">
+        <span>Page {{ page }} of {{ total_pages }} &nbsp;·&nbsp; {{ total_items }} materials</span>
+        <div class="inv-page-btns">
+          {% if page > 1 %}
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page=1" class="inv-page-btn">«</a>
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ page-1 }}" class="inv-page-btn">‹</a>
+          {% else %}
+          <span class="inv-page-btn disabled">«</span>
+          <span class="inv-page-btn disabled">‹</span>
+          {% endif %}
+          {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ p }}"
+             class="inv-page-btn {{ 'active' if p == page else '' }}">{{ p }}</a>
+          {% endfor %}
+          {% if page < total_pages %}
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ page+1 }}" class="inv-page-btn">›</a>
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ total_pages }}" class="inv-page-btn">»</a>
+          {% else %}
+          <span class="inv-page-btn disabled">›</span>
+          <span class="inv-page-btn disabled">»</span>
+          {% endif %}
         </div>
+      </div>
+      {% endif %}
 
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">📦</div>
-            <p>No materials or stock movements matched this filter.</p>
+      {% else %}
+      <div class="inv-empty">
+        <div class="inv-empty-icon"><i class="bi bi-boxes"></i></div>
+        <div class="inv-empty-title">No materials found</div>
+        <div class="inv-empty-subtitle">
+          {% if q or (category and category != 'all') %}
+          Try adjusting your search or filters.
+          <a href="/inventory" class="d-block mt-2" style="color:var(--inv-primary);">Clear filters</a>
+          {% else %}
+          Add materials in Masters to start tracking inventory.
+          {% endif %}
         </div>
-        {% endif %}
+      </div>
+      {% endif %}
     </div>
-</div>
+  </div>
+
+  <!-- ── GRID VIEW ─────────────────────────────────────────────────────── -->
+  <div data-inv-view="grid" style="display:none;">
+    {% if summary %}
+    <div class="inv-material-grid">
+      {% for item in summary %}
+      <div class="inv-material-card">
+        <div class="inv-mat-icon"><i class="bi bi-box-seam"></i></div>
+        <div class="inv-mat-code">{{ item.code or 'N/A' }}</div>
+        <div class="inv-mat-name">{{ item.name or '—' }}</div>
+        <span class="inv-badge inv-badge-gray">{{ item.category or 'Uncategorised' }}</span>
+        {% if item.stock_status == 'Out of Stock' %}
+        <span class="inv-badge inv-badge-danger ms-1">Out of Stock</span>
+        {% elif item.stock_status == 'Low Stock' %}
+        <span class="inv-badge inv-badge-warning ms-1">Low Stock</span>
+        {% endif %}
+        <div class="inv-mat-stats">
+          <div class="inv-mat-stat-item">
+            <div class="stat-val">{{ "%.1f"|format(item.current_stock or 0) }}</div>
+            <div class="stat-lbl">{{ item.unit or 'Stock' }}</div>
+          </div>
+          <div class="inv-mat-stat-item">
+            <div class="stat-val">₹{{ "%.0f"|format((item.current_stock or 0) * (item.rate or 0)) }}</div>
+            <div class="stat-lbl">Value</div>
+          </div>
+        </div>
+        <div class="inv-mat-actions">
+          <a href="/inventory/{{ item.id }}" class="inv-btn inv-btn-primary flex-fill justify-content-center" style="font-size:12px;">
+            <i class="bi bi-eye"></i> View
+          </a>
+          <a href="/inventory/{{ item.id }}/ledger" class="inv-btn inv-btn-outline" style="font-size:12px;padding:8px 10px;" title="Ledger">
+            <i class="bi bi-journal-text"></i>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="inv-card">
+      <div class="inv-empty">
+        <div class="inv-empty-icon"><i class="bi bi-boxes"></i></div>
+        <div class="inv-empty-title">No materials found</div>
+        <div class="inv-empty-subtitle">Adjust your filters or add materials.</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div><!-- /inv-page-body -->
+
+<button class="inv-fab" onclick="window.location='/inventory/adjust'" title="Stock Adjustment">
+  <i class="bi bi-plus-lg"></i>
+</button>
 
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
 <script>
-function toggleCustomDates() {
-    const select = document.getElementById('date_filter');
-    const customFields = document.querySelectorAll('.custom-date-field');
-    customFields.forEach(field => {
-        field.style.display = select.value === 'custom' ? 'block' : 'none';
-    });
-}
-
-function exportExcel() {
-    const params = new URLSearchParams(window.location.search);
-    window.location.href = "/inventory/export?" + params.toString();
-}
-
-function exportPDF() {
-    const params = new URLSearchParams(window.location.search);
-    window.location.href = "/inventory/export/pdf?" + params.toString();
-}
+window.INV_PAGE = 'stock';
+document.addEventListener('DOMContentLoaded', () => { invInitViewToggle('table'); });
 </script>
 {% endblock %}

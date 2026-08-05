@@ -1,116 +1,236 @@
 {% extends "shared/base.html" %}
-{% block title %}Material Batches – Right Ewaste ERP{% endblock %}
+{% block title %}Material Batches – Inventory Workspace{% endblock %}
 
-{% from "shared/_page_header.html" import page_header %}
+{% block styles %}
+<link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
+{% endblock %}
 
 {% block content %}
+{% set inv_active_tab = 'batches' %}
+{% include 'inventory/_workspace_header.html' %}
 
-{{ page_header(
-    title="Material Batches",
-    subtitle="Every purchase creates a unique batch – trace its complete lifecycle from receipt to final sale or disposal.",
-    back_url="/inventory/dashboard",
-    actions=[
-        {'label': 'Material Flow Dashboard', 'url': '/inventory/material-flow-dashboard', 'icon': 'bi-graph-up-arrow', 'class': 'btn-outline-secondary'},
-        {'label': 'Timeline Search', 'url': '/inventory/timeline', 'icon': 'bi-diagram-3', 'class': 'btn-primary'}
-    ]
-) }}
+<div class="inv-page-body">
 
-<!-- Search & Filters -->
-<div class="card mb-4">
-  <div class="card-body">
-    <form method="GET" class="row g-3 align-items-end">
-      <div class="col-md-5">
-        <label class="form-label">Search Batch / Material / Supplier</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" name="q" class="form-control" placeholder="BATCH-2026-00001, Desktop, ABC Corp..." value="{{ query }}">
+  <!-- Toolbar ──────────────────────────────────────────────────────────── -->
+  <form method="get" action="/inventory/batches">
+    <div class="inv-toolbar">
+      <div class="inv-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="query" id="batchSearch" class="inv-search-input"
+               placeholder="Search batch, material, supplier, invoice…"
+               value="{{ query or '' }}" autocomplete="off">
+      </div>
+
+      <select name="status" class="inv-filter-select" data-inv-autosubmit>
+        <option value="">All Statuses</option>
+        <option value="ACTIVE"      {{ 'selected' if status == 'ACTIVE' else '' }}>Active</option>
+        <option value="PROCESSING"  {{ 'selected' if status == 'PROCESSING' else '' }}>Processing</option>
+        <option value="COMPLETED"   {{ 'selected' if status == 'COMPLETED' else '' }}>Completed</option>
+        <option value="DISPOSED"    {{ 'selected' if status == 'DISPOSED' else '' }}>Disposed</option>
+      </select>
+
+      <div class="inv-toolbar-sep d-none d-md-block"></div>
+
+      <div class="inv-view-toggle d-none d-md-flex">
+        <button type="button" class="inv-view-btn" data-view="cards" onclick="invSetView('cards')" title="Card View">
+          <i class="bi bi-grid"></i>
+        </button>
+        <button type="button" class="inv-view-btn" data-view="table" onclick="invSetView('table')" title="Table View">
+          <i class="bi bi-table"></i>
+        </button>
+      </div>
+
+      <button type="submit" class="inv-btn inv-btn-primary">
+        <i class="bi bi-funnel"></i> Filter
+      </button>
+      {% if query or status %}
+      <a href="/inventory/batches" class="inv-btn inv-btn-outline"><i class="bi bi-x"></i> Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if batches %}
+
+  <!-- ── CARD VIEW ─────────────────────────────────────────────────────── -->
+  <div data-inv-view="cards">
+    <div class="inv-batch-grid">
+      {% for batch in batches %}
+      {% set st = batch.processing_status or batch.status or '' %}
+      {% if st == 'ACTIVE' %}
+        {% set badge_cls = 'inv-badge-green' %}
+      {% elif st == 'PROCESSING' %}
+        {% set badge_cls = 'inv-badge-info' %}
+      {% elif st == 'COMPLETED' %}
+        {% set badge_cls = 'inv-badge-teal' %}
+      {% elif st == 'DISPOSED' %}
+        {% set badge_cls = 'inv-badge-gray' %}
+      {% else %}
+        {% set badge_cls = 'inv-badge-warning' %}
+      {% endif %}
+
+      <div class="inv-batch-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div class="inv-batch-num">
+              <i class="bi bi-upc-scan"></i>
+              {{ batch.batch_number or '—' }}
+            </div>
+            <div class="inv-batch-material">{{ batch.material_name or '—' }}</div>
+          </div>
+          <span class="inv-badge {{ badge_cls }}">{{ st or 'Unknown' }}</span>
+        </div>
+
+        <div class="inv-batch-rows">
+          <div>
+            <div class="br-label">Supplier</div>
+            <div class="br-value">{{ batch.supplier_name or '—' }}</div>
+          </div>
+          <div>
+            <div class="br-label">Invoice</div>
+            <div class="br-value" style="font-family:monospace;font-size:11px;">
+              {% if batch.purchase_invoice_id %}
+              <a href="/purchase/{{ batch.purchase_invoice_id }}/view" style="color:var(--inv-primary);">
+                {{ batch.invoice_number or '—' }}
+              </a>
+              {% else %}{{ batch.invoice_number or '—' }}{% endif %}
+            </div>
+          </div>
+          <div>
+            <div class="br-label">Qty In</div>
+            <div class="br-value">{{ "%.2f"|format(batch.initial_quantity or 0) }}</div>
+          </div>
+          <div>
+            <div class="br-label">Remaining Wt</div>
+            <div class="br-value">{{ "%.3f"|format(batch.remaining_weight or 0) }} kg</div>
+          </div>
+          <div>
+            <div class="br-label">Created</div>
+            <div class="br-value" style="font-size:11px;">{{ batch.created_at or batch.purchase_date or '—' }}</div>
+          </div>
+          {% if batch.warehouse %}
+          <div>
+            <div class="br-label">Warehouse</div>
+            <div class="br-value">{{ batch.warehouse }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="inv-batch-footer">
+          <div style="font-size:11px;color:var(--text-xmuted);">
+            <i class="bi bi-clock"></i>
+            {% if batch.age_days is defined %}
+            {{ batch.age_days }} days old
+            {% else %}
+            Active batch
+            {% endif %}
+          </div>
+          <div style="display:flex;gap:6px;">
+            <a href="/inventory/batch/{{ batch.batch_number }}" class="inv-btn inv-btn-primary" style="font-size:12px;padding:6px 12px;">
+              <i class="bi bi-diagram-3"></i> Trace
+            </a>
+          </div>
         </div>
       </div>
-      <div class="col-md-3">
-        <label class="form-label">Status</label>
-        <select name="status" class="form-select">
-          <option value="all" {% if status == 'all' %}selected{% endif %}>All Statuses</option>
-          <option value="IN_STORE" {% if status == 'IN_STORE' %}selected{% endif %}>In Store</option>
-          <option value="IN_PROCESSING" {% if status == 'IN_PROCESSING' %}selected{% endif %}>In Processing</option>
-          <option value="PROCESSED" {% if status == 'PROCESSED' %}selected{% endif %}>Processed</option>
-          <option value="SOLD" {% if status == 'SOLD' %}selected{% endif %}>Sold</option>
-          <option value="DISPOSED" {% if status == 'DISPOSED' %}selected{% endif %}>Disposed</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
-      </div>
-      <div class="col-md-2">
-        <a href="/inventory/batches" class="btn btn-outline-secondary w-100"><i class="bi bi-x-circle me-1"></i>Clear</a>
-      </div>
-    </form>
+      {% endfor %}
+    </div>
   </div>
-</div>
 
-<!-- Batch Table -->
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="card-title mb-0"><i class="bi bi-boxes me-2 text-primary"></i>Material Batches <span class="badge bg-primary ms-2">{{ batches|length }}</span></h5>
-    <a href="/inventory/timeline" class="btn btn-sm btn-outline-info"><i class="bi bi-diagram-3 me-1"></i>Material Timeline</a>
-  </div>
-  <div class="card-body p-0">
-    {% if batches %}
-    <div class="table-responsive">
-      <table class="table table-hover mb-0 align-middle">
-        <thead>
-          <tr>
-            <th>Batch Number</th>
-            <th>Material</th>
-            <th>Supplier</th>
-            <th>Purchase Invoice</th>
-            <th>Purchase Date</th>
-            <th class="text-end">Qty</th>
-            <th class="text-end">Weight (KG)</th>
-            <th class="text-end">Remaining (KG)</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for b in batches %}
-          <tr>
-            <td><a href="/inventory/batch/{{ b.batch_number }}" class="fw-semibold text-primary font-monospace">{{ b.batch_number }}</a></td>
-            <td>{{ b.material_name }}</td>
-            <td>{{ b.supplier_name or '—' }}</td>
-            <td>
-              {% if b.purchase_invoice_id %}
-              <a href="/purchase/{{ b.purchase_invoice_id }}/view" class="text-secondary">{{ b.purchase_invoice_number or '—' }}</a>
-              {% else %}—{% endif %}
-            </td>
-            <td>{{ b.purchase_date }}</td>
-            <td class="text-end">{{ b.quantity|round(2) }}</td>
-            <td class="text-end">{{ b.weight|round(3) }}</td>
-            <td class="text-end">{{ b.remaining_weight|round(3) }}</td>
-            <td>
-              {% if b.status == 'IN_STORE' %}<span class="badge bg-success">In Store</span>
-              {% elif b.status == 'IN_PROCESSING' %}<span class="badge bg-warning text-dark">In Processing</span>
-              {% elif b.status == 'PROCESSED' %}<span class="badge bg-info">Processed</span>
-              {% elif b.status == 'SOLD' %}<span class="badge bg-secondary">Sold</span>
-              {% elif b.status == 'DISPOSED' %}<span class="badge bg-danger">Disposed</span>
-              {% else %}<span class="badge bg-light text-dark">{{ b.status }}</span>{% endif %}
-            </td>
-            <td>
-              <a href="/inventory/batch/{{ b.batch_number }}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-diagram-3 me-1"></i>Trace
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <!-- ── TABLE VIEW ────────────────────────────────────────────────────── -->
+  <div data-inv-view="table" style="display:none;">
+    <div class="inv-card">
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th data-sort>Batch Number</th>
+              <th data-sort>Material</th>
+              <th data-sort>Supplier</th>
+              <th>Invoice</th>
+              <th data-sort>Date</th>
+              <th class="col-num" data-sort>Qty</th>
+              <th class="col-num" data-sort>Weight</th>
+              <th class="col-num" data-sort>Remaining Wt</th>
+              <th>Status</th>
+              <th class="col-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for batch in batches %}
+            {% set st = batch.processing_status or batch.status or '' %}
+            <tr>
+              <td>
+                <span style="font-family:monospace;font-size:12.5px;font-weight:700;color:var(--inv-primary);">
+                  {{ batch.batch_number or '—' }}
+                </span>
+              </td>
+              <td style="font-weight:600;">{{ batch.material_name or '—' }}</td>
+              <td style="color:var(--text-muted);">{{ batch.supplier_name or '—' }}</td>
+              <td>
+                {% if batch.purchase_invoice_id %}
+                <a href="/purchase/{{ batch.purchase_invoice_id }}/view" style="font-family:monospace;font-size:12px;color:var(--inv-primary);">
+                  {{ batch.invoice_number or '—' }}
+                </a>
+                {% else %}
+                <span style="font-family:monospace;font-size:12px;color:var(--text-muted);">{{ batch.invoice_number or '—' }}</span>
+                {% endif %}
+              </td>
+              <td style="font-size:12px;color:var(--text-muted);white-space:nowrap;">{{ batch.created_at or batch.purchase_date or '—' }}</td>
+              <td class="col-num">{{ "%.2f"|format(batch.initial_quantity or 0) }}</td>
+              <td class="col-num">{{ "%.3f"|format(batch.initial_weight or 0) }}</td>
+              <td class="col-num" style="font-weight:700;">{{ "%.3f"|format(batch.remaining_weight or 0) }}</td>
+              <td>
+                {% if st == 'ACTIVE' %}
+                  <span class="inv-badge inv-badge-green">{{ st }}</span>
+                {% elif st == 'PROCESSING' %}
+                  <span class="inv-badge inv-badge-info">{{ st }}</span>
+                {% elif st == 'COMPLETED' %}
+                  <span class="inv-badge inv-badge-teal">{{ st }}</span>
+                {% elif st == 'DISPOSED' %}
+                  <span class="inv-badge inv-badge-gray">{{ st }}</span>
+                {% else %}
+                  <span class="inv-badge inv-badge-warning">{{ st or '—' }}</span>
+                {% endif %}
+              </td>
+              <td class="col-center">
+                <a href="/inventory/batch/{{ batch.batch_number }}" class="inv-btn inv-btn-outline" style="font-size:12px;padding:5px 10px;">
+                  <i class="bi bi-diagram-3"></i> Trace
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-    {% else %}
-    <div class="text-center py-5 text-muted">
-      <i class="bi bi-boxes fs-1 mb-3 d-block"></i>
-      <p>No material batches found{% if query %} for "{{ query }}"{% endif %}.</p>
-      <small>Batches are created automatically when purchase invoices are confirmed.</small>
-    </div>
-    {% endif %}
   </div>
-</div>
+
+  {% else %}
+  <div class="inv-card">
+    <div class="inv-empty">
+      <div class="inv-empty-icon"><i class="bi bi-stack"></i></div>
+      <div class="inv-empty-title">No batches found</div>
+      <div class="inv-empty-subtitle">
+        {% if query or status %}
+        Adjust your search or filters.
+        <a href="/inventory/batches" class="d-block mt-2" style="color:var(--inv-primary);">Clear filters</a>
+        {% else %}
+        Material batches are created automatically when purchase invoices are confirmed.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /inv-page-body -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
+<script>
+window.INV_PAGE = 'batches';
+document.addEventListener('DOMContentLoaded', () => {
+  invInitViewToggle('cards');
+});
+</script>
 {% endblock %}

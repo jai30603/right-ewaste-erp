@@ -1,172 +1,240 @@
 {% extends "shared/base.html" %}
+{% block title %}Movements – Inventory Workspace{% endblock %}
 
-{% block title %}Stock Movement Log – Right Ewaste ERP{% endblock %}
-{% block page_title %}Stock Movement Log{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{{ url_for('inventory.inventory_dashboard') }}" class="text-decoration-none text-muted">Inventory</a></li>
-<li class="breadcrumb-item active">Movement Log</li>
+{% block styles %}
+<link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
+{% set inv_active_tab = 'movements' %}
+{% include 'inventory/_workspace_header.html' %}
 
-{# ── Page Header ──────────────────────────────────────────────── #}
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-    <div>
-        <h1 class="h4 mb-1 fw-bold">Stock Movement Log</h1>
-        <p class="text-muted mb-0" style="font-size:13.5px;">
-            Every inventory change — purchase, sale, processing, adjustment — recorded here.
-        </p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('inventory.inventory_dashboard') }}"
-           class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px; font-weight:600;">
-            <i class="bi bi-speedometer2 me-1"></i> Dashboard
-        </a>
-        <a href="{{ url_for('inventory.inventory') }}"
-           class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px; font-weight:600;">
-            <i class="bi bi-box-seam me-1"></i> Stock List
-        </a>
-    </div>
-</div>
+<div class="inv-page-body">
 
-{# ── Filter Bar ───────────────────────────────────────────────── #}
-<div class="erp-card mb-4">
-    <div class="erp-card-header">
-        <i class="bi bi-funnel" style="font-size:16px; color:#0d9488;"></i>
-        <h2 class="h6 mb-0">Filter Movements</h2>
+  <!-- Toolbar ──────────────────────────────────────────────────────────── -->
+  {# route passes: movements, materials, material_id (string), movement_type (string) #}
+  <form method="get" action="/inventory/movements">
+    <div class="inv-toolbar">
+      <div class="inv-search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" name="q" class="inv-search-input"
+               placeholder="Search material, reference, type…"
+               value="{{ request.args.get('q', '') }}" autocomplete="off">
+      </div>
+
+      <select name="material_id" class="inv-filter-select" data-inv-autosubmit>
+        <option value="">All Materials</option>
+        {% for mat in materials %}
+        <option value="{{ mat.id }}" {{ 'selected' if material_id == mat.id|string else '' }}>
+          {{ mat.name }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <select name="movement_type" class="inv-filter-select" data-inv-autosubmit>
+        <option value="">All Types</option>
+        <option value="PURCHASE"   {{ 'selected' if movement_type == 'PURCHASE' else '' }}>Purchase</option>
+        <option value="SALE"       {{ 'selected' if movement_type == 'SALE' else '' }}>Sale</option>
+        <option value="ADJUSTMENT" {{ 'selected' if movement_type == 'ADJUSTMENT' else '' }}>Adjustment</option>
+        <option value="PROCESSING" {{ 'selected' if movement_type == 'PROCESSING' else '' }}>Processing</option>
+        <option value="TRANSFER"   {{ 'selected' if movement_type == 'TRANSFER' else '' }}>Transfer</option>
+      </select>
+
+      <div class="inv-toolbar-sep d-none d-md-block"></div>
+
+      <div class="inv-view-toggle d-none d-md-flex">
+        <button type="button" class="inv-view-btn" data-view="timeline" onclick="invSetView('timeline')" title="Timeline">
+          <i class="bi bi-list-ul"></i>
+        </button>
+        <button type="button" class="inv-view-btn" data-view="table" onclick="invSetView('table')" title="Table">
+          <i class="bi bi-table"></i>
+        </button>
+      </div>
+
+      <button type="submit" class="inv-btn inv-btn-primary">
+        <i class="bi bi-funnel"></i> Filter
+      </button>
+      {% if material_id or movement_type %}
+      <a href="/inventory/movements" class="inv-btn inv-btn-outline"><i class="bi bi-x"></i> Clear</a>
+      {% endif %}
     </div>
-    <div class="p-3 bg-light">
-        <form method="GET" action="{{ url_for('inventory.movement_history') }}" class="row g-2 align-items-end" id="movement-filter-form">
-            <div class="col-md-4 col-sm-6">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Material</label>
-                <select class="form-select form-select-sm" name="material_id" id="material_id_filter">
-                    <option value="">All Materials</option>
-                    {% for m in materials %}
-                    <option value="{{ m.id }}" {% if m.id == material_id %}selected{% endif %}>
-                        {{ m.name }} ({{ m.code }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4 col-sm-6">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Operation Type</label>
-                <select class="form-select form-select-sm" name="movement_type" id="movement_type_filter">
-                    <option value="all" {% if movement_type == 'all' %}selected{% endif %}>All Operations</option>
-                    {% for mtype in ['PURCHASE','SALE','PROCESSING','REFURBISHMENT','DISMANTLING','SORTING','INTERNAL_CONSUMPTION','WEIGHT_ADJUSTMENT','MANUAL_ADJUSTMENT','RETURN','TRANSFER'] %}
-                    <option value="{{ mtype }}" {% if movement_type == mtype %}selected{% endif %}>
-                        {{ mtype|replace('_',' ')|title }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4 col-sm-12 d-flex gap-2">
-                <button type="submit" class="btn btn-sm text-white px-4 py-2 w-100"
-                        style="background:#0d9488; border-radius:7px; font-size:12.5px; font-weight:600;">
-                    <i class="bi bi-filter me-1"></i> Apply Filter
-                </button>
-                <a href="{{ url_for('inventory.movement_history') }}"
-                   class="btn btn-sm btn-outline-secondary px-3 py-2"
-                   style="border-radius:7px; font-size:12.5px; white-space:nowrap;">
-                    Reset
+  </form>
+
+  {% if movements %}
+
+  <!-- ── TIMELINE VIEW ─────────────────────────────────────────────────── -->
+  <div data-inv-view="timeline">
+    <div class="inv-timeline">
+      {% for m in movements %}
+      {# m fields: movement_type, inventory_state, created_at, reference_number, quantity_change, weight_change, performed_by, material_id, material_name, type, qty #}
+      {% set mt = m.movement_type or '' %}
+      {% if mt in ('PURCHASE', 'STOCK_IN') %}
+        {% set dot_cls = 'dot-in' %}{% set badge_cls = 'inv-badge-green' %}{% set icon = 'bi-arrow-down-circle-fill' %}
+      {% elif mt in ('SALE', 'STOCK_OUT') %}
+        {% set dot_cls = 'dot-out' %}{% set badge_cls = 'inv-badge-danger' %}{% set icon = 'bi-arrow-up-circle-fill' %}
+      {% elif mt == 'ADJUSTMENT' %}
+        {% set dot_cls = 'dot-adj' %}{% set badge_cls = 'inv-badge-warning' %}{% set icon = 'bi-sliders' %}
+      {% elif mt == 'PROCESSING' %}
+        {% set dot_cls = 'dot-proc' %}{% set badge_cls = 'inv-badge-info' %}{% set icon = 'bi-gear-fill' %}
+      {% else %}
+        {% set dot_cls = 'dot-trans' %}{% set badge_cls = 'inv-badge-teal' %}{% set icon = 'bi-arrow-left-right' %}
+      {% endif %}
+
+      <div class="inv-timeline-item">
+        <div class="inv-timeline-dot {{ dot_cls }}">
+          <i class="bi {{ icon }}"></i>
+        </div>
+        <div class="inv-movement-card">
+          <div class="inv-movement-header">
+            <div>
+              <div class="inv-movement-title">
+                <a href="/inventory/{{ m.material_id }}" style="color:var(--text-primary);text-decoration:none;">
+                  {{ m.material_name or '—' }}
                 </a>
+                {% if m.material_code %}
+                <span style="font-size:11px;color:var(--text-muted);font-family:monospace;margin-left:6px;">{{ m.material_code }}</span>
+                {% endif %}
+              </div>
+              <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
+                <span class="inv-badge {{ badge_cls }}">
+                  <i class="bi {{ icon }}"></i> {{ m.type or mt or '—' }}
+                </span>
+                {% if m.inventory_state %}
+                <span class="inv-badge inv-badge-teal">{{ m.inventory_state }}</span>
+                {% endif %}
+              </div>
             </div>
-        </form>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;">
+                {{ m.created_at or '—' }}
+              </div>
+              {% if m.performed_by %}
+              <div style="font-size:11px;color:var(--text-xmuted);margin-top:2px;">
+                <i class="bi bi-person"></i> {{ m.performed_by }}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="inv-movement-meta">
+            {% if m.reference_number %}
+            <div class="inv-movement-meta-item">
+              <strong>Ref:</strong> <span style="font-family:monospace;font-size:11.5px;">{{ m.reference_number }}</span>
+            </div>
+            {% endif %}
+            <div class="inv-movement-meta-item">
+              <strong>Qty:</strong>
+              <span style="color:{{ 'var(--success)' if (m.quantity_change or 0) >= 0 else 'var(--danger)' }};font-weight:700;">
+                {{ '+' if (m.quantity_change or 0) >= 0 else '' }}{{ "%.2f"|format(m.quantity_change or 0) }}
+              </span>
+            </div>
+            <div class="inv-movement-meta-item">
+              <strong>Weight:</strong>
+              <span style="color:{{ 'var(--success)' if (m.weight_change or 0) >= 0 else 'var(--danger)' }};font-weight:700;">
+                {{ '+' if (m.weight_change or 0) >= 0 else '' }}{{ "%.3f"|format(m.weight_change or 0) }} kg
+              </span>
+            </div>
+            {% if m.remarks %}
+            <div class="inv-movement-meta-item" style="width:100%;margin-top:4px;padding-top:4px;border-top:1px solid var(--border);">
+              <strong>Note:</strong> {{ m.remarks }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
     </div>
-</div>
+  </div>
 
-{# ── Movements Table ──────────────────────────────────────────── #}
-<div class="erp-card">
-    <div class="erp-card-header">
-        <i class="bi bi-clock-history" style="font-size:18px; color:#0d9488;"></i>
-        <h2 class="h5 mb-0">Movement Records</h2>
-        <span style="color:#aaa; font-size:13px; margin-left:4px;">
-            ({{ movements|length }} records)
-        </span>
-    </div>
-    <div class="erp-card-body p-0">
-        {% if movements %}
-        <div style="overflow-x:auto;">
-        <table class="erp-table">
-            <thead>
-                <tr>
-                    <th>Date & Time</th>
-                    <th>Material</th>
-                    <th>Operation</th>
-                    <th>Reference</th>
-                    <th>State</th>
-                    <th style="text-align:right;">Qty Change</th>
-                    <th style="text-align:right;">Wt Change</th>
-                    <th>Remarks</th>
-                    <th>Performed By</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% set type_badge = {
-                    'PURCHASE':             ('bg-primary-subtle',   'Purchase'),
-                    'SALE':                 ('bg-success-subtle',   'Sale'),
-                    'MANUAL_ADJUSTMENT':    ('bg-warning-subtle',   'Adjustment'),
-                    'WEIGHT_ADJUSTMENT':    ('bg-warning-subtle',   'Wt Adjust'),
-                    'PROCESSING':           ('bg-info-subtle',      'Processing'),
-                    'REFURBISHMENT':        ('bg-info-subtle',      'Refurbishment'),
-                    'DISMANTLING':          ('bg-secondary',        'Dismantling'),
-                    'SORTING':              ('bg-secondary',        'Sorting'),
-                    'INTERNAL_CONSUMPTION': ('bg-danger-subtle',    'Internal Use'),
-                    'RETURN':               ('bg-primary-subtle',   'Return'),
-                    'TRANSFER':             ('bg-secondary',        'Transfer')
-                } %}
-                {% for row in movements %}
-                <tr>
-                    <td style="white-space:nowrap;" class="text-muted small">
-                        {{ row.created_at[:19] if row.created_at else '—' }}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('inventory.inventory_details', material_id=row.material_id) }}" class="fw-semibold text-decoration-none">
-                            {{ row.material_name }}
-                        </a>
-                        <div class="mt-1"><code class="code-cell">{{ row.material_code }}</code></div>
-                    </td>
-                    <td>
-                        {% set cls, lbl = type_badge.get(row.movement_type, ('bg-secondary', row.movement_type|replace('_',' ')|title)) %}
-                        <span class="badge {{ cls }}" style="font-size:10px; padding:3px 7px;">{{ lbl }}</span>
-                    </td>
-                    <td class="font-monospace text-muted" style="font-size:12px;">
-                        {{ row.reference_number or '—' }}
-                    </td>
-                    <td>
-                        <span class="badge bg-secondary" style="font-size:9.5px;">
-                            {{ row.inventory_state|title if row.inventory_state else '—' }}
-                        </span>
-                    </td>
-                    <td style="text-align:right; font-family:monospace; font-weight:700;
-                                color:{% if row.quantity_change > 0 %}#16a34a{% elif row.quantity_change < 0 %}#dc2626{% else %}#6b7280{% endif %};">
-                        {{ '%+.2f'|format(row.quantity_change) }}
-                    </td>
-                    <td style="text-align:right; font-family:monospace; font-size:12px;
-                                color:{% if row.weight_change > 0 %}#0d9488{% elif row.weight_change < 0 %}#b45309{% else %}#9ca3af{% endif %};">
-                        {{ '%+.2f'|format(row.weight_change) }} kg
-                    </td>
-                    <td style="font-size:12px; color:#6b7280; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-                        title="{{ row.remarks or '' }}">
-                        {{ row.remarks or '—' }}
-                    </td>
-                    <td style="font-size:12px; color:#6b7280;">{{ row.performed_by or '—' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
+  <!-- ── TABLE VIEW ────────────────────────────────────────────────────── -->
+  <div data-inv-view="table" style="display:none;">
+    <div class="inv-card">
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th data-sort>Date</th>
+              <th data-sort>Material</th>
+              <th data-sort>Type</th>
+              <th>Reference</th>
+              <th>State</th>
+              <th class="col-num" data-sort>Qty Δ</th>
+              <th class="col-num" data-sort>Wt Δ (kg)</th>
+              <th>Remarks</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in movements %}
+            {% set mt = m.movement_type or '' %}
+            <tr>
+              <td style="white-space:nowrap;font-size:12px;color:var(--text-muted);">{{ m.created_at or '—' }}</td>
+              <td>
+                <a href="/inventory/{{ m.material_id }}" style="font-weight:600;color:var(--inv-primary);">
+                  {{ m.material_name or '—' }}
+                </a>
+              </td>
+              <td>
+                {% if mt in ('PURCHASE', 'STOCK_IN') %}
+                  <span class="inv-badge inv-badge-green"><i class="bi bi-arrow-down-circle-fill"></i> {{ m.type or mt }}</span>
+                {% elif mt in ('SALE', 'STOCK_OUT') %}
+                  <span class="inv-badge inv-badge-danger"><i class="bi bi-arrow-up-circle-fill"></i> {{ m.type or mt }}</span>
+                {% elif mt == 'ADJUSTMENT' %}
+                  <span class="inv-badge inv-badge-warning"><i class="bi bi-sliders"></i> Adjustment</span>
+                {% elif mt == 'PROCESSING' %}
+                  <span class="inv-badge inv-badge-info"><i class="bi bi-gear-fill"></i> Processing</span>
+                {% else %}
+                  <span class="inv-badge inv-badge-gray">{{ m.type or mt or '—' }}</span>
+                {% endif %}
+              </td>
+              <td style="font-family:monospace;font-size:12px;">{{ m.reference_number or '—' }}</td>
+              <td>
+                {% if m.inventory_state %}
+                <span class="inv-badge inv-badge-teal">{{ m.inventory_state }}</span>
+                {% else %}—{% endif %}
+              </td>
+              <td class="col-num" style="color:{{ 'var(--success)' if (m.quantity_change or 0) >= 0 else 'var(--danger)' }};font-weight:700;">
+                {{ '+' if (m.quantity_change or 0) >= 0 else '' }}{{ "%.2f"|format(m.quantity_change or 0) }}
+              </td>
+              <td class="col-num" style="color:{{ 'var(--success)' if (m.weight_change or 0) >= 0 else 'var(--danger)' }};font-weight:700;">
+                {{ '+' if (m.weight_change or 0) >= 0 else '' }}{{ "%.3f"|format(m.weight_change or 0) }}
+              </td>
+              <td style="font-size:12px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ m.remarks or '' }}">
+                {{ m.remarks or '—' }}
+              </td>
+              <td style="font-size:12px;color:var(--text-muted);">{{ m.performed_by or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
         </table>
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">📊</div>
-            <p>No stock movements match the selected filters.</p>
-            <a href="{{ url_for('inventory.movement_history') }}" class="btn btn-sm btn-outline-secondary mt-2">
-                Clear Filters
-            </a>
-        </div>
-        {% endif %}
+      </div>
     </div>
-</div>
+  </div>
 
+  {% else %}
+  <div class="inv-card">
+    <div class="inv-empty">
+      <div class="inv-empty-icon"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="inv-empty-title">No movements found</div>
+      <div class="inv-empty-subtitle">
+        {% if material_id or movement_type %}
+        Try adjusting your filters.
+        <a href="/inventory/movements" class="d-block mt-2" style="color:var(--inv-primary);">Clear filters</a>
+        {% else %}
+        Stock movements will appear here as inventory is updated.
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /inv-page-body -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
+<script>
+window.INV_PAGE = 'movements';
+document.addEventListener('DOMContentLoaded', () => { invInitViewToggle('timeline'); });
+</script>
 {% endblock %}
