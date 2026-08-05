@@ -1,3 +1,6 @@
 Flask==2.3.3
 xhtml2pdf==0.2.17
 openpyxl==3.0.10
+Flask==2.3.3
+openpyxl==3.0.10
+xhtml2pdf==0.2.17

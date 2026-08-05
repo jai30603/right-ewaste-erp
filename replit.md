@@ -1,66 +1,58 @@
 # Right Ewaste ERP
 
-Internal ERP system for **Right Ewaste Recycle Pvt. Ltd.**
-
-## Stack
-
-- **Backend:** Python Flask (Blueprints + Services + Repositories)
-- **Database:** SQLite (`database/erp.db`)
-- **Frontend:** HTML + Bootstrap 5 + custom CSS
-- **Icons:** Bootstrap Icons
+An internal ERP system for Right Ewaste Recycle Pvt. Ltd.
 
 ## How to run
 
-```
-cd backend && python -m flask --app app run --host=0.0.0.0 --port=5000
+```bash
+python app.py
 ```
 
-The workflow **Start application** is already configured and runs this automatically.
+This starts the Flask development server on port 5000. The app runs in **development mode** by default — no login is required and a random session key is generated on each start.
+
+## Stack
+
+- **Backend**: Python / Flask
+- **Database**: SQLite (`database/erp.db`, created automatically on first run)
+- **Frontend**: Jinja2 templates + Bootstrap 5
+
+## Modules
+
+Sales Invoice, Purchase Invoice, Inventory, Materials, Material Processing, Employees, Certificates, Reports, Enterprise Document Management (EDMS), Communication, Settings, Audit, Traceability
+
+## Environment variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SESSION_SECRET` | Production only | Flask session secret key |
+| `APP_ENV` | No (default: `development`) | Set to `production` to enable authentication |
+| `ERP_ADMIN_USERNAME` / `ERP_ADMIN_PASSWORD_HASH` | Production only | Admin account credentials |
+| `ERP_OPERATOR_USERNAME` / `ERP_OPERATOR_PASSWORD_HASH` | Optional | Operator account (can create/edit, not delete) |
+| `ERP_VIEWER_USERNAME` / `ERP_VIEWER_PASSWORD_HASH` | Optional | Read-only account |
+
+Password hashes must be Werkzeug hashes — generate with:
+```bash
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('your-password'))"
+```
 
 ## Project structure
 
 ```
+app.py              # Entry point (imports backend/app.py)
 backend/
-  app.py              # Flask app + blueprint registration
-  database.py         # SQLite connection helper
-  routes/             # Flask Blueprints (one per module)
-  services/           # Business logic
-  repositories/       # All database queries (SQLite)
-  templates/          # Jinja2 HTML templates
-    base.html         # Shared layout (sidebar, topbar, flash messages)
-    party_form.html   # Unified add/edit party form
-  static/
-    css/style.css     # Custom ERP design system
-    js/state.js       # State → state-code auto-fill
-  data/
-    states.py         # Indian states with GST codes
+  app.py            # Flask app factory, route registration
+  database.py       # SQLite initialisation & schema migrations
+  routes/           # Blueprint route handlers
+  modules/          # Business logic modules
+  repositories/     # Data access layer
+  document_engine/  # PDF/report generation
+  erp_platform/     # KPIs, audit, notifications, search
+  config/           # Business configuration
+  static/           # CSS, JS, images
+  templates/        # Jinja2 HTML templates
 database/
-  erp.db              # SQLite database
-  schema/             # SQL schema files
+  schema/           # SQL schema files (auto-applied on startup)
+  erp.db            # SQLite database (auto-created)
 ```
 
-## Modules
-
-| Module           | Status        | Routes                          |
-|------------------|---------------|---------------------------------|
-| Dashboard        | ✅ Live        | `/`                             |
-| Party            | ✅ Production  | `/party`, `/party/add`, `/party/<id>/edit`, `/party/<id>/delete` |
-| Material         | 🚧 In progress | `/material`                     |
-| Sales Invoice    | 🚧 In progress | `/sales`                        |
-| Purchase Invoice | 🚧 In progress | `/purchase`                     |
-
-## Party module features
-
-- List all active parties with search (party code, name, contact, phone, GSTIN)
-- Add party — auto-generates `PTY-NNNNN` code
-- Edit party — pre-fills all fields
-- Soft delete — sets `is_active = 0`, never removes rows
-- Flash messages on all actions
-- Full validation (required fields, phone digits-only, email format, GSTIN max 15)
-
 ## User preferences
-
-- Keep existing Flask Blueprint structure
-- Business logic stays in services/repositories, not in routes or templates
-- Do not duplicate HTML — reuse `base.html` and shared form templates
-- Soft delete only — never permanently remove records
