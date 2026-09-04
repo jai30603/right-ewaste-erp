@@ -12,8 +12,16 @@ def generate_sales_invoice_number():
     return inv_num
 
 def calculate_invoice_totals(items, company_state_code, party_state_code):
-    from services.invoice_service import calculate_totals
-    return calculate_totals(items, company_state_code, party_state_code)
+    from services.calculation_service import calculate_invoice_result
+    res = calculate_invoice_result(items, company_state_code, party_state_code)
+    return {
+        "subtotal": res["taxable_total"],
+        "cgst": res["cgst_total"],
+        "sgst": res["sgst_total"],
+        "igst": res["igst_total"],
+        "round_off": res["round_off"],
+        "grand_total": res["grand_total"]
+    }
 
 def create_sales_invoice(*args, **kwargs):
     logger.info("Service Layer: Creating sales invoice")

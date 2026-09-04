@@ -125,12 +125,12 @@ class AttendanceService:
 
         if format_type == "pdf":
             try:
-                from xhtml2pdf import pisa
+                from backend.services.pdf_service import compile_html_to_pdf
                 html_content = f"""
                 <html>
                 <head>
                     <style>
-                        body {{ font-family: Helvetica, Arial, sans-serif; font-size: 10px; }}
+                        body {{ font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 10px; }}
                         h2 {{ text-align: center; color: #1e293b; }}
                         table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
                         th, td {{ border: 1px solid #cbd5e1; padding: 5px; text-align: left; }}
@@ -158,13 +158,12 @@ class AttendanceService:
                 </body>
                 </html>
                 """
-                pdf_out = io.BytesIO()
-                pisa_status = pisa.CreatePDF(html_content, dest=pdf_out)
-                if not pisa_status.err:
-                    pdf_out.seek(0)
-                    return pdf_out, "application/pdf", f"{filename}.pdf"
-            except Exception:
-                pass
+                pdf_bytes = compile_html_to_pdf(html_content)
+                pdf_out = io.BytesIO(pdf_bytes)
+                pdf_out.seek(0)
+                return pdf_out, "application/pdf", f"{filename}.pdf"
+            except Exception as e:
+                print("Error generating attendance PDF:", e)
 
             # Fallback to CSV if PDF generation fails
             out_str = io.StringIO()

@@ -50,6 +50,10 @@ def configure_security(app):
         if request.endpoint in {"auth.login", "static"}:
             return None
 
+        # Exclude local rendering engine requests for print documents
+        if request.remote_addr in {"127.0.0.1", "::1"} and request.path.startswith("/print/"):
+            return None
+
         # Database session validation
         token = session.get("session_token")
         user_info = None

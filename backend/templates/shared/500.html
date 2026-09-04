@@ -1,0 +1,18 @@
+{% extends "shared/base.html" %}
+
+{% block title %}500 Server Error — Right Ewaste ERP{% endblock %}
+
+{% block content %}
+<div class="enterprise-error-container" style="padding: 48px 24px; text-align: center; max-width: 600px; margin: 40px auto; background: var(--bg-panel, #1e2633); border: 1px solid var(--border-color, #2d3748);">
+    <div style="font-size: 48px; font-weight: 800; color: #ef4444; margin-bottom: 8px;">500</div>
+    <div style="font-size: 18px; font-weight: 700; color: var(--text-main, #f8fafc); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Internal Server Error</div>
+    <p style="font-size: 13px; color: var(--text-muted, #94a3b8); line-height: 1.6; margin-bottom: 24px;">
+        An unexpected server error occurred while processing the request. The incident has been recorded.
+    </p>
+    <div>
+        <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-primary" style="display: inline-block; padding: 8px 20px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 0; background: var(--primary, #10b981); color: #000; border: 1px solid var(--primary, #10b981);">
+            Return to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,61 +1,8 @@
 {% extends "shared/base.html" %}
-{% block title %}Material Flow – Inventory Workspace{% endblock %}
+{% block title %}Operational Process Flow Dashboard – Right Ewaste ERP{% endblock %}
 
 {% block styles %}
 <link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
-<style>
-.flow-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  padding: 24px 16px;
-}
-.flow-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  justify-content: center;
-}
-.flow-branch-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  width: 100%;
-  justify-content: center;
-  position: relative;
-}
-.flow-branch-row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 2px;
-  height: 24px;
-  background: var(--border);
-  transform: translateX(-50%);
-}
-.flow-down-arrow {
-  color: var(--text-xmuted);
-  font-size: 22px;
-  text-align: center;
-  margin: 2px 0;
-}
-.flow-connector {
-  width: 2px;
-  height: 28px;
-  background: var(--border);
-  margin: 0 auto;
-}
-.flow-h-line {
-  flex: 1;
-  height: 2px;
-  background: var(--border);
-  max-width: 60px;
-}
-.inv-flow-node { min-width: 140px; }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -64,14 +11,14 @@
 
 <div class="inv-page-body">
 
-  <!-- Date selector + reconciliation alert ─────────────────────────────── -->
+  <!-- Date Selector Toolbar ────────────────────────────────────────────── -->
   <div class="inv-toolbar" style="margin-bottom:16px;">
     <form method="get" action="/inventory/material-flow-dashboard" class="d-flex align-items-center gap-2 flex-wrap">
       <label style="font-size:13px;color:var(--text-muted);font-weight:500;">Report Date:</label>
       <input type="date" name="date" class="inv-date-input" value="{{ report_date or '' }}">
-      <button type="submit" class="inv-btn inv-btn-primary"><i class="bi bi-bar-chart"></i> Load</button>
+      <button type="submit" class="inv-btn inv-btn-primary"><i class="bi bi-bar-chart"></i> Load Date</button>
     </form>
-    <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">
+    <span style="margin-left:auto;font-size:12.5px;color:var(--text-muted);font-weight:600;">
       <i class="bi bi-calendar3"></i> {{ report_date or 'Today' }}
     </span>
   </div>
@@ -80,336 +27,218 @@
   <div class="inv-alert inv-alert-warning">
     <i class="bi bi-exclamation-triangle-fill"></i>
     <div>
-      <strong>Reconciliation Warning:</strong>
-      Daily material flow does not balance. Please review intake vs. output figures.
-      Variance: {{ "%.3f"|format(reconciliation.variance or 0) }} kg
+      <strong>Material Flow Variance Detected:</strong>
+      System reconciliation indicates a flow mismatch of <strong>{{ "%.3f"|format(reconciliation.variance or 0) }} kg</strong>. Review transaction logs.
     </div>
   </div>
   {% endif %}
 
   <!-- KPI Strip ────────────────────────────────────────────────────────── -->
   {% set ds = daily_summary or {} %}
-  <div class="inv-kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); margin-bottom:20px;">
+  <div class="inv-kpi-grid mb-4" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
     <div class="inv-kpi-card kpi-info">
       <div class="inv-kpi-icon icon-info"><i class="bi bi-cart-plus"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.total_intake_weight or 0) }}</div>
-      <div class="inv-kpi-label">Intake (kg)</div>
-      <div class="inv-kpi-sub">{{ ds.purchase_invoices or 0 }} purchases</div>
+      <div class="inv-kpi-value">{{ "%.2f"|format(ds.intake_wt or 0) }}</div>
+      <div class="inv-kpi-label">Daily Intake (kg)</div>
+      <div class="inv-kpi-sub">{{ ds.intake_qty or 0 }} items received</div>
     </div>
-    <div class="inv-kpi-card">
-      <div class="inv-kpi-icon icon-teal"><i class="bi bi-boxes"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.total_inventory_weight or 0) }}</div>
-      <div class="inv-kpi-label">In Inventory (kg)</div>
-    </div>
-    <div class="inv-kpi-card">
-      <div class="inv-kpi-icon icon-purple"><i class="bi bi-gear"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.total_processing_input or 0) }}</div>
-      <div class="inv-kpi-label">Processing In (kg)</div>
-      <div class="inv-kpi-sub">{{ ds.processing_jobs or 0 }} jobs</div>
-    </div>
-    <div class="inv-kpi-card kpi-success">
-      <div class="inv-kpi-icon icon-green"><i class="bi bi-recycle"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.recoverable_weight or 0) }}</div>
+    <div class="inv-kpi-card kpi-teal">
+      <div class="inv-kpi-icon icon-teal"><i class="bi bi-recycle"></i></div>
+      <div class="inv-kpi-value">{{ "%.2f"|format(ds.recoverable_wt or 0) }}</div>
       <div class="inv-kpi-label">Recoverable (kg)</div>
+      <div class="inv-kpi-sub">Segregated output</div>
     </div>
     <div class="inv-kpi-card">
-      <div class="inv-kpi-icon icon-info"><i class="bi bi-tools"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.refurbishable_weight or 0) }}</div>
+      <div class="inv-kpi-icon icon-green"><i class="bi bi-tools"></i></div>
+      <div class="inv-kpi-value">{{ "%.2f"|format(ds.refurbishable_wt or 0) }}</div>
       <div class="inv-kpi-label">Refurbishable (kg)</div>
-    </div>
-    <div class="inv-kpi-card kpi-warning">
-      <div class="inv-kpi-icon icon-warning"><i class="bi bi-trash3"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.disposal_weight or 0) }}</div>
-      <div class="inv-kpi-label">Disposal (kg)</div>
+      <div class="inv-kpi-sub">Repair Queue</div>
     </div>
     <div class="inv-kpi-card kpi-success">
       <div class="inv-kpi-icon icon-green"><i class="bi bi-truck"></i></div>
-      <div class="inv-kpi-value">{{ "%.2f"|format(ds.total_dispatch_weight or 0) }}</div>
+      <div class="inv-kpi-value">{{ "%.2f"|format(ds.dispatch_wt or 0) }}</div>
       <div class="inv-kpi-label">Dispatched (kg)</div>
-      <div class="inv-kpi-sub">{{ ds.sales_invoices or 0 }} sales</div>
-    </div>
-    <div class="inv-kpi-card {{ 'kpi-success' if (reconciliation and reconciliation.balanced) else 'kpi-warning' }}">
-      <div class="inv-kpi-icon {{ 'icon-green' if (reconciliation and reconciliation.balanced) else 'icon-warning' }}">
-        <i class="bi bi-{{ 'check-circle' if (reconciliation and reconciliation.balanced) else 'exclamation-circle' }}-fill"></i>
-      </div>
-      <div class="inv-kpi-value" style="font-size:1.1rem;">
-        {{ 'Balanced' if (reconciliation and reconciliation.balanced) else 'Review' }}
-      </div>
-      <div class="inv-kpi-label">Reconciliation</div>
-      {% if reconciliation %}
-      <div class="inv-kpi-sub">Variance: {{ "%.3f"|format(reconciliation.variance or 0) }} kg</div>
-      {% endif %}
+      <div class="inv-kpi-sub">{{ ds.dispatch_qty or 0 }} sales invoices</div>
     </div>
   </div>
 
   <div class="row g-4">
-
-    <!-- Flow Diagram ─────────────────────────────────────────────────────── -->
+    <!-- Interactive Operational Process Flow Diagram -->
     <div class="col-lg-7">
       <div class="inv-card">
         <div class="inv-card-header">
-          <span class="inv-card-title"><i class="bi bi-share"></i> Material Flow Diagram</span>
-          <span style="font-size:11px;color:var(--text-muted);">{{ report_date or 'Today' }}</span>
+          <span class="inv-card-title"><i class="bi bi-share"></i> Interactive Process Flow Diagram</span>
         </div>
         <div class="inv-card-body">
-          <div class="flow-main">
-
-            <!-- Purchase -->
-            <div class="flow-row">
-              <div class="inv-flow-node node-info" onclick="invNodeClick(this,'detail-purchase')" title="Click for details">
-                <i class="bi bi-cart-plus" style="color:var(--info);"></i>
-                <div class="inv-flow-node-label">Purchase</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.total_intake_weight or 0) }}</div>
-                <div class="inv-flow-node-unit">kg intake</div>
+          <div class="flow-container-v3">
+            
+            <!-- Step 1: Procurement / Purchase -->
+            <div class="flow-step-node" onclick="invShowDrawer('/inventory', 'Intake Material Batches')">
+              <div class="flow-step-left">
+                <div class="flow-step-icon bg-light text-primary border"><i class="bi bi-cart"></i></div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">1. Material Intake Procurement</div>
+                  <div class="flow-step-desc">Purchase invoices inward receipts</div>
+                </div>
+              </div>
+              <div class="flow-step-stats">
+                <div class="flow-stat-box">
+                  <div class="flow-stat-val">{{ "%.2f"|format(ds.intake_wt or 0) }} kg</div>
+                  <div class="flow-stat-lbl">Intake Wt</div>
+                </div>
+                <div class="flow-stat-box">
+                  <div class="flow-stat-val">{{ ds.intake_qty or 0 }}</div>
+                  <div class="flow-stat-lbl">SKUs In</div>
+                </div>
               </div>
             </div>
-            <div class="flow-connector"></div>
-            <div class="flow-down-arrow"><i class="bi bi-chevron-down"></i></div>
+            <div class="flow-connector-line"></div>
 
-            <!-- Inventory -->
-            <div class="flow-row">
-              <div class="inv-flow-node node-primary" onclick="invNodeClick(this,'detail-inventory')" title="Click for details">
-                <i class="bi bi-boxes" style="color:var(--inv-primary);"></i>
-                <div class="inv-flow-node-label">Warehouse Inventory</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.total_inventory_weight or 0) }}</div>
-                <div class="inv-flow-node-unit">kg in stock</div>
+            <!-- Step 2: Store / Warehouse -->
+            <div class="flow-step-node" onclick="invShowDrawer('/inventory/batches', 'Warehouse Batches Store')">
+              <div class="flow-step-left">
+                <div class="flow-step-icon bg-light text-info border"><i class="bi bi-inbox-fill"></i></div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">2. Warehouse Storage</div>
+                  <div class="flow-step-desc">RAW stock balance holding area</div>
+                </div>
+              </div>
+              <div class="flow-step-stats">
+                <div class="flow-stat-box">
+                  <div class="flow-stat-val">{{ "%.2f"|format(ds.intake_wt or 0) }} kg</div>
+                  <div class="flow-stat-lbl">Held Wt</div>
+                </div>
               </div>
             </div>
-            <div class="flow-connector"></div>
-            <div class="flow-down-arrow"><i class="bi bi-chevron-down"></i></div>
+            <div class="flow-connector-line"></div>
 
-            <!-- Processing -->
-            <div class="flow-row">
-              <div class="inv-flow-node node-info" onclick="invNodeClick(this,'detail-processing')" title="Click for details">
-                <i class="bi bi-gear-fill" style="color:#7c3aed;"></i>
-                <div class="inv-flow-node-label">Processing</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.total_processing_input or 0) }}</div>
-                <div class="inv-flow-node-unit">kg processed</div>
+            <!-- Step 3: Segregated Yield (Recoverable / Refurbishable / Disposal) -->
+            <div class="flow-step-node" onclick="invShowDrawer('/inventory', 'Processed Recovered Output')">
+              <div class="flow-step-left">
+                <div class="flow-step-icon bg-light text-success border"><i class="bi bi-recycle"></i></div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">3. Segregated Output Yield</div>
+                  <div class="flow-step-desc">Recovered classification streams</div>
+                </div>
+              </div>
+              <div class="flow-step-stats">
+                <div class="flow-stat-box">
+                  <div class="flow-stat-val">{{ "%.2f"|format((ds.recoverable_wt or 0) + (ds.refurbishable_wt or 0)) }} kg</div>
+                  <div class="flow-stat-lbl">Yield Weight</div>
+                </div>
               </div>
             </div>
-            <div class="flow-connector"></div>
-            <div class="flow-down-arrow"><i class="bi bi-chevron-down"></i></div>
+            <div class="flow-connector-line"></div>
 
-            <!-- Split: Recoverable / Refurbishable / Disposal -->
-            <div class="flow-branch-row" style="gap:14px;">
-              <div class="inv-flow-node node-success" onclick="invNodeClick(this,'detail-recoverable')" title="Click for details">
-                <i class="bi bi-recycle" style="color:var(--success);"></i>
-                <div class="inv-flow-node-label">Recoverable</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.recoverable_weight or 0) }}</div>
-                <div class="inv-flow-node-unit">kg</div>
+            <!-- Step 4: Dispatch / Sales Outward -->
+            <div class="flow-step-node" onclick="invShowDrawer('/inventory/movements', 'Sales Dispatched Logs')">
+              <div class="flow-step-left">
+                <div class="flow-step-icon bg-light text-danger border"><i class="bi bi-truck"></i></div>
+                <div class="flow-step-info">
+                  <div class="flow-step-name">4. Sales Dispatch Outward</div>
+                  <div class="flow-step-desc">Sales dispatches and certificates issued</div>
+                </div>
               </div>
-              <div class="inv-flow-node node-info" onclick="invNodeClick(this,'detail-refurb')" title="Click for details">
-                <i class="bi bi-tools" style="color:var(--info);"></i>
-                <div class="inv-flow-node-label">Refurbishable</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.refurbishable_weight or 0) }}</div>
-                <div class="inv-flow-node-unit">kg</div>
-              </div>
-              <div class="inv-flow-node node-warning" onclick="invNodeClick(this,'detail-disposal')" title="Click for details">
-                <i class="bi bi-trash3" style="color:var(--warning);"></i>
-                <div class="inv-flow-node-label">Disposal</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.disposal_weight or 0) }}</div>
-                <div class="inv-flow-node-unit">kg</div>
-              </div>
-            </div>
-            <div class="flow-connector"></div>
-            <div class="flow-down-arrow"><i class="bi bi-chevron-down"></i></div>
-
-            <!-- Sales / Dispatch -->
-            <div class="flow-row">
-              <div class="inv-flow-node node-success" onclick="invNodeClick(this,'detail-sales')" title="Click for details">
-                <i class="bi bi-truck" style="color:var(--success);"></i>
-                <div class="inv-flow-node-label">Sales / Dispatch</div>
-                <div class="inv-flow-node-val">{{ "%.1f"|format(ds.total_dispatch_weight or 0) }}</div>
-                <div class="inv-flow-node-unit">kg dispatched</div>
-              </div>
-            </div>
-            <div class="flow-connector"></div>
-            <div class="flow-down-arrow"><i class="bi bi-chevron-down"></i></div>
-
-            <!-- Certificate -->
-            <div class="flow-row">
-              <div class="inv-flow-node" onclick="invNodeClick(this,'detail-cert')" title="Click for details">
-                <i class="bi bi-shield-check" style="color:#7c3aed;"></i>
-                <div class="inv-flow-node-label">Certificate</div>
-                <div class="inv-flow-node-val">{{ ds.certificates_issued or '—' }}</div>
-                <div class="inv-flow-node-unit">issued</div>
+              <div class="flow-step-stats">
+                <div class="flow-stat-box">
+                  <div class="flow-stat-val">{{ "%.2f"|format(ds.dispatch_wt or 0) }} kg</div>
+                  <div class="flow-stat-lbl">Dispatched Wt</div>
+                </div>
+                <div class="flow-stat-box">
+                  <div class="flow-stat-val">{{ ds.dispatch_qty or 0 }}</div>
+                  <div class="flow-stat-lbl">SKUs Out</div>
+                </div>
               </div>
             </div>
 
-          </div><!-- /flow-main -->
-
-          <!-- Node detail panels (shown on click) -->
-          <div id="detail-purchase"    data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3">
-              <i class="bi bi-cart-plus"></i>
-              <div><strong>Purchase / Intake:</strong> {{ ds.purchase_invoices or 0 }} invoices · {{ "%.3f"|format(ds.total_intake_weight or 0) }} kg total intake</div>
-            </div>
-          </div>
-          <div id="detail-inventory"   data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3">
-              <i class="bi bi-boxes"></i>
-              <div><strong>Warehouse:</strong> {{ "%.3f"|format(ds.total_inventory_weight or 0) }} kg currently in stock across all warehouses</div>
-            </div>
-          </div>
-          <div id="detail-processing"  data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3">
-              <i class="bi bi-gear-fill"></i>
-              <div><strong>Processing:</strong> {{ ds.processing_jobs or 0 }} jobs · {{ "%.3f"|format(ds.total_processing_input or 0) }} kg input → {{ "%.3f"|format((ds.recoverable_weight or 0) + (ds.refurbishable_weight or 0) + (ds.disposal_weight or 0)) }} kg output</div>
-            </div>
-          </div>
-          <div id="detail-recoverable" data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3" style="background:var(--success-bg);border-color:var(--success-border);color:var(--success);">
-              <i class="bi bi-recycle"></i>
-              <div><strong>Recoverable:</strong> {{ "%.3f"|format(ds.recoverable_weight or 0) }} kg — materials that can be reclaimed and sold</div>
-            </div>
-          </div>
-          <div id="detail-refurb"      data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3">
-              <i class="bi bi-tools"></i>
-              <div><strong>Refurbishable:</strong> {{ "%.3f"|format(ds.refurbishable_weight or 0) }} kg — requires refurbishment before resale</div>
-            </div>
-          </div>
-          <div id="detail-disposal"    data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-warning mt-3">
-              <i class="bi bi-trash3"></i>
-              <div><strong>Disposal:</strong> {{ "%.3f"|format(ds.disposal_weight or 0) }} kg — to be disposed of per e-waste regulations</div>
-            </div>
-          </div>
-          <div id="detail-sales"       data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3" style="background:var(--success-bg);border-color:var(--success-border);color:var(--success);">
-              <i class="bi bi-truck"></i>
-              <div><strong>Dispatch:</strong> {{ ds.sales_invoices or 0 }} sales invoices · {{ "%.3f"|format(ds.total_dispatch_weight or 0) }} kg dispatched</div>
-            </div>
-          </div>
-          <div id="detail-cert"        data-flow-detail style="display:none;">
-            <div class="inv-alert inv-alert-info mt-3">
-              <i class="bi bi-shield-check"></i>
-              <div><strong>Certificates:</strong> {{ ds.certificates_issued or 0 }} recycling certificates issued for this period</div>
-            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Recovery Analytics & Reconciliation ──────────────────────────── -->
+    <!-- Supporting Panels / Collapsible Analytics -->
     <div class="col-lg-5">
-
-      <!-- Recovery breakdown -->
+      <!-- Recovery Analytics Card -->
       <div class="inv-card mb-4">
-        <div class="inv-card-header">
-          <span class="inv-card-title"><i class="bi bi-bar-chart-line"></i> Recovery Analytics</span>
+        <div class="inv-card-header" style="cursor: pointer;" onclick="invToggleCollapse('recoveryCollapse')">
+          <span class="inv-card-title"><i class="bi bi-bar-chart-line"></i> Recovery Yield Performance</span>
+          <i class="bi bi-chevron-up" id="recoveryCollapseChevron" style="color: var(--text-muted);"></i>
         </div>
-        <div class="inv-card-body">
-          {% set total_out = (ds.recoverable_weight or 0) + (ds.refurbishable_weight or 0) + (ds.disposal_weight or 0) %}
-          {% set total_in  = ds.total_processing_input or 0.01 %}
-
+        <div class="inv-card-body" id="recoveryCollapse">
+          {% set total_in = ds.intake_wt or 0.01 %}
           <div class="inv-progress-row">
             <div class="inv-progress-label">
-              <span><i class="bi bi-recycle" style="color:var(--success);"></i> Recoverable</span>
-              <span>{{ "%.1f"|format((ds.recoverable_weight or 0) / total_in * 100) }}%</span>
+              <span><i class="bi bi-recycle text-success"></i> Recoverable Yield</span>
+              <span>{{ "%.1f"|format((ds.recoverable_wt or 0) / total_in * 100) }}%</span>
             </div>
             <div class="inv-progress-bar">
-              <div class="inv-progress-fill fill-green" style="width:{{ ((ds.recoverable_weight or 0) / total_in * 100)|round(1) }}%"></div>
+              <div class="inv-progress-fill fill-green" style="width:{{ ((ds.recoverable_wt or 0) / total_in * 100)|round(1) }}%"></div>
             </div>
           </div>
 
           <div class="inv-progress-row">
             <div class="inv-progress-label">
-              <span><i class="bi bi-tools" style="color:var(--info);"></i> Refurbishable</span>
-              <span>{{ "%.1f"|format((ds.refurbishable_weight or 0) / total_in * 100) }}%</span>
+              <span><i class="bi bi-tools text-info"></i> Refurbishable Yield</span>
+              <span>{{ "%.1f"|format((ds.refurbishable_wt or 0) / total_in * 100) }}%</span>
             </div>
             <div class="inv-progress-bar">
-              <div class="inv-progress-fill fill-info" style="width:{{ ((ds.refurbishable_weight or 0) / total_in * 100)|round(1) }}%"></div>
+              <div class="inv-progress-fill fill-info" style="width:{{ ((ds.refurbishable_wt or 0) / total_in * 100)|round(1) }}%"></div>
             </div>
           </div>
 
           <div class="inv-progress-row">
             <div class="inv-progress-label">
-              <span><i class="bi bi-trash3" style="color:var(--warning);"></i> Disposal</span>
-              <span>{{ "%.1f"|format((ds.disposal_weight or 0) / total_in * 100) }}%</span>
+              <span><i class="bi bi-trash3 text-warning"></i> Disposal / Safe Waste Yield</span>
+              <span>{{ "%.1f"|format((ds.disposal_wt or 0) / total_in * 100) }}%</span>
             </div>
             <div class="inv-progress-bar">
-              <div class="inv-progress-fill fill-orange" style="width:{{ ((ds.disposal_weight or 0) / total_in * 100)|round(1) }}%"></div>
+              <div class="inv-progress-fill fill-orange" style="width:{{ ((ds.disposal_wt or 0) / total_in * 100)|round(1) }}%"></div>
             </div>
-          </div>
-
-          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-            <div class="d-flex justify-content-between" style="font-size:12.5px;">
-              <span style="color:var(--text-muted);">Total Processed</span>
-              <span style="font-weight:700;font-family:monospace;">{{ "%.3f"|format(total_in) }} kg</span>
-            </div>
-            <div class="d-flex justify-content-between mt-1" style="font-size:12.5px;">
-              <span style="color:var(--text-muted);">Total Output</span>
-              <span style="font-weight:700;font-family:monospace;">{{ "%.3f"|format(total_out) }} kg</span>
-            </div>
-            {% if total_in > 0 %}
-            <div class="d-flex justify-content-between mt-1" style="font-size:12.5px;">
-              <span style="color:var(--text-muted);">Processing Yield</span>
-              <span style="font-weight:700;color:var(--success);font-family:monospace;">{{ "%.1f"|format(total_out / total_in * 100) }}%</span>
-            </div>
-            {% endif %}
           </div>
         </div>
       </div>
 
-      <!-- Reconciliation Summary -->
+      <!-- Reconciliation Audit Summary Card -->
       <div class="inv-card">
-        <div class="inv-card-header">
-          <span class="inv-card-title">
-            <i class="bi bi-{{ 'check-circle-fill' if (reconciliation and reconciliation.balanced) else 'exclamation-circle-fill' }}"
-               style="color:{{ 'var(--success)' if (reconciliation and reconciliation.balanced) else 'var(--warning)' }};"></i>
-            Reconciliation
-          </span>
+        <div class="inv-card-header" style="cursor: pointer;" onclick="invToggleCollapse('reconcileCollapse')">
+          <span class="inv-card-title"><i class="bi bi-shield-check"></i> Reconciliation Audit Summary</span>
+          <i class="bi bi-chevron-up" id="reconcileCollapseChevron" style="color: var(--text-muted);"></i>
         </div>
-        <div class="inv-card-body">
+        <div class="inv-card-body" id="reconcileCollapse">
           {% if reconciliation %}
-          <div class="d-flex flex-column gap-2" style="font-size:13px;">
+          <div class="d-flex flex-column gap-2" style="font-size:12.5px;">
             <div class="d-flex justify-content-between">
-              <span style="color:var(--text-muted);">Total Intake</span>
+              <span style="color:var(--text-muted);">Intake Ledger Summary:</span>
               <span style="font-weight:700;font-family:monospace;">{{ "%.3f"|format(reconciliation.total_intake or 0) }} kg</span>
             </div>
             <div class="d-flex justify-content-between">
-              <span style="color:var(--text-muted);">Total Output</span>
+              <span style="color:var(--text-muted);">Output Ledger Summary:</span>
               <span style="font-weight:700;font-family:monospace;">{{ "%.3f"|format(reconciliation.total_output or 0) }} kg</span>
             </div>
-            <div class="d-flex justify-content-between" style="padding-top:8px;border-top:1px solid var(--border);margin-top:4px;">
-              <span style="color:var(--text-muted);">Variance</span>
+            <div class="d-flex justify-content-between pt-2 border-top mt-2">
+              <span style="color:var(--text-muted);">Calculated Flow Variance:</span>
               <span style="font-weight:700;font-family:monospace;color:{{ 'var(--success)' if (reconciliation.variance or 0) == 0 else 'var(--warning)' }};">
                 {{ "%.3f"|format(reconciliation.variance or 0) }} kg
               </span>
             </div>
-            <div style="margin-top:8px;">
-              <span class="inv-badge {{ 'inv-badge-green' if reconciliation.balanced else 'inv-badge-warning' }}" style="font-size:12px;padding:5px 12px;">
-                <i class="bi bi-{{ 'check-circle-fill' if reconciliation.balanced else 'exclamation-triangle-fill' }}"></i>
-                {{ 'Balanced' if reconciliation.balanced else 'Review Required' }}
+            <div class="mt-2">
+              <span class="inv-badge {{ 'inv-badge-green' if reconciliation.balanced else 'inv-badge-warning' }}" style="font-size:11px;padding:4px 10px;">
+                <i class="bi {{ 'bi-check-circle-fill' if reconciliation.balanced else 'bi-exclamation-triangle-fill' }}"></i>
+                {{ 'Database Reconciled' if reconciliation.balanced else 'Review Balance Discrepancy' }}
               </span>
             </div>
           </div>
           {% else %}
-          <div style="text-align:center;color:var(--text-muted);font-size:13px;padding:12px 0;">
-            No reconciliation data for selected date.
+          <div class="text-center text-muted py-2">
+            No audit reconciliation summary available.
           </div>
           {% endif %}
         </div>
       </div>
-
-      <!-- Quick Nav -->
-      <div class="d-flex flex-column gap-2 mt-3">
-        <a href="/inventory/batches" class="inv-btn inv-btn-outline w-100 justify-content-start">
-          <i class="bi bi-stack text-teal"></i> View Material Batches
-        </a>
-        <a href="/inventory/timeline" class="inv-btn inv-btn-outline w-100 justify-content-start">
-          <i class="bi bi-diagram-3 text-teal"></i> Trace a Material
-        </a>
-        <a href="/inventory" class="inv-btn inv-btn-outline w-100 justify-content-start">
-          <i class="bi bi-boxes text-teal"></i> Browse Stock
-        </a>
-      </div>
-
     </div>
-  </div><!-- /row -->
+  </div>
 
-</div><!-- /inv-page-body -->
+</div>
 
 {% endblock %}
 

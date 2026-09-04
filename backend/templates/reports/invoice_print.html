@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        {% if invoice_type == 'sales' %}
+            {{ invoice.invoice_number }}
+        {% else %}
+            {{ invoice.purchase_invoice_number }}
+        {% endif %}
+    </title>
+    <link href="/static/css/invoice_print.css" rel="stylesheet">
+</head>
+<body class="theme-{{ invoice_type }}">
+    <div class="invoice-container">
+        {% include "reports/invoice_core.html" %}
+    </div>
+</body>
+</html>

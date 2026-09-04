@@ -131,15 +131,21 @@ def get_document_items(document_type, document_id, conn):
     if document_type == "PURCHASE":
         return conn.execute(
             """SELECT pi.id, pi.purchase_invoice_number AS document_number, pi.invoice_date,
-                      pi.status, pi.is_active, pii.id AS item_id, pii.material_id, pii.quantity, pii.weight
-               FROM purchase_invoice pi JOIN purchase_invoice_item pii ON pii.purchase_invoice_id = pi.id
+                      pi.status, pi.is_active, pii.id AS item_id, pii.material_id, pii.quantity, pii.weight,
+                      m.material_name, m.tracking_type
+               FROM purchase_invoice pi 
+               JOIN purchase_invoice_item pii ON pii.purchase_invoice_id = pi.id
+               LEFT JOIN material m ON pii.material_id = m.id
                WHERE pi.id = ?""",
             (document_id,),
         ).fetchall()
     return conn.execute(
         """SELECT si.id, si.invoice_number AS document_number, si.invoice_date,
-                  si.status, si.is_active, sii.id AS item_id, sii.material_id, sii.quantity, sii.weight
-           FROM sales_invoice si JOIN sales_invoice_item sii ON sii.sales_invoice_id = si.id
+                  si.status, si.is_active, sii.id AS item_id, sii.material_id, sii.quantity, sii.weight,
+                  sii.item_type, m.material_name, m.tracking_type
+           FROM sales_invoice si 
+           JOIN sales_invoice_item sii ON sii.sales_invoice_id = si.id
+           LEFT JOIN material m ON sii.material_id = m.id
            WHERE si.id = ?""",
         (document_id,),
     ).fetchall()

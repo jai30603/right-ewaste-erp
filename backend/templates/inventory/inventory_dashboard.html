@@ -1,5 +1,5 @@
 {% extends "shared/base.html" %}
-{% block title %}Inventory Dashboard – Right Ewaste ERP{% endblock %}
+{% block title %}WMS Executive Dashboard – Right Ewaste ERP{% endblock %}
 
 {% block styles %}
 <link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
@@ -11,82 +11,99 @@
 
 <div class="inv-page-body">
 
-  <!-- KPI Row ──────────────────────────────────────────────────────────── -->
-  <div class="inv-kpi-grid" style="grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));">
-    {# snapshot fields: total_items, raw_items, finished_items, total_weight, low_stock #}
+  {# ── SECTION 1: INVENTORY HEALTH & ATTENTION ITEMS ── #}
+  <div class="row g-3 mb-4">
+    <!-- Health Status Widget -->
+    <div class="col-md-6">
+      <div class="inv-card h-100" style="border-top: 4px solid var(--success);">
+        <div class="inv-card-header">
+          <span class="inv-card-title"><i class="bi bi-heart-pulse-fill text-success"></i> Operational Inventory Health</span>
+        </div>
+        <div class="inv-card-body d-flex align-items-center justify-content-between py-3">
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">
+              {% if (snapshot.low_stock or 0) > 0 %}Attention Required{% else %}Excellent Status{% endif %}
+            </div>
+            <p class="text-muted mb-0 mt-1" style="font-size: 12.5px;">
+              {% if (snapshot.low_stock or 0) > 0 %}
+              {{ snapshot.low_stock }} item(s) are below safety limits. All other stock levels are within normal limits.
+              {% else %}
+              All materials are fully stocked. No active deficit warnings reported.
+              {% endif %}
+            </p>
+          </div>
+          <span class="inv-badge {{ 'inv-badge-danger' if (snapshot.low_stock or 0) > 0 else 'inv-badge-green' }}" style="font-size: 13px; padding: 6px 12px;">
+            <i class="bi {{ 'bi-exclamation-circle' if (snapshot.low_stock or 0) > 0 else 'bi-check-circle' }}"></i>
+            {{ 'Deficit' if (snapshot.low_stock or 0) > 0 else 'Healthy' }}
+          </span>
+        </div>
+      </div>
+    </div>
 
-    <a href="/inventory" class="inv-kpi-card kpi-teal">
+    <!-- Active Warnings Banner -->
+    <div class="col-md-6">
+      <div class="inv-card h-100" style="border-top: 4px solid var(--warning);">
+        <div class="inv-card-header">
+          <span class="inv-card-title"><i class="bi bi-bell-fill text-warning"></i> Action Checklist</span>
+        </div>
+        <div class="inv-card-body d-flex flex-column justify-content-center py-2" style="font-size: 12.5px; color: var(--text-secondary);">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-arrow-right-short text-warning"></i>
+            <span>{{ snapshot.low_stock or 0 }} items flagged as <strong>Low Stock</strong>. Review replenishment sheets.</span>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-right-short text-info"></i>
+            <span>Current store weight capacity: <strong>{{"%.1f"|format(snapshot.total_weight or 0)}} kg</strong>. Optimize space allocation.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── SECTION 2: EXECUTIVE WMS KPI STRIP ── #}
+  <div class="inv-kpi-grid mb-4" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+    <div class="inv-kpi-card kpi-teal">
       <div class="inv-kpi-icon icon-teal"><i class="bi bi-box-seam"></i></div>
       <div class="inv-kpi-value">{{ snapshot.total_items or 0 }}</div>
-      <div class="inv-kpi-label">Total Materials</div>
-      <div class="inv-kpi-sub">With available stock</div>
-    </a>
-
-    <a href="/inventory" class="inv-kpi-card">
+      <div class="inv-kpi-label">Total SKUs</div>
+      <div class="inv-kpi-sub">Total Catalog Items</div>
+    </div>
+    <div class="inv-kpi-card">
       <div class="inv-kpi-icon icon-info"><i class="bi bi-inbox-fill"></i></div>
       <div class="inv-kpi-value">{{ snapshot.raw_items or 0 }}</div>
-      <div class="inv-kpi-label">Raw Materials</div>
-      <div class="inv-kpi-sub">Unprocessed stock</div>
-    </a>
-
-    <a href="/inventory" class="inv-kpi-card kpi-success">
-      <div class="inv-kpi-icon icon-green"><i class="bi bi-patch-check"></i></div>
+      <div class="inv-kpi-label">Raw Material Stock</div>
+      <div class="inv-kpi-sub">Pending Processing</div>
+    </div>
+    <div class="inv-kpi-card kpi-success">
+      <div class="inv-kpi-icon icon-green"><i class="bi bi-recycle"></i></div>
       <div class="inv-kpi-value">{{ snapshot.finished_items or 0 }}</div>
-      <div class="inv-kpi-label">Finished / Recovered</div>
-      <div class="inv-kpi-sub">Ready for dispatch</div>
-    </a>
-
-    <a href="/inventory" class="inv-kpi-card {{ 'kpi-danger' if (snapshot.low_stock or 0) > 0 else '' }}">
-      <div class="inv-kpi-icon {{ 'icon-danger' if (snapshot.low_stock or 0) > 0 else 'icon-warning' }}">
-        <i class="bi bi-exclamation-triangle{{ '-fill' if (snapshot.low_stock or 0) > 0 else '' }}"></i>
-      </div>
-      <div class="inv-kpi-value">{{ snapshot.low_stock or 0 }}</div>
-      <div class="inv-kpi-label">Low Stock Alerts</div>
-      <div class="inv-kpi-sub">{{ 'Needs attention' if (snapshot.low_stock or 0) > 0 else 'All levels OK' }}</div>
-    </a>
-
+      <div class="inv-kpi-label">Finished & Recovered</div>
+      <div class="inv-kpi-sub">Ready for Sale Dispatch</div>
+    </div>
     <div class="inv-kpi-card">
-      <div class="inv-kpi-icon icon-teal"><i class="bi bi-weight"></i></div>
-      <div class="inv-kpi-value">{{ "%.1f"|format(snapshot.total_weight or 0) }}</div>
-      <div class="inv-kpi-label">Total Weight (kg)</div>
-      <div class="inv-kpi-sub">Across all warehouses</div>
-    </div>
-
-    <a href="/inventory/batches" class="inv-kpi-card">
-      <div class="inv-kpi-icon icon-purple"><i class="bi bi-stack"></i></div>
-      <div class="inv-kpi-value">{{ categories|length }}</div>
-      <div class="inv-kpi-label">Categories</div>
-      <div class="inv-kpi-sub">Material groups</div>
-    </a>
-  </div>
-
-  <!-- Low Stock Alert ──────────────────────────────────────────────────── -->
-  {% if (snapshot.low_stock or 0) > 0 %}
-  <div class="inv-alert inv-alert-warning">
-    <i class="bi bi-exclamation-triangle-fill"></i>
-    <div>
-      <strong>{{ snapshot.low_stock }} material{{ 's' if snapshot.low_stock != 1 else '' }} at low stock.</strong>
-      Review inventory levels and consider restocking.
-      <a href="/inventory" class="ms-2 fw-600" style="color:inherit;">View Stock →</a>
+      <div class="inv-kpi-icon icon-teal"><i class="bi bi-speedometer2"></i></div>
+      <div class="inv-kpi-value">{{"%.1f"|format(snapshot.total_weight or 0)}}</div>
+      <div class="inv-kpi-label">Valued Weight (kg)</div>
+      <div class="inv-kpi-sub">Store Weight Total</div>
     </div>
   </div>
-  {% endif %}
 
-  <div class="row g-4">
-
-    <!-- Stock by Category ────────────────────────────────────────────── -->
+  {# ── SECTION 3: SYSTEM DISTRIBUTION ANALYTICS ── #}
+  <div class="row g-4 mb-4">
+    <!-- Material Category Summary -->
     <div class="col-lg-4">
-      <div class="inv-card h-100">
-        <div class="inv-card-header">
+      <div class="inv-card">
+        <div class="inv-card-header" style="cursor: pointer;" onclick="invToggleCollapse('catCol')">
           <span class="inv-card-title"><i class="bi bi-pie-chart"></i> Stock by Category</span>
+          <i class="bi bi-chevron-up" id="catColChevron" style="color: var(--text-muted);"></i>
         </div>
-        <div class="inv-card-body no-pad">
+        <div class="inv-card-body no-pad" id="catCol">
           {% if categories %}
           <table class="inv-table">
             <thead>
               <tr>
                 <th>Category</th>
-                <th class="col-num">Qty</th>
+                <th class="col-num">Available Qty</th>
               </tr>
             </thead>
             <tbody>
@@ -104,22 +121,23 @@
             </tbody>
           </table>
           {% else %}
-          <div class="inv-empty">
+          <div class="inv-empty" style="padding: 24px;">
             <div class="inv-empty-icon"><i class="bi bi-pie-chart"></i></div>
-            <div class="inv-empty-subtitle">No category data yet</div>
+            <div class="inv-empty-subtitle">No category distribution data</div>
           </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Stock by Lifecycle State ──────────────────────────────────────── -->
+    <!-- Lifecycle State Distribution -->
     <div class="col-lg-4">
-      <div class="inv-card h-100">
-        <div class="inv-card-header">
-          <span class="inv-card-title"><i class="bi bi-layers"></i> Stock by Lifecycle</span>
+      <div class="inv-card">
+        <div class="inv-card-header" style="cursor: pointer;" onclick="invToggleCollapse('lifecycleCol')">
+          <span class="inv-card-title"><i class="bi bi-layers"></i> Stock by Lifecycle State</span>
+          <i class="bi bi-chevron-up" id="lifecycleColChevron" style="color: var(--text-muted);"></i>
         </div>
-        <div class="inv-card-body">
+        <div class="inv-card-body" id="lifecycleCol">
           {% if states %}
             {% set max_val = states|map(attribute='value')|list|max or 1 %}
             {% for state in states %}
@@ -137,50 +155,40 @@
           {% else %}
           <div class="inv-empty" style="padding:24px;">
             <div class="inv-empty-icon" style="width:40px;height:40px;font-size:18px;"><i class="bi bi-layers"></i></div>
-            <div class="inv-empty-subtitle">No lifecycle data yet</div>
+            <div class="inv-empty-subtitle">No state distribution data</div>
           </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Quick Navigation ─────────────────────────────────────────────── -->
+    <!-- Quick Operations Drawer Command Panel (Takes minimal space) -->
     <div class="col-lg-4">
-      <div class="inv-card h-100">
+      <div class="inv-card">
         <div class="inv-card-header">
-          <span class="inv-card-title"><i class="bi bi-grid"></i> Quick Access</span>
+          <span class="inv-card-title"><i class="bi bi-lightning-charge"></i> Quick Tasks</span>
         </div>
         <div class="inv-card-body">
           <div class="d-flex flex-column gap-2">
             <a href="/inventory" class="inv-btn inv-btn-outline w-100 justify-content-start">
-              <i class="bi bi-boxes" style="color:var(--inv-primary);"></i> Browse Stock
+              <i class="bi bi-boxes" style="color:var(--inv-primary);"></i> Go to Stock Workspace
             </a>
             <a href="/inventory/movements" class="inv-btn inv-btn-outline w-100 justify-content-start">
-              <i class="bi bi-arrow-left-right" style="color:var(--inv-primary);"></i> View Movements
-            </a>
-            <a href="/inventory/batches" class="inv-btn inv-btn-outline w-100 justify-content-start">
-              <i class="bi bi-stack" style="color:var(--inv-primary);"></i> Material Batches
-            </a>
-            <a href="/inventory/timeline" class="inv-btn inv-btn-outline w-100 justify-content-start">
-              <i class="bi bi-diagram-3" style="color:var(--inv-primary);"></i> Trace a Material
-            </a>
-            <a href="/inventory/material-flow-dashboard" class="inv-btn inv-btn-outline w-100 justify-content-start">
-              <i class="bi bi-share" style="color:var(--inv-primary);"></i> Material Flow
+              <i class="bi bi-arrow-left-right" style="color:var(--inv-primary);"></i> Audit Transactions log
             </a>
             <a href="/inventory/adjust" class="inv-btn inv-btn-primary w-100 justify-content-start">
-              <i class="bi bi-sliders"></i> Stock Adjustment
+              <i class="bi bi-sliders"></i> Manual Stock Adjustment
             </a>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /row -->
-
-  <!-- Recent Movements ─────────────────────────────────────────────────── -->
-  <div class="inv-card mt-4">
+  {# ── SECTION 4: AUDIT LEDGER LOG ACTIVITY ── #}
+  <div class="inv-card">
     <div class="inv-card-header">
-      <span class="inv-card-title"><i class="bi bi-clock-history"></i> Recent Stock Movements</span>
+      <span class="inv-card-title"><i class="bi bi-clock-history"></i> Live Stock Movements Audit Trail</span>
       <a href="/inventory/movements" class="inv-btn inv-btn-ghost" style="font-size:12px;">
         View all <i class="bi bi-arrow-right"></i>
       </a>
@@ -191,36 +199,35 @@
         <table class="inv-table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Material</th>
-              <th>Type</th>
-              <th>Reference</th>
+              <th>Timestamp</th>
+              <th>Material Name</th>
+              <th>Operation Type</th>
+              <th>Reference Number</th>
               <th>State</th>
-              <th class="col-num">Qty Δ</th>
-              <th class="col-num">Wt Δ (kg)</th>
-              <th>By</th>
+              <th class="col-num">Qty Change</th>
+              <th class="col-num">Weight Change</th>
+              <th>Operator</th>
             </tr>
           </thead>
           <tbody>
             {% for m in recent_movements %}
-            {# field names from get_stock_movements: movement_type, inventory_state, created_at, reference_number, quantity_change, weight_change, performed_by #}
             {% set mt = m.movement_type or '' %}
-            <tr>
+            <tr onclick="invShowDrawer('/inventory/{{ m.material_id }}', 'Material Details')">
               <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">{{ m.created_at or '—' }}</td>
               <td>
-                <a href="/inventory/{{ m.material_id }}" style="font-weight:600;color:var(--inv-primary);">
+                <a href="javascript:void(0)" onclick="event.stopPropagation(); invShowDrawer('/inventory/{{ m.material_id }}', 'Material Details')" style="font-weight:600;color:var(--inv-primary);">
                   {{ m.material_name or '—' }}
                 </a>
               </td>
               <td>
                 {% if mt in ('PURCHASE', 'STOCK_IN') %}
-                  <span class="inv-badge inv-badge-green"><i class="bi bi-arrow-down-circle-fill"></i> {{ m.type or mt }}</span>
+                  <span class="inv-badge inv-badge-green"><i class="bi bi-arrow-down-circle-fill"></i> Inward Receipt</span>
                 {% elif mt in ('SALE', 'STOCK_OUT') %}
-                  <span class="inv-badge inv-badge-danger"><i class="bi bi-arrow-up-circle-fill"></i> {{ m.type or mt }}</span>
+                  <span class="inv-badge inv-badge-danger"><i class="bi bi-arrow-up-circle-fill"></i> Outward Dispatch</span>
                 {% elif mt == 'ADJUSTMENT' %}
-                  <span class="inv-badge inv-badge-warning"><i class="bi bi-sliders"></i> Adjustment</span>
+                  <span class="inv-badge inv-badge-warning"><i class="bi bi-sliders"></i> Audit Adjustment</span>
                 {% elif mt == 'PROCESSING' %}
-                  <span class="inv-badge inv-badge-info"><i class="bi bi-gear-fill"></i> Processing</span>
+                  <span class="inv-badge inv-badge-info"><i class="bi bi-gear-fill"></i> Job Processing</span>
                 {% else %}
                   <span class="inv-badge inv-badge-gray">{{ m.type or mt or '—' }}</span>
                 {% endif %}
@@ -244,21 +251,16 @@
         </table>
       </div>
       {% else %}
-      <div class="inv-empty">
-        <div class="inv-empty-icon"><i class="bi bi-inbox"></i></div>
-        <div class="inv-empty-title">No movements yet</div>
-        <div class="inv-empty-subtitle">Stock movements will appear here as inventory is updated.</div>
+      <div class="inv-empty" style="padding: 32px;">
+        <div class="inv-empty-icon"><i class="bi bi-clock-history"></i></div>
+        <div class="inv-empty-title">No movements registered</div>
+        <div class="inv-empty-subtitle">Live transactions will show up as inventory operations occur.</div>
       </div>
       {% endif %}
     </div>
   </div>
 
-</div><!-- /inv-page-body -->
-
-<!-- Mobile FAB -->
-<button class="inv-fab" onclick="window.location='/inventory/adjust'" title="Stock Adjustment">
-  <i class="bi bi-plus-lg"></i>
-</button>
+</div>
 
 {% endblock %}
 

@@ -1,5 +1,5 @@
 {% extends "shared/base.html" %}
-{% block title %}Timeline & Traceability – Inventory Workspace{% endblock %}
+{% block title %}Material Traceability & Genealogy – Right Ewaste ERP{% endblock %}
 
 {% block styles %}
 <link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
@@ -60,16 +60,16 @@
 <div class="inv-page-body">
 
   <!-- Hero Search ──────────────────────────────────────────────────────── -->
-  <form method="get" action="/inventory/timeline">
+  <form method="get" action="/inventory/timeline" id="traceSearchForm">
     <div class="trace-search-hero">
       <h2><i class="bi bi-diagram-3" style="color:var(--inv-primary);"></i> &nbsp;Material Traceability Search</h2>
-      <p>Search by batch number, invoice number, processing job, or material name to trace the complete lifecycle.</p>
+      <p>Enter a batch number to view its complete lifecycle tree (e.g. BATCH-2026-00092).</p>
       <div class="trace-search-row">
         <div class="inv-search-wrap flex-fill">
           <i class="bi bi-search"></i>
-          <input type="text" name="query" id="traceQuery" class="inv-search-input"
+          <input type="text" name="q" id="traceQuery" class="inv-search-input"
                  style="font-size:14px;padding:10px 12px 10px 38px;"
-                 placeholder="Batch No., Invoice No., Job No., Material…"
+                 placeholder="Enter Batch Number (e.g. BATCH-2026-00092)"
                  value="{{ query or '' }}" autofocus autocomplete="off">
         </div>
         <button type="submit" class="inv-btn inv-btn-primary" style="padding:10px 20px;font-size:14px;">
@@ -84,204 +84,97 @@
     </div>
   </form>
 
+  <!-- Interactive Graphic Lifecycle Timeline Container -->
+  <div id="lifecycleGraphContainer" style="display:none;" class="mb-4">
+    <div class="inv-card">
+      <div class="inv-card-header">
+        <span class="inv-card-title"><i class="bi bi-diagram-3"></i> Connected Material Lifecycle Timeline</span>
+      </div>
+      <div class="inv-card-body">
+        <div class="inv-lifecycle" id="lifecycleNodes">
+          <!-- Dynamically populated via javascript -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   {% if query and search_results %}
-  <!-- ── RESULTS ──────────────────────────────────────────────────────── -->
+  <!-- Search Results list if query is general -->
+  <div id="generalResultsList">
+    {% set batches  = search_results.get('batches', []) %}
+    {% set jobs     = search_results.get('jobs', []) %}
+    {% set purchases = search_results.get('purchases', []) %}
+    {% set sales    = search_results.get('sales', []) %}
+    {% set materials = search_results.get('materials', []) %}
+    {% set total    = batches|length + jobs|length + purchases|length + sales|length + materials|length %}
 
-  {% set batches  = search_results.get('batches', []) %}
-  {% set jobs     = search_results.get('jobs', []) %}
-  {% set purchases = search_results.get('purchases', []) %}
-  {% set sales    = search_results.get('sales', []) %}
-  {% set materials = search_results.get('materials', []) %}
-  {% set total    = batches|length + jobs|length + purchases|length + sales|length + materials|length %}
-
-  <div style="margin-bottom:16px; display:flex; align-items:center; gap:10px;">
-    <span class="inv-badge inv-badge-teal" style="font-size:13px;padding:5px 12px;">
-      {{ total }} result{{ 's' if total != 1 else '' }}
-    </span>
-    <span style="font-size:13px;color:var(--text-muted);">for <strong style="color:var(--text-primary);">"{{ query }}"</strong></span>
-  </div>
-
-  <!-- Batches ──────────────────────────────────────────────────────────── -->
-  {% if batches %}
-  <div class="trace-result-section">
-    <h5><i class="bi bi-stack" style="color:var(--inv-primary);"></i> Material Batches</h5>
-    <div class="inv-batch-grid">
-      {% for batch in batches %}
-      {% set st = batch.processing_status or batch.status or '' %}
-      <div class="inv-batch-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-          <div class="inv-batch-num"><i class="bi bi-upc-scan"></i> {{ batch.batch_number }}</div>
-          <span class="inv-badge {{ 'inv-badge-green' if st=='ACTIVE' else ('inv-badge-info' if st=='PROCESSING' else 'inv-badge-gray') }}">
-            {{ st or '—' }}
-          </span>
-        </div>
-        <div class="inv-batch-material">{{ batch.material_name or '—' }}</div>
-        <div class="inv-batch-rows" style="margin-top:8px;">
-          <div><div class="br-label">Supplier</div><div class="br-value">{{ batch.supplier_name or '—' }}</div></div>
-          <div><div class="br-label">Remaining Wt</div><div class="br-value">{{ "%.3f"|format(batch.remaining_weight or 0) }} kg</div></div>
-        </div>
-        <div style="margin-top:12px;">
-          <a href="/inventory/batch/{{ batch.batch_number }}" class="inv-btn inv-btn-primary w-100 justify-content-center" style="font-size:12px;">
-            <i class="bi bi-diagram-3"></i> View Full Traceability
-          </a>
-        </div>
-      </div>
-      {% endfor %}
+    <div style="margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+      <span class="inv-badge inv-badge-teal" style="font-size:13px;padding:5px 12px;">
+        {{ total }} search match{{ 'es' if total != 1 else '' }}
+      </span>
+      <span style="font-size:13px;color:var(--text-muted);">for <strong style="color:var(--text-primary);">"{{ query }}"</strong></span>
     </div>
-  </div>
-  {% endif %}
 
-  <!-- Processing Jobs ───────────────────────────────────────────────────── -->
-  {% if jobs %}
-  <div class="trace-result-section">
-    <h5><i class="bi bi-gear" style="color:var(--info);"></i> Processing Jobs</h5>
-    <div class="inv-card">
-      <div class="inv-table-wrap">
-        <table class="inv-table">
-          <thead>
-            <tr>
-              <th>Job Number</th>
-              <th>Material</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th class="col-num">Input Wt</th>
-              <th class="col-num">Output Wt</th>
-              <th class="col-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for job in jobs %}
-            <tr>
-              <td><span style="font-family:monospace;font-weight:700;color:var(--info);">{{ job.processing_number or '—' }}</span></td>
-              <td style="font-weight:600;">{{ job.material_name or '—' }}</td>
-              <td><span class="inv-badge inv-badge-info">{{ job.status or '—' }}</span></td>
-              <td style="font-size:12px;color:var(--text-muted);">{{ job.processing_date or '—' }}</td>
-              <td class="col-num">{{ "%.3f"|format(job.input_weight or 0) }} kg</td>
-              <td class="col-num">{{ "%.3f"|format(job.output_weight or 0) }} kg</td>
-              <td class="col-center">
-                <a href="/processing/{{ job.id }}" class="inv-btn inv-btn-outline" style="font-size:12px;padding:5px 10px;">
-                  View
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <!-- Batches -->
+    {% if batches %}
+    <div class="trace-result-section">
+      <h5><i class="bi bi-stack" style="color:var(--inv-primary);"></i> Material Batches</h5>
+      <div class="inv-batch-grid">
+        {% for batch_num in batches %}
+        <div class="inv-batch-card" style="cursor:pointer;" onclick="loadLifecycleTimeline('{{ batch_num }}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div class="inv-batch-num"><i class="bi bi-upc-scan"></i> {{ batch_num }}</div>
+            <span class="inv-badge inv-badge-green">Traceable</span>
+          </div>
+          <div style="margin-top:12px;">
+            <button type="button" class="inv-btn inv-btn-primary w-100 justify-content-center" style="font-size:12px;">
+              <i class="bi bi-diagram-3"></i> View Connected Timeline
+            </button>
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- Purchase Invoices ─────────────────────────────────────────────────── -->
-  {% if purchases %}
-  <div class="trace-result-section">
-    <h5><i class="bi bi-cart" style="color:var(--warning);"></i> Purchase Invoices</h5>
-    <div class="inv-card">
-      <div class="inv-table-wrap">
-        <table class="inv-table">
-          <thead>
-            <tr>
-              <th>Invoice No.</th>
-              <th>Supplier</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th class="col-num">Grand Total</th>
-              <th class="col-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
+    <!-- Invoices & Jobs fallback links -->
+    {% if purchases or sales or jobs %}
+    <div class="trace-result-section">
+      <h5><i class="bi bi-link-45deg" style="color:var(--text-muted);"></i> Operations & Invoices Links</h5>
+      <div class="inv-card">
+        <div class="inv-card-body py-2">
+          <div class="d-flex flex-wrap gap-2">
             {% for inv in purchases %}
-            <tr>
-              <td><span style="font-family:monospace;font-weight:700;color:var(--warning);">{{ inv.purchase_invoice_number or inv.invoice_number or '—' }}</span></td>
-              <td style="font-weight:600;">{{ inv.supplier_name or '—' }}</td>
-              <td style="font-size:12px;color:var(--text-muted);">{{ inv.invoice_date or '—' }}</td>
-              <td><span class="inv-badge inv-badge-warning">{{ inv.status or '—' }}</span></td>
-              <td class="col-num">₹{{ "%.2f"|format(inv.grand_total or 0) }}</td>
-              <td class="col-center">
-                <a href="/purchase/{{ inv.id }}/view" class="inv-btn inv-btn-outline" style="font-size:12px;padding:5px 10px;">View</a>
-              </td>
-            </tr>
+            <a href="/purchase/{{ inv.id }}/view" class="inv-btn inv-btn-outline" style="font-size:12px;">
+              <i class="bi bi-cart"></i> Purchase Invoice: {{ inv.purchase_invoice_number or inv.invoice_number }}
+            </a>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Sales Invoices ────────────────────────────────────────────────────── -->
-  {% if sales %}
-  <div class="trace-result-section">
-    <h5><i class="bi bi-receipt" style="color:var(--success);"></i> Sales Invoices</h5>
-    <div class="inv-card">
-      <div class="inv-table-wrap">
-        <table class="inv-table">
-          <thead>
-            <tr>
-              <th>Invoice No.</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th class="col-num">Grand Total</th>
-              <th class="col-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
             {% for inv in sales %}
-            <tr>
-              <td><span style="font-family:monospace;font-weight:700;color:var(--success);">{{ inv.invoice_number or '—' }}</span></td>
-              <td style="font-weight:600;">{{ inv.customer_name or '—' }}</td>
-              <td style="font-size:12px;color:var(--text-muted);">{{ inv.invoice_date or '—' }}</td>
-              <td><span class="inv-badge inv-badge-green">{{ inv.status or '—' }}</span></td>
-              <td class="col-num">₹{{ "%.2f"|format(inv.grand_total or 0) }}</td>
-              <td class="col-center">
-                <a href="/sales/{{ inv.id }}/view" class="inv-btn inv-btn-outline" style="font-size:12px;padding:5px 10px;">View</a>
-              </td>
-            </tr>
+            <a href="/sales/{{ inv.id }}/view" class="inv-btn inv-btn-outline" style="font-size:12px;">
+              <i class="bi bi-receipt"></i> Sales Invoice: {{ inv.invoice_number }}
+            </a>
             {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Materials ─────────────────────────────────────────────────────────── -->
-  {% if materials %}
-  <div class="trace-result-section">
-    <h5><i class="bi bi-box-seam" style="color:var(--inv-primary);"></i> Materials</h5>
-    <div class="inv-material-grid">
-      {% for mat in materials %}
-      <div class="inv-material-card">
-        <div class="inv-mat-icon"><i class="bi bi-box-seam"></i></div>
-        <div class="inv-mat-code">{{ mat.material_code or 'N/A' }}</div>
-        <div class="inv-mat-name">{{ mat.name or mat.material_name or '—' }}</div>
-        <span class="inv-badge inv-badge-gray">{{ mat.category or '—' }}</span>
-        <div class="inv-mat-actions" style="margin-top:12px;">
-          <a href="/inventory/{{ mat.id }}" class="inv-btn inv-btn-primary flex-fill justify-content-center" style="font-size:12px;">
-            <i class="bi bi-eye"></i> View Stock
-          </a>
+            {% for job in jobs %}
+            <a href="/processing/{{ job.id }}" class="inv-btn inv-btn-outline" style="font-size:12px;">
+              <i class="bi bi-gear"></i> Processing Job: {{ job.processing_number }}
+            </a>
+            {% endfor %}
+          </div>
         </div>
       </div>
-      {% endfor %}
     </div>
+    {% endif %}
   </div>
-  {% endif %}
-
-  {% elif query and not search_results %}
-  <!-- No results ─────────────────────────────────────────────────────────── -->
+  {% elif query %}
   <div class="inv-card">
     <div class="inv-empty">
       <div class="inv-empty-icon"><i class="bi bi-search"></i></div>
-      <div class="inv-empty-title">No results for "{{ query }}"</div>
-      <div class="inv-empty-subtitle">
-        Try a different batch number, invoice number, job number, or material name.
-      </div>
+      <div class="inv-empty-title">No matches found for "{{ query }}"</div>
+      <div class="inv-empty-subtitle">Try entering a different batch number, invoice number, or material.</div>
     </div>
   </div>
-
   {% else %}
-  <!-- Idle state ─────────────────────────────────────────────────────────── -->
+  <!-- Idle Guide -->
   <div class="row g-4">
     <div class="col-md-4">
       <a href="/inventory/batches" class="inv-kpi-card text-decoration-none d-block" style="text-align:center;">
@@ -305,44 +198,9 @@
       </a>
     </div>
   </div>
-
-  <!-- How to use guide -->
-  <div class="inv-card mt-4">
-    <div class="inv-card-header">
-      <span class="inv-card-title"><i class="bi bi-info-circle"></i> How to trace a material</span>
-    </div>
-    <div class="inv-card-body">
-      <div class="inv-trace-flow">
-        {% set stages = [
-          ('bi-cart', 'icon-warning', 'Purchase', 'Material is received via a purchase invoice and a batch is created.', True),
-          ('bi-inbox-fill', 'icon-info', 'Receiving', 'Batch arrives at the warehouse; initial weight and quantity are recorded.', False),
-          ('bi-gear-fill', 'icon-green', 'Processing', 'Material is processed — segregated, refurbished, or prepared for disposal.', False),
-          ('bi-boxes', 'icon-teal', 'Finished Inventory', 'Processed output enters finished goods inventory.', False),
-          ('bi-bag-check', 'icon-green', 'Sales', 'Finished goods are dispatched via a sales invoice.', False),
-          ('bi-shield-check', 'icon-purple', 'Certificate', 'Recycling certificate is issued to the original supplier.', False)
-        ] %}
-        {% for icon, icon_cls, title, desc, is_last in stages %}
-        <div class="inv-trace-stage">
-          <div class="inv-trace-left">
-            <div class="inv-trace-node">
-              <div class="inv-kpi-icon {{ icon_cls }}" style="width:36px;height:36px;font-size:16px;margin:0;">
-                <i class="bi {{ icon }}"></i>
-              </div>
-            </div>
-            {% if not loop.last %}<div class="inv-trace-line"></div>{% endif %}
-          </div>
-          <div class="inv-trace-card" style="margin-bottom:{{ '0' if loop.last else '8px' }};">
-            <div class="inv-trace-stage-title">{{ title }}</div>
-            <div class="inv-trace-stage-meta">{{ desc }}</div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
   {% endif %}
 
-</div><!-- /inv-page-body -->
+</div>
 
 {% endblock %}
 
@@ -350,7 +208,178 @@
 <script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
 <script>
 window.INV_PAGE = 'timeline';
-// Auto-focus search
-document.getElementById('traceQuery')?.focus();
+document.addEventListener('DOMContentLoaded', () => {
+  // If query matches a batch format, trigger timeline load instantly
+  const q = "{{ query or '' }}".trim();
+  if (q.startsWith("BATCH-")) {
+    loadLifecycleTimeline(q);
+  }
+});
+
+function loadLifecycleTimeline(batchNumber) {
+  const container = document.getElementById('lifecycleGraphContainer');
+  const list = document.getElementById('generalResultsList');
+  const nodes = document.getElementById('lifecycleNodes');
+  
+  if (list) list.style.display = 'none';
+  container.style.display = 'block';
+  
+  nodes.innerHTML = `
+    <div style="text-align:center;padding:32px 0;">
+      <i class="bi bi-hourglass-split spinner-border text-primary" style="font-size:24px;border:none;"></i>
+      <div style="margin-top:12px;color:var(--text-muted);">Fetching end-to-end batch genealogy...</div>
+    </div>
+  `;
+  
+  fetch(`/platform/api/traceability/batch/${batchNumber}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        nodes.innerHTML = `<div class="inv-alert inv-alert-danger">${data.error}</div>`;
+        return;
+      }
+      renderLifecycleTimeline(data);
+    })
+    .catch(err => {
+      nodes.innerHTML = `<div class="inv-alert inv-alert-danger">Failed to connect to WMS database.</div>`;
+    });
+}
+
+function renderLifecycleTimeline(data) {
+  const nodes = document.getElementById('lifecycleNodes');
+  const b = data.batch;
+  const p = data.purchase || {};
+  const movements = data.movements || [];
+  const jobs = data.processing_jobs || [];
+  const outputs = data.classified_outputs || [];
+  const sales = data.sales_dispatches || [];
+  
+  let html = '';
+  
+  // Node 1: Purchase
+  html += `
+    <div class="inv-lifecycle-node">
+      <div class="inv-lifecycle-icon"><i class="bi bi-cart"></i></div>
+      <div class="inv-lifecycle-body">
+        <div class="inv-lifecycle-title">
+          <span>Stage 1: Inward Purchase Procurement</span>
+          <span class="inv-badge inv-badge-green">PO Linked</span>
+        </div>
+        <div class="inv-lifecycle-meta">
+          <strong>Supplier:</strong> ${p.supplier_name || 'N/A'} (Code: ${p.party_code || 'N/A'})<br>
+          <strong>Inward Invoice:</strong> ${p.purchase_invoice_number || 'N/A'} (Date: ${p.invoice_date || 'N/A'})<br>
+          <strong>Procured Volume:</strong> ${b.weight ? Number(b.weight).toFixed(2) + ' kg' : '0.00 kg'}
+        </div>
+        <div class="inv-lifecycle-actions">
+          ${p.id ? `<a href="/purchase/${p.id}/view" class="inv-btn inv-btn-outline" style="font-size:11px;padding:3px 8px;">View Invoice Document</a>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Node 2: Receiving & Store
+  html += `
+    <div class="inv-lifecycle-node">
+      <div class="inv-lifecycle-icon"><i class="bi bi-inbox-fill"></i></div>
+      <div class="inv-lifecycle-body">
+        <div class="inv-lifecycle-title">
+          <span>Stage 2: Warehouse Store & Inventory Entry</span>
+          <span class="inv-badge inv-badge-teal">Stored RAW</span>
+        </div>
+        <div class="inv-lifecycle-meta">
+          <strong>Inward Batch Number:</strong> <span class="font-monospace fw-bold text-primary">${b.batch_number}</span><br>
+          <strong>Initial Quantity:</strong> ${Number(b.quantity).toFixed(2)} units (Remaining Weight: ${Number(b.remaining_weight).toFixed(3)} kg)<br>
+          <strong>Warehouse Block:</strong> Main Raw Warehouse (Raw Stock Category)
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Node 3: Processing
+  if (jobs.length > 0) {
+    const job = jobs[0];
+    html += `
+      <div class="inv-lifecycle-node">
+        <div class="inv-lifecycle-icon"><i class="bi bi-gear-fill"></i></div>
+        <div class="inv-lifecycle-body">
+          <div class="inv-lifecycle-title">
+            <span>Stage 3: Refurbishment & Processing Job</span>
+            <span class="inv-badge inv-badge-info">${job.status || 'Processed'}</span>
+          </div>
+          <div class="inv-lifecycle-meta">
+            <strong>Job Number:</strong> <span class="font-monospace text-info fw-bold">${job.processing_number}</span> (Date: ${job.processing_date || 'N/A'})<br>
+            <strong>Processing Weight Input:</strong> ${Number(job.input_weight || 0).toFixed(2)} kg (Output: ${Number(job.output_weight || 0).toFixed(2)} kg)<br>
+            <strong>Operator:</strong> ${job.performed_by || 'Staff'}
+          </div>
+          <div class="inv-lifecycle-actions">
+            <a href="/processing/${job.id}" class="inv-btn inv-btn-outline" style="font-size:11px;padding:3px 8px;">View Processing Sheet</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Node 4: Recovered Output
+  if (outputs.length > 0) {
+    let outputsList = outputs.map(o => `<li>${o.material_name} (${Number(o.quantity).toFixed(2)} units · ${Number(o.weight).toFixed(3)} kg)</li>`).join('');
+    html += `
+      <div class="inv-lifecycle-node">
+        <div class="inv-lifecycle-icon"><i class="bi bi-recycle"></i></div>
+        <div class="inv-lifecycle-body">
+          <div class="inv-lifecycle-title">
+            <span>Stage 4: Recovered Classified Outputs</span>
+            <span class="inv-badge inv-badge-green">Recovered</span>
+          </div>
+          <div class="inv-lifecycle-meta">
+            <strong>Materials Generated:</strong>
+            <ul class="mb-0 ps-3 mt-1" style="font-size:12px;">${outputsList}</ul>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Node 5: Dispatches & Sales
+  if (sales.length > 0) {
+    const sale = sales[0];
+    html += `
+      <div class="inv-lifecycle-node">
+        <div class="inv-lifecycle-icon"><i class="bi bi-bag-check"></i></div>
+        <div class="inv-lifecycle-body">
+          <div class="inv-lifecycle-title">
+            <span>Stage 5: Sales Dispatch Outward</span>
+            <span class="inv-badge inv-badge-danger">Dispatched</span>
+          </div>
+          <div class="inv-lifecycle-meta">
+            <strong>Sales Invoice:</strong> ${sale.invoice_number} (Date: ${sale.invoice_date || 'N/A'})<br>
+            <strong>Customer:</strong> ${sale.buyer_name || 'N/A'}<br>
+            <strong>Dispatched Qty:</strong> ${Number(sale.quantity || 0).toFixed(2)} units
+          </div>
+          <div class="inv-lifecycle-actions">
+            <a href="/sales/${sale.sales_invoice_id}/view" class="inv-btn inv-btn-outline" style="font-size:11px;padding:3px 8px;">View Dispatch Invoice</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  // Node 6: Recycling Certificate
+  html += `
+    <div class="inv-lifecycle-node">
+      <div class="inv-lifecycle-icon"><i class="bi bi-shield-check"></i></div>
+      <div class="inv-lifecycle-body">
+        <div class="inv-lifecycle-title">
+          <span>Stage 6: Green Certificate Issuance</span>
+          <span class="inv-badge inv-badge-purple">Compliant</span>
+        </div>
+        <div class="inv-lifecycle-meta">
+          Green E-Waste Safe Recycling Certificate auto-issued to the original supplier for verified sustainable recycling.
+        </div>
+      </div>
+    </div>
+  `;
+  
+  nodes.innerHTML = html;
+}
 </script>
 {% endblock %}

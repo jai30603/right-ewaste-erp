@@ -1,151 +1,130 @@
 {% extends "shared/base.html" %}
 
 {% block title %}Stock Adjustment – Right Ewaste ERP{% endblock %}
-{% block page_title %}Stock Adjustment{% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{{ url_for('inventory.inventory_dashboard') }}" class="text-decoration-none text-muted">Inventory</a></li>
-<li class="breadcrumb-item active">Stock Adjustment</li>
+{% block styles %}
+<link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
+{% set inv_active_tab = 'stock' %}
+{% include 'inventory/_workspace_header.html' %}
 
-{# ── Page Header ──────────────────────────────────────────────── #}
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-    <div>
-        <h1 class="h4 mb-1 fw-bold">Stock Adjustment</h1>
-        <p class="text-muted mb-0" style="font-size:13.5px;">
-            Admin-only. All adjustments are logged with full audit trail. A reason is mandatory.
-        </p>
-    </div>
-    <a href="{{ url_for('inventory.inventory') }}" class="btn btn-sm btn-outline-secondary px-3" style="border-radius:8px; font-weight:600;">
-        <i class="bi bi-arrow-left me-1"></i> Back to Stock
-    </a>
-</div>
+<div class="inv-page-body">
 
-{# ── Warning Banner ───────────────────────────────────────────── #}
-<div class="alert border-0 mb-4 d-flex align-items-start gap-3"
-     style="background:#fffbeb; border-left:4px solid #d97706 !important; border-radius:10px; padding:16px 20px;">
-    <i class="bi bi-exclamation-triangle-fill" style="color:#d97706; font-size:20px; flex-shrink:0; margin-top:2px;"></i>
-    <div>
-        <div style="font-weight:700; color:#92400e; margin-bottom:3px;">Admin Action – Use With Caution</div>
-        <div style="font-size:13px; color:#78350f; line-height:1.5;">
-            Stock adjustments bypass normal purchase/sale workflows. Use only for physical count corrections,
-            damage write-offs, or system migration. Every adjustment is permanently recorded in the material ledger
-            with your username, date, time, and the reason provided.
-        </div>
-    </div>
-</div>
-
-{# ── Adjustment Form ──────────────────────────────────────────── #}
-<div class="row justify-content-center">
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm" style="border-radius:14px;">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center gap-2 mb-4">
-                    <i class="bi bi-sliders" style="color:#0d9488; font-size:22px;"></i>
-                    <h2 class="h5 mb-0 fw-semibold">Record Manual Adjustment</h2>
-                </div>
-
-                <form method="POST" action="{{ url_for('inventory.stock_adjustment') }}" id="adjustment-form">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-
-                    {# Material Selection #}
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold" for="material_id" style="font-size:13px;">
-                            Material <span class="text-danger">*</span>
-                        </label>
-                        <select class="form-select" name="material_id" id="material_id" required>
-                            <option value="">— Select a material —</option>
-                            {% for m in materials %}
-                            <option value="{{ m.id }}">{{ m.name }} ({{ m.code }})</option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Select the material you are adjusting.</div>
-                    </div>
-
-                    {# Direction #}
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold" style="font-size:13px;">
-                            Adjustment Direction <span class="text-danger">*</span>
-                        </label>
-                        <div class="d-flex gap-3">
-                            <div class="flex-fill">
-                                <input type="radio" class="btn-check" name="direction" id="dir_in" value="IN" autocomplete="off" checked>
-                                <label class="btn btn-outline-success w-100" for="dir_in"
-                                       style="border-radius:8px; font-weight:600; font-size:13px; padding:10px;">
-                                    <i class="bi bi-arrow-up-circle me-2"></i> Increase Stock (IN)
-                                </label>
-                            </div>
-                            <div class="flex-fill">
-                                <input type="radio" class="btn-check" name="direction" id="dir_out" value="OUT" autocomplete="off">
-                                <label class="btn btn-outline-danger w-100" for="dir_out"
-                                       style="border-radius:8px; font-weight:600; font-size:13px; padding:10px;">
-                                    <i class="bi bi-arrow-down-circle me-2"></i> Reduce Stock (OUT)
-                                </label>
-                            </div>
-                        </div>
-                        <div class="form-text">
-                            Increase: physical count shows more than system. Decrease: damage, wastage, or write-off.
-                        </div>
-                    </div>
-
-                    {# Quantity Fields #}
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" for="quantity" style="font-size:13px;">Quantity</label>
-                            <input type="number" class="form-control" name="quantity" id="quantity"
-                                   min="0" step="0.01" value="0" placeholder="0.00">
-                            <div class="form-text">Main stock unit</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold" for="weight" style="font-size:13px;">Weight (kg)</label>
-                            <input type="number" class="form-control" name="weight" id="weight"
-                                   min="0" step="0.001" value="0" placeholder="0.000">
-                            <div class="form-text">In kilograms</div>
-                        </div>
-                    </div>
-
-                    {# Reason #}
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold" for="reason" style="font-size:13px;">
-                            Reason for Adjustment <span class="text-danger">*</span>
-                        </label>
-                        <textarea class="form-control" name="reason" id="reason" rows="3" required
-                                  placeholder="e.g. Physical stock count correction dated 13-Jul-2026. System showed 50 KG, actual count was 52 KG."></textarea>
-                        <div class="form-text">
-                            Be specific. This reason will appear permanently in the material ledger and audit trail.
-                        </div>
-                    </div>
-
-                    {# Actions #}
-                    <div class="d-flex gap-3 pt-2 border-top">
-                        <button type="submit" class="btn text-white px-5" id="submit-adj"
-                                style="background:#0d9488; border-radius:8px; font-weight:600;">
-                            <i class="bi bi-check2-circle me-1"></i> Record Adjustment
-                        </button>
-                        <a href="{{ url_for('inventory.inventory') }}"
-                           class="btn btn-outline-secondary px-4"
-                           style="border-radius:8px; font-weight:600;">
-                            Cancel
-                        </a>
-                    </div>
-                </form>
+    {# ── Warning Banner ── #}
+    <div class="inv-alert inv-alert-warning mb-4">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size: 20px;"></i>
+        <div>
+            <div style="font-weight: 700; margin-bottom: 2px;">Admin Action – Use With Caution</div>
+            <div style="font-size: 12.5px; line-height: 1.5;">
+                Stock adjustments bypass normal purchase/sale workflows. Use only for physical count corrections,
+                damage write-offs, or system migration. Every adjustment is permanently recorded in the material ledger.
             </div>
         </div>
     </div>
+
+    {# ── Adjustment Form ── #}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="inv-card">
+                <div class="inv-card-header">
+                    <span class="inv-card-title"><i class="bi bi-sliders"></i> Record Manual Stock Adjustment</span>
+                </div>
+                <div class="inv-card-body">
+                    <form method="POST" action="{{ url_for('inventory.stock_adjustment') }}" id="adjustment-form">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                        {# Material Selection #}
+                        <div class="mb-4">
+                            <label class="form-label fw-600 mb-1" for="material_id" style="font-size: 13px;">
+                                Material <span class="text-danger">*</span>
+                            </label>
+                            <select class="inv-filter-select w-100" name="material_id" id="material_id" required>
+                                <option value="">— Select a material —</option>
+                                {% for m in materials %}
+                                <option value="{{ m.id }}">{{ m.name }} ({{ m.code }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text mt-1 text-muted" style="font-size: 11px;">Select the material you are adjusting.</div>
+                        </div>
+
+                        {# Direction #}
+                        <div class="mb-4">
+                            <label class="form-label fw-600 mb-1" style="font-size: 13px;">
+                                Adjustment Direction <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex gap-3">
+                                <div class="flex-fill">
+                                    <input type="radio" class="btn-check" name="direction" id="dir_in" value="IN" autocomplete="off" checked>
+                                    <label class="btn btn-outline-success w-100 py-2.5" for="dir_in" style="font-size: 13px; font-weight: 600;">
+                                        <i class="bi bi-arrow-up-circle me-1"></i> Increase Stock (IN)
+                                    </label>
+                                </div>
+                                <div class="flex-fill">
+                                    <input type="radio" class="btn-check" name="direction" id="dir_out" value="OUT" autocomplete="off">
+                                    <label class="btn btn-outline-danger w-100 py-2.5" for="dir_out" style="font-size: 13px; font-weight: 600;">
+                                        <i class="bi bi-arrow-down-circle me-1"></i> Reduce Stock (OUT)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Quantity Fields #}
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-600 mb-1" for="quantity" style="font-size: 13px;">Quantity</label>
+                                <input type="number" class="inv-search-input" style="padding: 8px 12px;" name="quantity" id="quantity"
+                                       min="0" step="0.01" value="0" placeholder="0.00">
+                                <div class="form-text mt-1 text-muted" style="font-size: 11px;">Main stock unit count</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-600 mb-1" for="weight" style="font-size: 13px;">Weight (kg)</label>
+                                <input type="number" class="inv-search-input" style="padding: 8px 12px;" name="weight" id="weight"
+                                       min="0" step="0.001" value="0" placeholder="0.000">
+                                <div class="form-text mt-1 text-muted" style="font-size: 11px;">In kilograms</div>
+                            </div>
+                        </div>
+
+                        {# Reason #}
+                        <div class="mb-4">
+                            <label class="form-label fw-600 mb-1" for="reason" style="font-size: 13px;">
+                                Reason for Adjustment <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="inv-search-input" style="padding: 8px 12px;" name="reason" id="reason" rows="3" required
+                                      placeholder="e.g. Physical stock count correction dated 13-Jul-2026. System showed 50 KG, actual count was 52 KG."></textarea>
+                            <div class="form-text mt-1 text-muted" style="font-size: 11px;">
+                                Be specific. This reason will appear permanently in the material ledger and audit trail.
+                            </div>
+                        </div>
+
+                        {# Actions #}
+                        <div class="d-flex gap-3 pt-3 border-top">
+                            <button type="submit" class="inv-btn inv-btn-primary px-4" id="submit-adj">
+                                <i class="bi bi-check2-circle"></i> Record Adjustment
+                            </button>
+                            <a href="{{ url_for('inventory.inventory') }}" class="inv-btn inv-btn-outline px-4">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
 <script>
 // Prevent accidental double-submit
 document.getElementById('adjustment-form').addEventListener('submit', function () {
     const btn = document.getElementById('submit-adj');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Recording…';
+    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Recording…';
 });
 </script>
 {% endblock %}

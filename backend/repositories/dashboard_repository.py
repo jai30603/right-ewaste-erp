@@ -1,14 +1,15 @@
 """
 Dashboard Repository
 Provides aggregated business snapshot data for the main dashboard.
-All queries are intentionally lightweight — single-pass aggregations only.
+Focuses strictly on Core Production Scope: Sales, Purchase, Inventory, Masters.
+All queries are lightweight and safe.
 """
 from datetime import datetime
 from database import get_connection
 
 
 def get_dashboard_snapshot():
-    """Return all KPI figures needed for the dashboard in a single DB connection."""
+    """Return all KPI figures and recent records for the dashboard."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -69,84 +70,89 @@ def get_dashboard_snapshot():
 
     # ── Inventory Items (distinct active materials in stock with stock > 0) ──
     cursor.execute("""
-        SELECT COUNT(DISTINCT material_id) FROM inventory_balance WHERE current_quantity > 0
+        SELECT COUNT(DISTINCT material_id), COALESCE(SUM(current_quantity), 0)
+        FROM inventory_balance
+        WHERE current_quantity > 0
     """)
-    inventory_items = cursor.fetchone()[0] or 0
+    inv_r = cursor.fetchone()
+    inventory_items = inv_r[0] or 0
+    total_stock_qty = inv_r[1] or 0.0
 
     # ── Total Confirmed Purchase Invoices (all time) ─────────────────────
     cursor.execute("""
-        SELECT COUNT(*)
+        SELECT COUNT(*), COALESCE(SUM(grand_total), 0)
         FROM purchase_invoice
         WHERE is_active = 1 AND status NOT IN ('DRAFT','CANCELLED')
     """)
-    total_purchase_invoices = cursor.fetchone()[0] or 0
+    p_all = cursor.fetchone()
+    total_purchase_invoices = p_all[0] or 0
+    total_purchase_amount = p_all[1] or 0.0
 
     # ── Total Confirmed Sales Invoices (all time) ────────────────────────
     cursor.execute("""
-        SELECT COUNT(*)
+        SELECT COUNT(*), COALESCE(SUM(grand_total), 0)
         FROM sales_invoice
         WHERE is_active = 1 AND status NOT IN ('DRAFT','CANCELLED')
     """)
-    total_sales_invoices = cursor.fetchone()[0] or 0
+    s_all = cursor.fetchone()
+    total_sales_invoices = s_all[0] or 0
+    total_sales_amount = s_all[1] or 0.0
 
-    # ── Pending Processing Jobs ──────────────────────────────────────────
+    # ── Recent Sales Invoices (Latest 5) ─────────────────────────────────
     cursor.execute("""
-        SELECT COUNT(*)
-        FROM processing_job
-        WHERE status IN ('DRAFT', 'IN_PROGRESS')
+        SELECT s.id, s.invoice_number, s.invoice_date, s.party_id, p.company_name as party_name,
+               s.grand_total, s.status, s.created_at
+        FROM sales_invoice s
+        LEFT JOIN party p ON s.party_id = p.id
+        WHERE s.is_active = 1
+        ORDER BY s.id DESC
+        LIMIT 5
     """)
-    pending_processing = cursor.fetchone()[0] or 0
+    recent_sales = [dict(row) for row in cursor.fetchall()]
 
-    # ── Pending Certificates ─────────────────────────────────────────────
+    # ── Recent Purchase Invoices (Latest 5) ──────────────────────────────
     cursor.execute("""
-        SELECT COUNT(*)
-        FROM processing_job pj
-        WHERE pj.status = 'COMPLETED'
-          AND pj.id NOT IN (
-              SELECT cp.processing_job_id
-              FROM certificate_processing cp
-              JOIN certificate c ON cp.certificate_id = c.id
-              WHERE c.status NOT IN ('CANCELLED')
-          )
+        SELECT pi.id, pi.purchase_invoice_number as invoice_number, pi.invoice_date, pi.supplier_id as party_id, p.company_name as party_name,
+               pi.grand_total, pi.status, pi.created_at
+        FROM purchase_invoice pi
+        LEFT JOIN party p ON pi.supplier_id = p.id
+        WHERE pi.is_active = 1
+        ORDER BY pi.id DESC
+        LIMIT 5
     """)
-    pending_certificates = cursor.fetchone()[0] or 0
+    recent_purchases = [dict(row) for row in cursor.fetchall()]
 
-    # ── Employee Management Metrics ─────────────────────────────────────
-    cursor.execute("SELECT COUNT(*) FROM employees WHERE status = 'Active'")
-    total_employees = cursor.fetchone()[0] or 0
-
-    cursor.execute("SELECT COUNT(*) FROM employee_attendance WHERE attendance_date = ? AND attendance_status = 'Present'", (today,))
-    present_today = cursor.fetchone()[0] or 0
-
+    # ── Top Inventory Items by Quantity ───────────────────────────────────
     cursor.execute("""
-        SELECT COUNT(DISTINCT lr.employee_id) 
-        FROM employee_leave_requests lr
-        JOIN employees e ON lr.employee_id = e.id
-        WHERE lr.status = 'Approved' AND ? BETWEEN lr.start_date AND lr.end_date AND e.status = 'Active'
-    """, (today,))
-    employees_on_leave = cursor.fetchone()[0] or 0
+        SELECT m.id, m.material_code as code, m.material_name as name, m.category, m.uom, ib.current_quantity, ib.inventory_state
+        FROM inventory_balance ib
+        JOIN material m ON ib.material_id = m.id
+        WHERE ib.current_quantity > 0
+        ORDER BY ib.current_quantity DESC
+        LIMIT 5
+    """)
+    top_stock = [dict(row) for row in cursor.fetchall()]
 
-    cursor.execute("SELECT COUNT(*) FROM employee_leave_requests WHERE status = 'Pending'")
-    pending_leave_requests = cursor.fetchone()[0] or 0
 
     conn.close()
 
     return {
-        "today_purchase_count":   today_purchase_count,
-        "today_purchase_value":   today_purchase_value,
-        "today_sales_count":      today_sales_count,
-        "today_sales_value":      today_sales_value,
-        "monthly_purchase_value": monthly_purchase_value,
-        "monthly_sales_value":    monthly_sales_value,
-        "total_parties":          total_parties,
-        "total_materials":        total_materials,
-        "inventory_items":        inventory_items,
+        "today_purchase_count":    today_purchase_count,
+        "today_purchase_value":    today_purchase_value,
+        "today_sales_count":       today_sales_count,
+        "today_sales_value":       today_sales_value,
+        "monthly_purchase_value":  monthly_purchase_value,
+        "monthly_sales_value":     monthly_sales_value,
+        "total_parties":           total_parties,
+        "total_materials":         total_materials,
+        "inventory_items":         inventory_items,
+        "total_stock_qty":         total_stock_qty,
         "total_purchase_invoices": total_purchase_invoices,
-        "total_sales_invoices":   total_sales_invoices,
-        "pending_processing":     pending_processing,
-        "pending_certificates":   pending_certificates,
-        "total_employees":        total_employees,
-        "present_today":          present_today,
-        "employees_on_leave":     employees_on_leave,
-        "pending_leave_requests": pending_leave_requests,
+        "total_purchase_amount":   total_purchase_amount,
+        "total_sales_invoices":    total_sales_invoices,
+        "total_sales_amount":      total_sales_amount,
+        "recent_sales":            recent_sales,
+        "recent_purchases":        recent_purchases,
+        "top_stock":               top_stock,
     }
+

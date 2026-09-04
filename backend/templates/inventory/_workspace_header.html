@@ -4,23 +4,41 @@
   Variables used: inv_active_tab (string: dashboard|stock|movements|batches|timeline|flow)
 #}
 <div class="inv-workspace-header">
+  <!-- Breadcrumbs -->
+  <div class="inv-breadcrumb mb-2" style="font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; color: var(--text-muted);">
+    <span>Dashboard</span>
+    <i class="bi bi-chevron-right" style="font-size: 9px; opacity: 0.7;"></i>
+    <span>Inventory</span>
+    <i class="bi bi-chevron-right" style="font-size: 9px; opacity: 0.7;"></i>
+    <span style="color: var(--inv-primary); font-weight: 600;">
+      {% if inv_active_tab == 'dashboard' %}Overview
+      {% elif inv_active_tab == 'stock' %}Stock Summary
+      {% elif inv_active_tab == 'movements' %}Movements
+      {% elif inv_active_tab == 'batches' %}Material Batches
+      {% elif inv_active_tab == 'timeline' %}Timeline &amp; Traceability
+      {% elif inv_active_tab == 'flow' %}Material Flow
+      {% else %}Details
+      {% endif %}
+    </span>
+  </div>
+
   <div class="inv-header-top">
     <div class="inv-header-brand">
       <div class="inv-header-icon"><i class="bi bi-box-seam"></i></div>
       <div>
-        <h1 class="inv-header-title">Inventory</h1>
+        <h1 class="inv-header-title">Inventory Workspace</h1>
         <p class="inv-header-subtitle">Manage stock, traceability, warehouse movements and inventory analytics</p>
       </div>
     </div>
     <div class="inv-header-actions">
       <a href="/inventory/adjust" class="inv-btn inv-btn-outline d-none d-md-inline-flex">
-        <i class="bi bi-sliders"></i> Adjust
+        <i class="bi bi-sliders"></i> Adjust Stock
       </a>
-      <button onclick="invRefresh()" class="inv-btn inv-btn-ghost" title="Refresh">
+      <button onclick="window.location.reload();" class="inv-btn inv-btn-ghost" title="Refresh">
         <i class="bi bi-arrow-clockwise"></i>
       </button>
       <a href="/inventory/export" class="inv-btn inv-btn-outline d-none d-sm-inline-flex">
-        <i class="bi bi-download"></i> Export
+        <i class="bi bi-download"></i> Export Data
       </a>
     </div>
   </div>
@@ -34,7 +52,7 @@
     <a href="/inventory"
        class="inv-tab-link {{ 'active' if inv_active_tab == 'stock' else '' }}">
       <i class="bi bi-boxes"></i>
-      <span>Stock</span>
+      <span>Stock Summary</span>
     </a>
     <a href="/inventory/movements"
        class="inv-tab-link {{ 'active' if inv_active_tab == 'movements' else '' }}">

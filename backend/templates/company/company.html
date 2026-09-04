@@ -13,18 +13,15 @@
 <link href="/static/css/masters.css?v=1" rel="stylesheet">
 
 <!-- ── Page Header ────────────────────────────────────────────── -->
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+<div class="erp-page-header">
     <div>
-        <h4 style="font-size:20px; font-weight:800; color:var(--text-primary,#0f2318); margin:0;">
-            <i class="bi bi-building me-2" style="color:#2e7d32;"></i> Company Profile
-        </h4>
-        <div style="font-size:13px; color:var(--text-muted,#6c7a75); margin-top:3px;">
-            Legal registry, GSTIN, PAN, and corporate billing details
-        </div>
+        <h1 class="erp-page-title">Company Profile</h1>
+        <p class="erp-page-subtitle">Legal registry, GSTIN, PAN, and corporate billing details</p>
     </div>
 </div>
 
 <form method="POST" action="/company" novalidate>
+<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
 <div class="row g-4">
     <!-- ── LEFT COLUMN ─────────────────────────────────────────── -->

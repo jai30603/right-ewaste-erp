@@ -1,45 +1,28 @@
-"""
-PDF Service
-Centralizes PDF generation from templates using xhtml2pdf.
-"""
-import io
-import os
-from urllib.parse import urlparse
-from flask import render_template, Response
-from xhtml2pdf import pisa
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-
-# Register custom fonts in ReportLab to avoid xhtml2pdf temporary file lock bugs on Windows
-_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-_font_path = os.path.normpath(os.path.join(_root, 'static', 'fonts', 'SegoeUI.ttf'))
-if os.path.exists(_font_path):
-    pdfmetrics.registerFont(TTFont('Segoe UI', _font_path))
-
-def _fetch_pdf_resource(uri, rel):
-    """
-    Callback function to resolve relative static paths for xhtml2pdf.
-    """
-    parsed = urlparse(uri)
-    if parsed.scheme == 'file':
-        path = parsed.path
-        if path.startswith('/') and path[2:3] == ':':
-            path = path[1:]
-        return os.path.normpath(path)
-    if uri.startswith('/static/'):
-        # backend is at path parent of services folder
-        root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        return os.path.normpath(os.path.join(root, uri.lstrip('/').replace('/', os.sep)))
-    return uri
+from flask import Response
+from backend.pdf.pdf_generator import render_to_pdf as playwright_render_to_pdf
+from backend.pdf.pdf_generator import compile_html_to_pdf as playwright_compile_html_to_pdf
+from backend.pdf.pdf_generator import render_url_to_pdf as playwright_render_url_to_pdf
 
 def render_to_pdf(template_name, context):
     """
-    Renders a template with context and converts it to PDF bytes.
+    Renders a template with context and converts it to PDF bytes using Playwright.
     """
-    html = render_template(template_name, **context)
-    buf = io.BytesIO()
-    pisa.CreatePDF(io.StringIO(html), dest=buf, link_callback=_fetch_pdf_resource)
-    return buf.getvalue()
+    # Use 0.5in margins on top/bottom, 0.6in on left/right for standard A4 layout
+    margin = {"top": "0.5in", "bottom": "0.5in", "left": "0.6in", "right": "0.6in"}
+    return playwright_render_to_pdf(template_name, context, margin=margin)
+
+def compile_html_to_pdf(html_content):
+    """
+    Directly compiles any HTML content string to PDF bytes using Playwright.
+    """
+    margin = {"top": "0.5in", "bottom": "0.5in", "left": "0.6in", "right": "0.6in"}
+    return playwright_compile_html_to_pdf(html_content, margin=margin)
+
+def render_url_to_pdf(url, landscape=False):
+    """
+    Instructs Playwright to render a print endpoint URL directly to PDF.
+    """
+    return playwright_render_url_to_pdf(url, landscape=landscape)
 
 def send_pdf_response(pdf_bytes, filename):
     """

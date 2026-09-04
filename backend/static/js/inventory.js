@@ -119,9 +119,40 @@ function invExport(fmt) {
 function invNodeClick(node, detailId) {
   document.querySelectorAll('.inv-flow-node').forEach(n => n.classList.remove('node-selected'));
   node.classList.add('node-selected');
-  document.querySelectorAll('[data-flow-detail]').forEach(d => d.style.display = 'none');
   const detail = document.getElementById(detailId);
-  if (detail) detail.style.display = '';
+  if (detail) {
+    const title = node.querySelector('.inv-flow-node-label')?.textContent || 'Node Details';
+    const contentHtml = detail.innerHTML;
+    
+    let overlay = document.getElementById('inv-drawer-overlay');
+    let drawer = document.getElementById('inv-drawer');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'inv-drawer-overlay';
+      overlay.className = 'inv-drawer-overlay';
+      overlay.onclick = invCloseDrawer;
+      document.body.appendChild(overlay);
+    }
+    if (!drawer) {
+      drawer = document.createElement('div');
+      drawer.id = 'inv-drawer';
+      drawer.className = 'inv-drawer';
+      drawer.innerHTML = `
+        <div class="inv-drawer-header">
+          <h3 class="inv-drawer-title" id="inv-drawer-title">Details</h3>
+          <button class="inv-btn inv-btn-ghost" onclick="invCloseDrawer()" style="padding: 4px 8px;">
+            <i class="bi bi-x-lg" style="font-size: 14px;"></i>
+          </button>
+        </div>
+        <div class="inv-drawer-body" id="inv-drawer-body"></div>
+      `;
+      document.body.appendChild(drawer);
+    }
+    document.getElementById('inv-drawer-title').textContent = title;
+    document.getElementById('inv-drawer-body').innerHTML = contentHtml;
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  }
 }
 
 /* ── Copy to clipboard ────────────────────────────────────────────────────── */
@@ -137,6 +168,19 @@ function invCopy(text) {
 }
 
 /* ── Refresh current page ─────────────────────────────────────────────────── */
+/* ── Toggle collapse sections ─────────────────────────────────────────────── */
+function invToggleCollapse(collapseId) {
+  const el = document.getElementById(collapseId);
+  const chevron = document.getElementById(collapseId + 'Chevron');
+  if (el) {
+    const hidden = el.style.display === 'none';
+    el.style.display = hidden ? '' : 'none';
+    if (chevron) {
+      chevron.className = hidden ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    }
+  }
+}
+
 function invRefresh() {
   window.location.reload();
 }
@@ -157,6 +201,73 @@ function invRestoreFiltersLink(href) {
     });
     return base.pathname + '?' + base.searchParams.toString();
   } catch { return href; }
+}
+
+/* ── Sidebar Details Drawer ───────────────────────────────────────────────── */
+function invShowDrawer(url, title = 'Item Details') {
+  let overlay = document.getElementById('inv-drawer-overlay');
+  let drawer = document.getElementById('inv-drawer');
+  
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'inv-drawer-overlay';
+    overlay.className = 'inv-drawer-overlay';
+    overlay.onclick = invCloseDrawer;
+    document.body.appendChild(overlay);
+  }
+  if (!drawer) {
+    drawer = document.createElement('div');
+    drawer.id = 'inv-drawer';
+    drawer.className = 'inv-drawer';
+    drawer.innerHTML = `
+      <div class="inv-drawer-header">
+        <h3 class="inv-drawer-title" id="inv-drawer-title">Details</h3>
+        <button class="inv-btn inv-btn-ghost" onclick="invCloseDrawer()" style="padding: 4px 8px;">
+          <i class="bi bi-x-lg" style="font-size: 14px;"></i>
+        </button>
+      </div>
+      <div class="inv-drawer-body" id="inv-drawer-body"></div>
+    `;
+    document.body.appendChild(drawer);
+  }
+
+  document.getElementById('inv-drawer-title').textContent = title;
+  const body = document.getElementById('inv-drawer-body');
+  
+  body.innerHTML = `
+    <div class="inv-skeleton-title"></div>
+    <div class="inv-skeleton-row" style="width: 90%;"></div>
+    <div class="inv-skeleton-row" style="width: 80%;"></div>
+    <div class="inv-skeleton-row" style="width: 85%;"></div>
+    <div class="inv-skeleton-row" style="width: 60%;"></div>
+    <div class="inv-skeleton-row" style="width: 75%;"></div>
+  `;
+  
+  overlay.classList.add('open');
+  drawer.classList.add('open');
+
+  const fetchUrl = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'drawer=1';
+  fetch(fetchUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => {
+      if (!r.ok) throw new Error('Failed to load details');
+      return r.text();
+    })
+    .then(html => {
+      body.innerHTML = html;
+    })
+    .catch(err => {
+      body.innerHTML = `
+        <div class="text-danger p-3 text-center">
+          <i class="bi bi-exclamation-octagon" style="font-size: 24px;"></i>
+          <p class="mt-2">${err.message}</p>
+        </div>
+      `;
+    });
+}
+
+function invCloseDrawer() {
+  document.getElementById('inv-drawer-overlay')?.classList.remove('open');
+  document.getElementById('inv-drawer')?.classList.remove('open');
 }
 
 /* ── Init all ─────────────────────────────────────────────────────────────── */

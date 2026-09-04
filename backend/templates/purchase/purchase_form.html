@@ -5,309 +5,339 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="/purchase" class="text-decoration-none text-muted">Purchase Invoice</a></li>
-<li class="breadcrumb-item active">{% if invoice_id %}Edit{% else %}New{% endif %}</li>
+<li class="breadcrumb-item"><a href="/purchase" class="text-decoration-none text-muted">Purchase Invoices</a></li>
+<li class="breadcrumb-item active">{% if invoice_id %}Edit Invoice{% else %}New Invoice{% endif %}</li>
 {% endblock %}
-
-{% from "shared/_page_header.html" import page_header %}
-
-{% block content %}
-
-{{ page_header(
-    title="Edit Purchase Invoice" if invoice_id else "New Purchase Invoice",
-    subtitle="Create or edit an inward material purchase transaction.",
-    back_url="/purchase",
-    actions=[
-        {'label': 'Cancel & Return', 'url': '/purchase', 'icon': 'bi-x-circle', 'class': 'btn-outline-secondary'}
-    ]
-) }}
 
 {% macro val(field) %}{{ form[field] if form and form[field] is not none else '' }}{% endmacro %}
 
-<form method="POST" action="{% if invoice_id %}/purchase/{{ invoice_id }}/edit{% else %}/purchase/add{% endif %}" novalidate id="invoice-form">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+{% block content %}
+<link href="/static/css/sales.css?v=2" rel="stylesheet">
 
-<!-- ── Purchase Invoice Header ────────────────────────────────────────── -->
-<div class="erp-card mb-3">
-    <div class="erp-card-header" style="border-bottom: 2px solid #2563eb;">
-        <i class="bi bi-cart" style="font-size:18px; color:#2563eb;"></i>
-        <h5>Purchase Header</h5>
-        <span style="margin-left:8px; font-size:12px; background:#e8f0ff; color:#2563eb; padding:3px 10px; border-radius:20px; font-style:italic;">
-            {% if form and form.purchase_invoice_number %}{{ form.purchase_invoice_number }}{% else %}No. auto-generated{% endif %}
-        </span>
-    </div>
-    <div class="erp-card-body">
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Invoice Date <span class="text-danger">*</span></label>
-                <input type="date" name="invoice_date" class="form-control {{ 'is-invalid' if errors.invoice_date }}" value="{{ val('invoice_date') or today }}" required>
-                {% if errors.invoice_date %}<div class="invalid-feedback">{{ errors.invoice_date }}</div>{% endif %}
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">Supplier <span class="text-danger">*</span></label>
-                <div class="d-flex gap-2">
-                    <select name="supplier_id" id="supplier-select" class="form-select {{ 'is-invalid' if errors.supplier_id }}" onchange="onPartyChange()" required>
-                        <option value="">Select supplier</option>
-                        {% for supplier in suppliers %}
-                        <option value="{{ supplier.id }}" 
-                                data-state-code="{{ supplier.state_code or '' }}"
-                                data-gstin="{{ supplier.gstin or '' }}"
-                                data-address="{{ supplier.billing_address or '' }}"
-                                data-state="{{ supplier.state or '' }}"
-                                {{ 'selected' if val('supplier_id') == supplier.id|string }}>
-                            {{ supplier.company_name }} ({{ supplier.party_code }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <a href="/party/add" class="btn btn-outline-success btn-sm" title="Add Supplier">
-                        <i class="bi bi-person-plus"></i>
-                    </a>
-                </div>
-                {% if errors.supplier_id %}<div class="invalid-feedback">{{ errors.supplier_id }}</div>{% endif %}
-            </div>
-
-            <!-- Auto-populated Supplier Fields -->
-            <div class="col-md-2 col-sm-6">
-                <label class="form-label">Supplier GSTIN</label>
-                <input type="text" id="supplier-gstin" class="form-control form-control-sm" readonly style="background:#f4f7f5; font-size:12.5px;">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">State &amp; Code</label>
-                <input type="text" id="supplier-state-display" class="form-control form-control-sm" readonly style="background:#f4f7f5; font-size:12.5px;">
-            </div>
-
-            <div class="col-md-6 col-sm-12">
-                <label class="form-label">Supplier Address</label>
-                <input type="text" id="supplier-address" class="form-control form-control-sm" readonly style="background:#f4f7f5; font-size:12.5px;">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Supplier Invoice Number</label>
-                <input type="text" name="supplier_invoice_number" class="form-control form-control-sm" value="{{ val('supplier_invoice_number') }}" placeholder="Supplier PO/Bill No">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">E-Way Bill Number</label>
-                <input type="text" name="eway_bill_number" class="form-control form-control-sm" value="{{ val('eway_bill_number') }}" placeholder="12-digit number">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Reference Number</label>
-                <input type="text" name="reference_number" class="form-control form-control-sm" value="{{ val('reference_number') }}" placeholder="Optional reference">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Payment Mode</label>
-                <select name="payment_mode" class="form-select form-select-sm">
-                    <option value="">Select mode</option>
-                    {% for mode in payment_modes %}
-                    <option value="{{ mode }}" {{ 'selected' if val('payment_mode') == mode }}>{{ mode }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Transporter</label>
-                <input type="text" name="transporter" class="form-control form-control-sm" value="{{ val('transporter') }}" placeholder="e.g. Self">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Vehicle Number</label>
-                <input type="text" name="vehicle_number" class="form-control form-control-sm" value="{{ val('vehicle_number') }}" placeholder="MH01AB1234" style="text-transform:uppercase;">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Invoice Status</label>
-                <select name="status" class="form-select form-select-sm">
-                    <option value="DRAFT" {{ 'selected' if val('status') == 'DRAFT' }}>Draft</option>
-                    <option value="CONFIRMED" {{ 'selected' if val('status') == 'CONFIRMED' or not val('status') }}>Confirmed</option>
-                    <option value="CANCELLED" {{ 'selected' if val('status') == 'CANCELLED' }}>Cancelled</option>
-                </select>
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Intake Type</label>
-                <select name="intake_type" class="form-select form-select-sm">
-                    <option value="Purchase" {{ 'selected' if val('intake_type') == 'Purchase' or not val('intake_type') }}>Purchase</option>
-                    <option value="Donation" {{ 'selected' if val('intake_type') == 'Donation' }}>Donation</option>
-                    <option value="Direct Pickup" {{ 'selected' if val('intake_type') == 'Direct Pickup' }}>Direct Pickup</option>
-                </select>
-            </div>
-
-            <div class="col-md-12">
-                <label class="form-label">Remarks</label>
-                <input type="text" name="remarks" class="form-control form-control-sm" value="{{ val('remarks') }}" placeholder="Optional notes">
-            </div>
+<!-- ── Page Header ────────────────────────────────────────────── -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+    <div>
+        <h4 style="font-size:20px; font-weight:800; color:var(--text-primary,#0f2318); margin:0;">
+            <i class="bi bi-cart-check me-2" style="color:#1565c0;"></i>
+            {% if invoice_id %}Edit Purchase Invoice{% else %}New Purchase Invoice{% endif %}
+        </h4>
+        <div style="font-size:13px; color:var(--text-muted,#6c7a75); margin-top:3px;">
+            {% if form and form.purchase_invoice_number %}
+                Invoice <strong style="font-family:monospace;">{{ form.purchase_invoice_number }}</strong>
+            {% else %}
+                Invoice number will be auto-generated on save
+            {% endif %}
         </div>
     </div>
-</div>
-
-<!-- ── Transport Details ─────────────────────────────────────────────── -->
-<div class="erp-card mb-3">
-    <div class="erp-card-header" style="border-bottom: 2px solid #2563eb;">
-        <i class="bi bi-truck" style="font-size:18px; color:#2563eb;"></i>
-        <h5>Transport Details <small class="text-muted" style="font-size:12px;">(Optional)</small></h5>
-    </div>
-    <div class="erp-card-body">
-        <div class="row g-3">
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Vehicle Type</label>
-                <select name="vehicle_type" class="form-select form-select-sm">
-                    <option value="" {{ 'selected' if not val('vehicle_type') }}>— Select —</option>
-                    <option value="Truck" {{ 'selected' if val('vehicle_type') == 'Truck' }}>Truck</option>
-                    <option value="Tempo" {{ 'selected' if val('vehicle_type') == 'Tempo' }}>Tempo</option>
-                    <option value="Mini Truck" {{ 'selected' if val('vehicle_type') == 'Mini Truck' }}>Mini Truck</option>
-                    <option value="Pickup Van" {{ 'selected' if val('vehicle_type') == 'Pickup Van' }}>Pickup Van</option>
-                    <option value="Other" {{ 'selected' if val('vehicle_type') == 'Other' }}>Other</option>
-                </select>
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Driver Name</label>
-                <input type="text" name="driver_name" class="form-control form-control-sm" value="{{ val('driver_name') }}" placeholder="Driver's name">
-            </div>
-
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label">Weight Slip / Weighbridge Ref.</label>
-                <input type="text" name="weight_slip_number" class="form-control form-control-sm" value="{{ val('weight_slip_number') }}" placeholder="WS-2024-001">
-            </div>
-
-            <div class="col-md-3 col-sm-6 d-flex align-items-end">
-                <div class="form-check ms-1 mt-2">
-                    <input class="form-check-input" type="checkbox" name="ready_for_processing" id="readyForProcessing" value="1"
-                        {{ 'checked' if val('ready_for_processing') == 1 or val('ready_for_processing') == '1' }}>
-                    <label class="form-check-label" for="readyForProcessing">
-                        Ready for Processing
-                    </label>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ── Purchase Items Table ──────────────────────────────────────────── -->
-<div class="erp-card mb-3">
-    <div class="erp-card-header" style="border-bottom: 2px solid #2563eb;">
-        <i class="bi bi-list-ul" style="font-size:18px; color:#2563eb;"></i>
-        <h5>Invoice Items</h5>
-        {% if errors.get('items') %}
-        <span style="margin-left:10px; color:#dc3545; font-size:13px;">
-            <i class="bi bi-exclamation-circle"></i> {{ errors['items'] }}
-        </span>
-        {% endif %}
-        <div class="ms-auto">
-            <button type="button" class="btn btn-sm btn-primary text-white" style="background-color:#2563eb;" onclick="addRow()">
-                <i class="bi bi-plus-lg"></i> Add Row
-            </button>
-        </div>
-    </div>
-    <div class="erp-card-body p-0">
-        <div style="overflow-x:auto;">
-        <table class="erp-table" id="items-table">
-            <thead>
-                <tr>
-                    <th style="width:36px;">#</th>
-                    <th style="min-width:180px;">Material</th>
-                    <th style="width:70px; text-align:center;">HSN</th>
-                    <th style="width:85px; text-align:center;">Category</th>
-                    <th style="width:65px; text-align:center;">Unit</th>
-                    <th style="width:85px; text-align:right;">Qty</th>
-                    <th style="width:90px; text-align:right;">Weight (kg)</th>
-                    <th style="width:95px; text-align:right;">Rate (₹)</th>
-                    <th style="width:105px; text-align:right;">Taxable Value</th>
-                    <th style="width:65px; text-align:center;">GST %</th>
-                    <th style="width:80px; text-align:right;">CGST</th>
-                    <th style="width:80px; text-align:right;">SGST</th>
-                    <th style="width:80px; text-align:right;">IGST</th>
-                    <th style="width:100px; text-align:right;">Line Total</th>
-                    <th style="width:40px;"></th>
-                </tr>
-            </thead>
-            <tbody id="items-body"></tbody>
-        </table>
-        </div>
-    </div>
-</div>
-
-<!-- ── Totals ─────────────────────────────────────────────────────────── -->
-<div class="row justify-content-end mb-3">
-<div class="col-lg-5 col-md-7">
-<div class="erp-card">
-    <div class="erp-card-header" style="padding:14px 20px 12px; border-bottom: 1.5px solid #2563eb;">
-        <i class="bi bi-calculator" style="font-size:16px; color:#2563eb;"></i>
-        <h5 style="font-size:14px;">Invoice Summary</h5>
-        <span id="gst-type-badge"
-              style="margin-left:auto; font-size:11px; font-weight:700; padding:3px 10px;
-                     border-radius:20px; background:#f4f7f5; color:#6c7a75;">
-            Select supplier for GST
-        </span>
-    </div>
-    <div class="erp-card-body" style="padding:0;">
-        <table style="width:100%; border-collapse:collapse; font-size:13.5px;">
-            <tr class="summary-row">
-                <td class="summary-label">Subtotal (Taxable Value)</td>
-                <td class="summary-value">₹ <span id="subtotal-display">0.00</span></td>
-            </tr>
-            <tr class="summary-row" id="cgst-row" style="display:none;">
-                <td class="summary-label">CGST</td>
-                <td class="summary-value">₹ <span id="cgst-display">0.00</span></td>
-            </tr>
-            <tr class="summary-row" id="sgst-row" style="display:none;">
-                <td class="summary-label">SGST</td>
-                <td class="summary-value">₹ <span id="sgst-display">0.00</span></td>
-            </tr>
-            <tr class="summary-row" id="igst-row" style="display:none;">
-                <td class="summary-label">IGST</td>
-                <td class="summary-value">₹ <span id="igst-display">0.00</span></td>
-            </tr>
-            <tr class="summary-row" id="round-off-row">
-                <td class="summary-label">Round Off</td>
-                <td class="summary-value" id="round-off-display" style="color:#6c7a75;">—</td>
-            </tr>
-            <tr class="summary-row grand-total-row">
-                <td class="summary-label" style="font-weight:700; color:#0f2318; font-size:14px;">
-                    Grand Total
-                </td>
-                <td class="summary-value" style="font-weight:700; color:#1e40af; font-size:16px;
-                                                  font-family:monospace;">
-                    ₹ <span id="grand-total-display">0.00</span>
-                </td>
-            </tr>
-        </table>
-    </div>
-</div>
-</div>
-</div>
-
-<!-- Hidden inputs for form submit -->
-<input type="hidden" name="hidden_subtotal"   id="hidden-subtotal"   value="0">
-<input type="hidden" name="hidden_cgst"       id="hidden-cgst"       value="0">
-<input type="hidden" name="hidden_sgst"       id="hidden-sgst"       value="0">
-<input type="hidden" name="hidden_igst"       id="hidden-igst"       value="0">
-<input type="hidden" name="hidden_round_off"  id="hidden-round-off"  value="0">
-<input type="hidden" name="hidden_grand_total" id="hidden-grand-total" value="0">
-
-<!-- ── Form Actions ─────────────────────────────────────────────────── -->
-<div class="d-flex justify-content-between align-items-center">
-    <a href="/purchase" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Cancel
+    <a href="/purchase" class="sv3-btn sv3-btn-outline">
+        <i class="bi bi-x-circle"></i> Cancel
     </a>
-    <button type="submit" class="btn btn-primary text-white" style="background-color:#2563eb; padding:10px 32px; font-size:14px;">
-        <i class="bi bi-check-lg"></i> Save Invoice
-    </button>
 </div>
+
+<form method="POST" action="{% if invoice_id %}/purchase/{{ invoice_id }}/edit{% else %}/purchase/add{% endif %}" novalidate id="invoice-form">
+<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+<div class="row g-4">
+
+    <!-- ── LEFT COLUMN ─────────────────────────────────────────── -->
+    <div class="col-lg-8">
+
+        <!-- Supplier Card -->
+        <div class="sv3-form-card">
+            <div class="sv3-form-header">
+                <i class="bi bi-building"></i>
+                <h5>Supplier</h5>
+                <span style="margin-left:auto; font-size:11px; color:var(--text-muted,#6c7a75);">Select the source party / supplier</span>
+            </div>
+            <div class="sv3-form-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="sv3-field-label">Supplier <span class="req">*</span></label>
+                        <div class="d-flex gap-2">
+                            <select name="supplier_id" id="supplier-select"
+                                    class="form-select {{ 'is-invalid' if errors.supplier_id }}"
+                                    onchange="onPartyChange()" required
+                                    style="border-radius:8px; font-size:13px; height:38px; border-color:var(--border-color,#dde5e0);">
+                                <option value="">Choose supplier…</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}"
+                                        data-state-code="{{ supplier.state_code or '' }}"
+                                        data-gstin="{{ supplier.gstin or '' }}"
+                                        data-address="{{ supplier.billing_address or '' }}"
+                                        data-state="{{ supplier.state or '' }}"
+                                        {{ 'selected' if val('supplier_id') == supplier.id|string }}>
+                                    {{ supplier.company_name }} ({{ supplier.party_code }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <a href="/party/add" class="sv3-btn sv3-btn-secondary" style="padding:0 14px; white-space:nowrap;" title="Add new supplier">
+                                <i class="bi bi-person-plus"></i>
+                            </a>
+                        </div>
+                        {% if errors.supplier_id %}
+                        <div style="color:#dc3545; font-size:12px; margin-top:4px;"><i class="bi bi-exclamation-circle"></i> {{ errors.supplier_id }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Invoice Date <span class="req">*</span></label>
+                        <input type="date" name="invoice_date"
+                               class="sv3-form-control {{ 'is-invalid' if errors.invoice_date }}"
+                               value="{{ val('invoice_date') or today }}" required>
+                        {% if errors.invoice_date %}
+                        <div style="color:#dc3545; font-size:12px; margin-top:4px;">{{ errors.invoice_date }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Supplier Info Banner -->
+                <div class="sv3-customer-banner" id="supplier-info-banner">
+                    <div class="row g-2" style="font-size:13px;">
+                        <div class="col-sm-4"><strong>GSTIN:</strong> <span id="info-gstin" style="font-family:monospace;">—</span></div>
+                        <div class="col-sm-4"><strong>State:</strong> <span id="info-state">—</span></div>
+                        <div class="col-sm-4"><strong>State Code:</strong> <span id="info-state-code">—</span></div>
+                        <div class="col-12 mt-1"><strong>Address:</strong> <span id="info-address" style="color:var(--text-muted,#6c7a75);">—</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Details Card -->
+        <div class="sv3-form-card">
+            <div class="sv3-form-header">
+                <i class="bi bi-file-text"></i>
+                <h5>Invoice Details</h5>
+            </div>
+            <div class="sv3-form-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Invoice Status</label>
+                        <select name="status" class="sv3-form-select">
+                            <option value="DRAFT"     {{ 'selected' if val('status') == 'DRAFT' }}>Draft</option>
+                            <option value="CONFIRMED" {{ 'selected' if val('status') == 'CONFIRMED' or not val('status') }}>Confirmed</option>
+                            <option value="RECEIVED"  {{ 'selected' if val('status') == 'RECEIVED' }}>Received</option>
+                            <option value="PAID"      {{ 'selected' if val('status') == 'PAID' }}>Paid</option>
+                            <option value="CANCELLED" {{ 'selected' if val('status') == 'CANCELLED' }}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Intake Type</label>
+                        <select name="intake_type" class="sv3-form-select">
+                            <option value="Purchase"      {{ 'selected' if val('intake_type') == 'Purchase' or not val('intake_type') }}>Purchase</option>
+                            <option value="Donation"      {{ 'selected' if val('intake_type') == 'Donation' }}>Donation</option>
+                            <option value="Direct Pickup" {{ 'selected' if val('intake_type') == 'Direct Pickup' }}>Direct Pickup</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Payment Mode</label>
+                        <select name="payment_mode" class="sv3-form-select">
+                            <option value="">Select mode</option>
+                            {% for mode in payment_modes %}
+                            <option value="{{ mode }}" {{ 'selected' if val('payment_mode') == mode }}>{{ mode }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Supplier Invoice No.</label>
+                        <input type="text" name="supplier_invoice_number" class="sv3-form-control"
+                               value="{{ val('supplier_invoice_number') }}" placeholder="Supplier PO/Bill No">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Reference Number</label>
+                        <input type="text" name="reference_number" class="sv3-form-control"
+                               value="{{ val('reference_number') }}" placeholder="Optional reference">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">E-Way Bill Number</label>
+                        <input type="text" name="eway_bill_number" class="sv3-form-control"
+                               value="{{ val('eway_bill_number') }}" placeholder="12-digit number">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Transporter</label>
+                        <input type="text" name="transporter" class="sv3-form-control"
+                               value="{{ val('transporter') }}" placeholder="e.g. Self">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Vehicle Number</label>
+                        <input type="text" name="vehicle_number" class="sv3-form-control"
+                               value="{{ val('vehicle_number') }}" placeholder="MH01AB1234"
+                               style="text-transform:uppercase;">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Vehicle Type</label>
+                        <select name="vehicle_type" class="sv3-form-select">
+                            <option value="" {{ 'selected' if not val('vehicle_type') }}>— Select —</option>
+                            <option value="Truck"      {{ 'selected' if val('vehicle_type') == 'Truck' }}>Truck</option>
+                            <option value="Tempo"      {{ 'selected' if val('vehicle_type') == 'Tempo' }}>Tempo</option>
+                            <option value="Mini Truck" {{ 'selected' if val('vehicle_type') == 'Mini Truck' }}>Mini Truck</option>
+                            <option value="Pickup Van" {{ 'selected' if val('vehicle_type') == 'Pickup Van' }}>Pickup Van</option>
+                            <option value="Other"      {{ 'selected' if val('vehicle_type') == 'Other' }}>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Driver Name</label>
+                        <input type="text" name="driver_name" class="sv3-form-control"
+                               value="{{ val('driver_name') }}" placeholder="Driver's name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sv3-field-label">Weight Slip / Weighbridge Ref.</label>
+                        <input type="text" name="weight_slip_number" class="sv3-form-control"
+                               value="{{ val('weight_slip_number') }}" placeholder="WS-2024-001">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check ms-1" style="padding-top:8px;">
+                            <input class="form-check-input" type="checkbox" name="ready_for_processing"
+                                   id="readyForProcessing" value="1"
+                                   {{ 'checked' if val('ready_for_processing') == 1 or val('ready_for_processing') == '1' }}>
+                            <label class="form-check-label" for="readyForProcessing" style="font-size:13px;">
+                                Ready for Processing
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="sv3-field-label">Remarks</label>
+                        <input type="text" name="remarks" class="sv3-form-control"
+                               value="{{ val('remarks') }}" placeholder="Optional notes for this invoice">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Materials Table Card -->
+        <div class="sv3-form-card">
+            <div class="sv3-form-header">
+                <i class="bi bi-list-ul"></i>
+                <h5>Invoice Items</h5>
+                {% if errors.get('items') %}
+                <span style="margin-left:10px; color:#dc3545; font-size:12px;">
+                    <i class="bi bi-exclamation-circle"></i> {{ errors['items'] }}
+                </span>
+                {% endif %}
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="sv3-btn sv3-btn-secondary" style="padding:6px 14px; font-size:12px;" onclick="addRow()">
+                        <i class="bi bi-plus-lg"></i> Add Row
+                    </button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+            <table class="sv3-items-table" id="items-table">
+                <thead>
+                    <tr>
+                        <th style="width:30px;">#</th>
+                        <th style="min-width:170px;">Material</th>
+                        <th style="width:70px; text-align:center;">HSN</th>
+                        <th style="width:85px; text-align:center;">Category</th>
+                        <th style="width:55px; text-align:center;">UOM</th>
+                        <th style="width:80px; text-align:right;">Qty</th>
+                        <th style="width:90px; text-align:right;">Weight (kg)</th>
+                        <th style="width:90px; text-align:right;">Rate (₹)</th>
+                        <th style="width:100px; text-align:right;">Taxable</th>
+                        <th style="width:55px; text-align:center;">GST%</th>
+                        <th style="width:75px; text-align:right;">CGST</th>
+                        <th style="width:75px; text-align:right;">SGST</th>
+                        <th style="width:75px; text-align:right;">IGST</th>
+                        <th style="width:95px; text-align:right;">Line Total</th>
+                        <th style="width:38px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="items-body"></tbody>
+            </table>
+            </div>
+            <div style="padding:12px 16px; border-top:1px solid var(--border-color,#eef2ef);">
+                <button type="button" class="sv3-btn sv3-btn-secondary" style="padding:7px 16px; font-size:12.5px;" onclick="addRow()">
+                    <i class="bi bi-plus-circle"></i> Add Another Row
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── RIGHT COLUMN ────────────────────────────────────────── -->
+    <div class="col-lg-4">
+
+        <!-- Totals Card (sticky) -->
+        <div style="position:sticky; top:80px;">
+        <div class="sv3-totals-card">
+            <div class="sv3-form-header" style="border-bottom-width:1.5px;">
+                <i class="bi bi-calculator"></i>
+                <h5>Invoice Summary</h5>
+                <span id="gst-type-badge" style="margin-left:auto; font-size:11px; font-weight:700;
+                      padding:3px 10px; border-radius:20px; background:#f4f7f5; color:#6c7a75;">
+                    Select supplier for GST
+                </span>
+            </div>
+
+            <div class="sv3-totals-row">
+                <span class="lbl">Subtotal (Taxable)</span>
+                <span class="val">₹ <span id="subtotal-display">0.00</span></span>
+            </div>
+            <div class="sv3-totals-row" id="cgst-row" style="display:none;">
+                <span class="lbl">CGST</span>
+                <span class="val" style="color:#1565c0;">₹ <span id="cgst-display">0.00</span></span>
+            </div>
+            <div class="sv3-totals-row" id="sgst-row" style="display:none;">
+                <span class="lbl">SGST</span>
+                <span class="val" style="color:#1565c0;">₹ <span id="sgst-display">0.00</span></span>
+            </div>
+            <div class="sv3-totals-row" id="igst-row" style="display:none;">
+                <span class="lbl">IGST</span>
+                <span class="val" style="color:#1565c0;">₹ <span id="igst-display">0.00</span></span>
+            </div>
+            <div class="sv3-totals-row" id="round-off-row">
+                <span class="lbl">Round Off</span>
+                <span class="val" id="round-off-display" style="color:#6c7a75;">—</span>
+            </div>
+            <div class="sv3-totals-grand">
+                <span class="lbl">Grand Total</span>
+                <span class="val">₹ <span id="grand-total-display">0.00</span></span>
+            </div>
+        </div>
+
+        <!-- Save Actions -->
+        <div style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
+            <button type="submit" class="sv3-btn sv3-btn-primary" style="width:100%; justify-content:center; padding:13px;">
+                <i class="bi bi-check-lg"></i>
+                {% if invoice_id %}Update Invoice{% else %}Save Invoice{% endif %}
+            </button>
+            <a href="/purchase" class="sv3-btn sv3-btn-outline" style="width:100%; justify-content:center;">
+                <i class="bi bi-arrow-left"></i> Cancel &amp; Return
+            </a>
+        </div>
+
+        <!-- Tips Card -->
+        <div style="margin-top:16px; background:var(--bg-alt,#f8faf8); border-radius:12px; padding:16px; border:1px solid var(--border-color,#e8eeeb);">
+            <div style="font-size:11px; font-weight:700; color:#1565c0; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;">
+                <i class="bi bi-lightbulb"></i> Tips
+            </div>
+            <ul style="font-size:12px; color:var(--text-muted,#6c7a75); padding-left:16px; margin:0; line-height:2;">
+                <li>Select supplier first — GST type (CGST/SGST vs IGST) is auto-detected from state code</li>
+                <li>Rate is per unit; for weight-tracked materials use the Weight column</li>
+                <li>Grand total is auto-rounded to nearest rupee</li>
+                <li>Mark <em>Ready for Processing</em> to queue materials for factory</li>
+            </ul>
+        </div>
+
+        </div><!-- sticky -->
+    </div>
+
+</div><!-- row -->
+
+<!-- Hidden totals submitted to backend -->
+<input type="hidden" name="hidden_subtotal"    id="hidden-subtotal"    value="0">
+<input type="hidden" name="hidden_cgst"        id="hidden-cgst"        value="0">
+<input type="hidden" name="hidden_sgst"        id="hidden-sgst"        value="0">
+<input type="hidden" name="hidden_igst"        id="hidden-igst"        value="0">
+<input type="hidden" name="hidden_round_off"   id="hidden-round-off"   value="0">
+<input type="hidden" name="hidden_grand_total" id="hidden-grand-total" value="0">
 
 </form>
 
-<!-- ── Row template ───────────────────────────────────────────────────── -->
+<!-- ── Row Template ───────────────────────────────────────────── -->
 <template id="row-template">
     <tr>
-        <td style="color:#aaa; font-size:12px; padding-top:14px;" class="row-num"></td>
+        <td style="color:#aaa; font-size:11px; padding-top:14px; text-align:center;" class="row-num"></td>
         <td>
             <select name="material_id[]" class="form-select form-select-sm material-select"
-                    style="font-size:13px;" onchange="onMaterialChange(this)" required>
+                    style="font-size:12.5px; border-radius:6px;" onchange="onMaterialChange(this)" required>
                 <option value="">Select material</option>
                 {% for m in materials %}
                 <option value="{{ m.id }}"
@@ -315,69 +345,68 @@
                         data-uom="{{ m.uom or '' }}"
                         data-hsn="{{ m.hsn_code or '' }}"
                         data-category="{{ m.category or '' }}"
-                        data-tracking-type="{{ m.tracking_type }}">
+                        data-tracking-type="{{ m.tracking_type or 'BOTH' }}">
                     {{ m.material_name }}
                 </option>
                 {% endfor %}
             </select>
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm hsn-code" readonly 
-                   style="text-align:center; font-size:13px; background:#f4f7f5; width:70px; margin:0 auto;">
+            <input type="text" class="form-control form-control-sm hsn-code readonly-cell"
+                   readonly style="text-align:center; font-size:12px; width:65px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm material-category" readonly 
-                   style="text-align:center; font-size:13px; background:#f4f7f5; width:80px; margin:0 auto;">
+            <input type="text" class="form-control form-control-sm material-category readonly-cell"
+                   readonly style="text-align:center; font-size:12px; width:80px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm uom-code" readonly 
-                   style="text-align:center; font-size:13px; background:#f4f7f5; width:55px; margin:0 auto;">
+            <input type="text" class="form-control form-control-sm uom-code readonly-cell"
+                   readonly style="text-align:center; font-size:12px; width:50px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
             <input type="number" name="qty[]" class="form-control form-control-sm qty-input"
                    min="0" step="0.01" value="0"
-                   style="text-align:right; font-size:13px;" oninput="calcRow(this)">
+                   style="text-align:right; font-size:12.5px; width:72px; border-radius:6px;" oninput="calcRow(this)">
         </td>
         <td>
             <input type="number" name="weight[]" class="form-control form-control-sm weight-input"
                    min="0" step="0.001" value="0"
-                   style="text-align:right; font-size:13px;" oninput="calcRow(this)">
+                   style="text-align:right; font-size:12.5px; width:82px; border-radius:6px;" oninput="calcRow(this)">
         </td>
         <td>
             <input type="number" name="rate[]" class="form-control form-control-sm rate-input"
                    min="0" step="0.01" value="0"
-                   style="text-align:right; font-size:13px;" oninput="calcRow(this)">
+                   style="text-align:right; font-size:12.5px; width:82px; border-radius:6px;" oninput="calcRow(this)">
         </td>
         <td>
-            <input type="number" name="amount[]" class="form-control form-control-sm amount-input"
+            <input type="number" name="amount[]" class="form-control form-control-sm amount-input readonly-cell"
                    readonly value="0.00"
-                   style="text-align:right; font-size:13px; background:#f8faf9; font-weight:600; width:100px;">
+                   style="text-align:right; font-size:12.5px; font-weight:700; color:#1b5e20; width:92px; border-radius:6px;">
         </td>
         <td>
-            <input type="number" name="gst_percentage[]" class="form-control form-control-sm gst-pct"
+            <input type="number" name="gst_percentage[]" class="form-control form-control-sm gst-pct readonly-cell"
                    readonly value="0"
-                   style="text-align:center; font-size:13px; background:#f4f7f5;
-                          font-weight:600; color:#2d6a4f; width:50px; margin:0 auto;">
+                   style="text-align:center; font-size:12px; width:48px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
-            <input type="number" class="form-control form-control-sm row-cgst" readonly value="0.00"
-                   style="text-align:right; font-size:12px; background:#f8faf9; width:70px; margin:0 auto;">
+            <input type="number" class="form-control form-control-sm row-cgst readonly-cell" readonly value="0.00"
+                   style="text-align:right; font-size:11.5px; width:68px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
-            <input type="number" class="form-control form-control-sm row-sgst" readonly value="0.00"
-                   style="text-align:right; font-size:12px; background:#f8faf9; width:70px; margin:0 auto;">
+            <input type="number" class="form-control form-control-sm row-sgst readonly-cell" readonly value="0.00"
+                   style="text-align:right; font-size:11.5px; width:68px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
-            <input type="number" class="form-control form-control-sm row-igst" readonly value="0.00"
-                   style="text-align:right; font-size:12px; background:#f8faf9; width:70px; margin:0 auto;">
+            <input type="number" class="form-control form-control-sm row-igst readonly-cell" readonly value="0.00"
+                   style="text-align:right; font-size:11.5px; width:68px; margin:0 auto; border-radius:6px;">
         </td>
         <td>
-            <input type="number" class="form-control form-control-sm row-total" readonly value="0.00"
-                   style="text-align:right; font-size:13px; background:#f8faf9; font-weight:600; width:85px; margin:0 auto;">
+            <input type="number" class="form-control form-control-sm row-total readonly-cell" readonly value="0.00"
+                   style="text-align:right; font-size:12.5px; font-weight:700; width:88px; margin:0 auto; border-radius:6px;">
         </td>
         <td style="text-align:center;">
             <button type="button" class="btn btn-sm btn-outline-danger"
-                    style="padding:3px 8px; border-radius:6px;" onclick="deleteRow(this)">
+                    style="padding:3px 8px; border-radius:6px;" onclick="deleteRow(this)" title="Remove row">
                 <i class="bi bi-trash"></i>
             </button>
         </td>
@@ -388,37 +417,34 @@
 
 {% block scripts %}
 <style>
-.summary-row td { padding: 10px 20px; border-bottom: 1px solid #eef2ef; }
-.summary-row:last-child td { border-bottom: none; }
-.summary-label { color: #6c7a75; font-size: 13px; }
-.summary-value { text-align: right; font-family: monospace; font-size: 13.5px; color: #1a2b22; }
-.grand-total-row { background: #f4f7f5; }
+#items-table .form-select,
+#items-table .form-control { background-color: transparent; }
+#items-table .readonly-cell { background: var(--bg-alt,#f5f8f5) !important; }
 </style>
 
 <script>
 const COMPANY_STATE_CODE = "{{ company_state_code }}";
 let rowCount = 0;
 
-// ── Auto-populate supplier details ───────────────────────────────────────────
-function populateSupplierDetails() {
+/* ── Supplier info banner ────────────────────────────────────── */
+function onPartyChange() {
     const sel = document.getElementById('supplier-select');
     const opt = sel.options[sel.selectedIndex];
-    
-    if (opt && opt.value !== "") {
-        document.getElementById('supplier-gstin').value = opt.dataset.gstin || "—";
-        document.getElementById('supplier-address').value = opt.dataset.address || "—";
-        
-        const state = opt.dataset.state || "—";
-        const code = opt.dataset.stateCode || "—";
-        document.getElementById('supplier-state-display').value = `${state} (${code})`;
+    const banner = document.getElementById('supplier-info-banner');
+
+    if (opt && opt.value !== '') {
+        document.getElementById('info-gstin').textContent      = opt.dataset.gstin    || '—';
+        document.getElementById('info-state').textContent      = opt.dataset.state    || '—';
+        document.getElementById('info-state-code').textContent = opt.dataset.stateCode|| '—';
+        document.getElementById('info-address').textContent    = opt.dataset.address  || '—';
+        banner.style.display = 'block';
     } else {
-        document.getElementById('supplier-gstin').value = "";
-        document.getElementById('supplier-address').value = "";
-        document.getElementById('supplier-state-display').value = "";
+        banner.style.display = 'none';
     }
+    recalcAll();
 }
 
-// ── Row management ───────────────────────────────────────────────────────────
+/* ── Row management ──────────────────────────────────────────── */
 function addRow() {
     const tmpl  = document.getElementById('row-template');
     const clone = tmpl.content.cloneNode(true);
@@ -442,105 +468,94 @@ function renumberRows() {
     });
 }
 
-// ── Material selection change ────────────────────────────────────────────────
+/* ── Material selected ───────────────────────────────────────── */
 function onMaterialChange(select) {
     const tr  = select.closest('tr');
     const opt = select.options[select.selectedIndex];
     const gst = opt ? (parseFloat(opt.dataset.gst) || 0) : 0;
-    const uom = opt ? (opt.dataset.uom || '') : '';
-    const hsn = opt ? (opt.dataset.hsn || '') : '';
+    const uom = opt ? (opt.dataset.uom      || '') : '';
+    const hsn = opt ? (opt.dataset.hsn      || '') : '';
     const cat = opt ? (opt.dataset.category || '') : '';
-    const tracking = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
-    
-    tr.querySelector('.gst-pct').value = gst;
-    tr.querySelector('.uom-code').value = uom;
-    tr.querySelector('.hsn-code').value = hsn;
+    const trackingType = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
+
+    tr.querySelector('.gst-pct').value           = gst;
+    tr.querySelector('.uom-code').value          = uom;
+    tr.querySelector('.hsn-code').value          = hsn;
     tr.querySelector('.material-category').value = cat;
-    
-    const qtyInput = tr.querySelector('.qty-input');
-    const qtyCell = qtyInput.closest('td');
-    const wInput = tr.querySelector('.weight-input');
+
+    const qtyInput   = tr.querySelector('.qty-input');
+    const qtyCell    = qtyInput.closest('td');
+    const wInput     = tr.querySelector('.weight-input');
     const weightCell = wInput.closest('td');
-    
-    if (tracking === "WEIGHT_ONLY") {
-        qtyInput.value = "0";
-        qtyInput.readOnly = true;
-        qtyCell.style.display = 'none';
+
+    if (trackingType === 'WEIGHT_ONLY') {
+        qtyInput.value = '0'; qtyInput.readOnly = true;
+        qtyCell.style.display    = 'none';
         weightCell.style.display = '';
         wInput.readOnly = false;
-    } else if (tracking === "QUANTITY_ONLY") {
-        wInput.value = "0";
-        wInput.readOnly = true;
-        qtyInput.readOnly = false;
-        qtyCell.style.display = '';
+        wInput.style.background  = '';
+    } else if (trackingType === 'QUANTITY_ONLY') {
+        wInput.value = '0'; wInput.readOnly = true;
+        wInput.style.background  = 'var(--bg-alt,#f5f8f5)';
+        qtyInput.readOnly        = false;
+        qtyCell.style.display    = '';
         weightCell.style.display = 'none';
     } else {
-        qtyInput.readOnly = false;
-        qtyCell.style.display = '';
+        qtyInput.readOnly        = false;
+        qtyCell.style.display    = '';
         weightCell.style.display = '';
-        wInput.readOnly = false;
+        wInput.readOnly          = false;
+        wInput.style.background  = '';
     }
-    
+
     tr.querySelector('.qty-input').focus();
     recalcAll();
 }
 
-// ── Per-row calculations ─────────────────────────────────────────────────────
+/* ── Per-row amount ──────────────────────────────────────────── */
 function calcRow(input) {
     const tr     = input.closest('tr');
-    const qty    = parseFloat(tr.querySelector('.qty-input').value)  || 0;
+    const qty    = parseFloat(tr.querySelector('.qty-input').value)    || 0;
     const weight = parseFloat(tr.querySelector('.weight-input').value) || 0;
-    const rate   = parseFloat(tr.querySelector('.rate-input').value) || 0;
-    const opt = tr.querySelector('.material-select').selectedOptions[0];
+    const rate   = parseFloat(tr.querySelector('.rate-input').value)   || 0;
+    const opt    = tr.querySelector('.material-select').selectedOptions[0];
     const tracking = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
     tr.querySelector('.amount-input').value = ((tracking === 'WEIGHT_ONLY' ? weight : qty) * rate).toFixed(2);
     recalcAll();
 }
 
-// ── Customer / Supplier change ───────────────────────────────────────────────
-function onPartyChange() {
-    populateSupplierDetails();
-    recalcAll();
-}
-
-// ── Master Recalculation ─────────────────────────────────────────────────────
+/* ── Master recalculation ────────────────────────────────────── */
 function recalcAll() {
-    let subtotal = 0;
-    let totalCgst = 0;
-    let totalSgst = 0;
-    let totalIgst = 0;
+    let subtotal = 0, totalCgst = 0, totalSgst = 0, totalIgst = 0;
 
-    const sel            = document.getElementById('supplier-select');
-    const selectedOpt    = sel.options[sel.selectedIndex];
+    const sel               = document.getElementById('supplier-select');
+    const selectedOpt       = sel.options[sel.selectedIndex];
     const supplierStateCode = selectedOpt ? (selectedOpt.dataset.stateCode || '') : '';
-    const isIntra        = supplierStateCode !== '' && supplierStateCode === COMPANY_STATE_CODE;
-    const supplierSelected = supplierStateCode !== '';
+    const isIntra           = supplierStateCode !== '' && supplierStateCode === COMPANY_STATE_CODE;
+    const supplierSelected  = supplierStateCode !== '';
 
     document.querySelectorAll('#items-body tr').forEach(tr => {
         const amount = parseFloat(tr.querySelector('.amount-input').value) || 0;
         const gstPct = parseFloat(tr.querySelector('.gst-pct').value)      || 0;
         subtotal += amount;
-        
+
         const rowGst = amount * gstPct / 100;
-        let rowCgst = 0;
-        let rowSgst = 0;
-        let rowIgst = 0;
-        
+        let rowCgst = 0, rowSgst = 0, rowIgst = 0;
+
         if (supplierSelected) {
             if (isIntra) {
                 rowCgst = Math.round((rowGst / 2) * 100) / 100;
                 rowSgst = Math.round((rowGst / 2) * 100) / 100;
-                totalCgst += rowCgst;
-                totalSgst += rowSgst;
+                totalCgst += rowCgst; totalSgst += rowSgst;
             } else {
                 rowIgst = Math.round(rowGst * 100) / 100;
                 totalIgst += rowIgst;
             }
         }
-        
-        tr.querySelector('.row-cgst').value = rowCgst.toFixed(2);
-        tr.querySelector('.row-sgst').value = rowSgst.toFixed(2);
-        tr.querySelector('.row-igst').value = rowIgst.toFixed(2);
+
+        tr.querySelector('.row-cgst').value  = rowCgst.toFixed(2);
+        tr.querySelector('.row-sgst').value  = rowSgst.toFixed(2);
+        tr.querySelector('.row-igst').value  = rowIgst.toFixed(2);
         tr.querySelector('.row-total').value = (amount + rowCgst + rowSgst + rowIgst).toFixed(2);
     });
 
@@ -548,7 +563,6 @@ function recalcAll() {
     const grandRounded = Math.round(grandRaw);
     const roundOff     = Math.round((grandRounded - grandRaw) * 100) / 100;
 
-    // Update summary display
     setText('subtotal-display',    subtotal.toFixed(2));
     setText('cgst-display',        totalCgst.toFixed(2));
     setText('sgst-display',        totalSgst.toFixed(2));
@@ -560,16 +574,13 @@ function recalcAll() {
         roundOffEl.textContent = (roundOff >= 0 ? '+ ' : '- ') + '₹ ' + Math.abs(roundOff).toFixed(2);
         roundOffEl.style.color = roundOff < 0 ? '#dc3545' : '#198754';
     } else {
-        roundOffEl.textContent = '—';
-        roundOffEl.style.color = '#6c7a75';
+        roundOffEl.textContent = '—'; roundOffEl.style.color = '#6c7a75';
     }
 
-    // Show/hide GST rows
     show('cgst-row', isIntra);
     show('sgst-row', isIntra);
     show('igst-row', !isIntra && supplierSelected);
 
-    // GST badge
     const badge = document.getElementById('gst-type-badge');
     if (!supplierSelected) {
         badge.textContent = 'Select supplier for GST';
@@ -582,7 +593,6 @@ function recalcAll() {
         badge.style.background = '#dbeafe'; badge.style.color = '#1e40af';
     }
 
-    // Update hidden inputs for backend
     setValue('hidden-subtotal',    subtotal.toFixed(2));
     setValue('hidden-cgst',        totalCgst.toFixed(2));
     setValue('hidden-sgst',        totalSgst.toFixed(2));
@@ -591,81 +601,60 @@ function recalcAll() {
     setValue('hidden-grand-total', grandRounded.toFixed(2));
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 function setText(id, v)  { document.getElementById(id).textContent = v; }
 function setValue(id, v) { document.getElementById(id).value = v; }
 function show(id, vis)   { document.getElementById(id).style.display = vis ? '' : 'none'; }
 
-// ── Submit Validation ────────────────────────────────────────────────────────
+/* ── Submit guard ────────────────────────────────────────────── */
 document.getElementById('invoice-form').addEventListener('submit', function(e) {
     const rows = document.querySelectorAll('#items-body tr');
     if (rows.length === 0) {
-        e.preventDefault();
-        alert('Please add at least one item before saving.');
-        return;
+        e.preventDefault(); alert('Please add at least one item before saving.'); return;
     }
-    
-    let ok = true;
-    let errorMsg = "";
-    
+    let ok = true, errorMsg = '';
     rows.forEach((tr, index) => {
-        const material = tr.querySelector('.material-select').value;
-        const select = tr.querySelector('.material-select');
-        const opt = select.options[select.selectedIndex];
+        const sel      = tr.querySelector('.material-select');
+        const opt      = sel.options[sel.selectedIndex];
         const tracking = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
-        
-        const qty = parseFloat(tr.querySelector('.qty-input').value) || 0;
-        const rate = parseFloat(tr.querySelector('.rate-input').value) || 0;
-        const weight = parseFloat(tr.querySelector('.weight-input').value) || 0;
-        
-        if (!material) {
-            ok = false;
-            errorMsg = "Please select a material for all rows.";
-        } else if (qty <= 0) {
-            ok = false;
-            errorMsg = `Row ${index + 1}: Quantity must be greater than zero.`;
+        const qty      = parseFloat(tr.querySelector('.qty-input').value)    || 0;
+        const rate     = parseFloat(tr.querySelector('.rate-input').value)   || 0;
+        const weight   = parseFloat(tr.querySelector('.weight-input').value) || 0;
+
+        if (!sel.value) {
+            ok = false; errorMsg = 'Please select a material for all rows.';
+        } else if (tracking !== 'WEIGHT_ONLY' && qty <= 0) {
+            ok = false; errorMsg = `Row ${index + 1}: Quantity must be greater than zero.`;
         } else if (rate <= 0) {
-            ok = false;
-            errorMsg = `Row ${index + 1}: Rate must be greater than zero.`;
-        } else if (tracking === "WEIGHT_ONLY" && weight <= 0) {
-            ok = false;
-            errorMsg = `Row ${index + 1}: Weight must be greater than zero for weight-only material.`;
-        } else if (tracking === "BOTH" && weight <= 0) {
-            ok = false;
-            errorMsg = `Row ${index + 1}: Weight must be greater than zero for this material.`;
+            ok = false; errorMsg = `Row ${index + 1}: Rate must be greater than zero.`;
+        } else if ((tracking === 'WEIGHT_ONLY' || tracking === 'BOTH') && weight <= 0) {
+            ok = false; errorMsg = `Row ${index + 1}: Weight must be greater than zero.`;
         }
     });
-    
-    if (!ok) {
-        e.preventDefault();
-        alert(errorMsg);
-    }
+    if (!ok) { e.preventDefault(); alert(errorMsg); }
 });
 
-// ── Populate details on document ready ───────────────────────────────────────
-window.addEventListener('DOMContentLoaded', function(){
-    populateSupplierDetails();
-    
+/* ── Pre-populate existing items ─────────────────────────────── */
+window.addEventListener('DOMContentLoaded', function () {
     {% if existing_items %}
     {% for item in existing_items %}
     addRow();
     const rows = document.querySelectorAll('#items-body tr');
     const last = rows[rows.length - 1];
-    
-    last.querySelector('.material-select').value = '{{ item.material_id }}';
-    
-    onMaterialChange(last.querySelector('.material-select'));
-    
-    last.querySelector('.qty-input').value = '{{ item.quantity or 0 }}';
+    const selEl = last.querySelector('.material-select');
+    selEl.value = '{{ item.material_id }}';
+    onMaterialChange(selEl);
+    last.querySelector('.qty-input').value    = '{{ item.quantity or 0 }}';
     last.querySelector('.amount-input').value = '{{ item.amount or 0 }}';
     last.querySelector('.weight-input').value = '{{ item.weight or 0 }}';
-    last.querySelector('.rate-input').value = '{{ item.rate or 0 }}';
+    last.querySelector('.rate-input').value   = '{{ item.rate or 0 }}';
     {% endfor %}
     {% else %}
     addRow();
     {% endif %}
-    
-    if (document.getElementById('supplier-select').value) recalcAll();
+
+    if (document.getElementById('supplier-select').value) {
+        onPartyChange();
+    }
 });
 </script>
 {% endblock %}

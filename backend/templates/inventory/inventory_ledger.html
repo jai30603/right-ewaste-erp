@@ -1,182 +1,184 @@
 {% extends "shared/base.html" %}
 
 {% block title %}Material Ledger – Right Ewaste ERP{% endblock %}
-{% block page_title %}Material Ledger{% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="/inventory" class="text-decoration-none text-muted">Stock Summary</a></li>
-<li class="breadcrumb-item active">Ledger</li>
+{% block styles %}
+<link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
+{% set inv_active_tab = 'stock' %}
+{% include 'inventory/_workspace_header.html' %}
 
-<!-- ── Material Info Header Card ──────────────────────────────── -->
-<div class="card border-0 shadow-sm mb-4" style="border-radius:12px; background: linear-gradient(135deg, #0d9488, #0f766e); color: white;">
-    <div class="card-body p-4">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div>
-                <small style="opacity:0.8; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Material Code: {{ material.material_code }}</small>
-                <h3 class="mb-1 fw-bold">{{ material.material_name }}</h3>
-                <span class="badge" style="background-color: rgba(255, 255, 255, 0.2); font-size:11px;">Category: {{ material.category or 'General' }}</span>
-            </div>
-            <div class="text-end">
-                <small style="opacity:0.8; font-weight:600;">CURRENT BALANCE STOCK</small>
-                <h2 class="mb-0 fw-bold font-monospace">{{ "%.2f"|format(current_stock) }} <span style="font-size:16px;">{{ material.uom }}</span></h2>
-                <small style="opacity:0.8;">Valued at: ₹ {{ "%.2f"|format(current_stock * rate) }}</small>
+<div class="inv-page-body">
+
+    <!-- ── Material Info Header Card ── -->
+    <div class="inv-card mb-4" style="background: linear-gradient(135deg, var(--inv-primary), var(--inv-primary-dk)); color: white; border: none; border-radius: 12px; overflow: hidden;">
+        <div class="inv-card-body p-4" style="color: white;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <small style="opacity: 0.8; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Material Code: {{ material.material_code }}</small>
+                    <h3 class="mb-1 fw-bold text-white" style="font-size: 20px; margin: 4px 0 0 0;">{{ material.material_name }}</h3>
+                    <span class="inv-badge mt-1" style="background: rgba(255, 255, 255, 0.2); color: white; font-size: 11px;">Category: {{ material.category or 'General' }}</span>
+                </div>
+                <div class="text-end">
+                    <small style="opacity: 0.8; font-weight: 600; text-transform: uppercase;">Current Balance Stock</small>
+                    <h2 class="mb-0 fw-bold font-monospace" style="font-size: 28px; line-height: 1.1;">{{ "%.2f"|format(current_stock) }} <span style="font-size: 14px; font-weight: 500;">{{ material.uom }}</span></h2>
+                    <small style="opacity: 0.8;">Valued at: ₹{{ "%.2f"|format(current_stock * rate) }}</small>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="erp-card">
-    <div class="erp-card-header">
-        <i class="bi bi-journal-text" style="font-size:18px; color:#0d9488;"></i>
-        <h5>Transaction History Statement</h5>
-    </div>
+    <div class="inv-card">
+        <div class="inv-card-header">
+            <span class="inv-card-title"><i class="bi bi-journal-text"></i> Transaction History Statement</span>
+        </div>
 
-    <!-- ── Filter Bar ────────────────────────────────────────────── -->
-    <div class="p-3 bg-light border-bottom">
-        <form method="GET" action="/inventory/{{ material.id }}/ledger" class="row g-2 align-items-end" id="filter-form">
-            <div class="col-md-3 col-sm-6">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Quick Filter</label>
-                <select name="date_filter" id="date_filter" class="form-select form-select-sm" onchange="toggleCustomDates()">
-                    <option value="all" {% if date_filter == 'all' or not date_filter %}selected{% endif %}>All Time</option>
-                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
-                    <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
-                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
-                    <option value="last_6_months" {% if date_filter == 'last_6_months' %}selected{% endif %}>Last 6 Months</option>
-                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
-                </select>
+        <!-- ── Filter Bar ── -->
+        <div class="p-3 border-bottom" style="background: var(--surface-raised);">
+            <form method="GET" action="/inventory/{{ material.id }}/ledger" class="row g-2 align-items-end" id="filter-form">
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label mb-1" style="font-size: 11.5px; font-weight: 600; color: var(--inv-primary-dk);">Quick Filter</label>
+                    <select name="date_filter" id="date_filter" class="inv-filter-select w-100" style="min-width: 100%;" onchange="toggleCustomDates()">
+                        <option value="all" {% if date_filter == 'all' or not date_filter %}selected{% endif %}>All Time</option>
+                        <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                        <option value="this_week" {% if date_filter == 'this_week' %}selected{% endif %}>This Week</option>
+                        <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+                        <option value="last_6_months" {% if date_filter == 'last_6_months' %}selected{% endif %}>Last 6 Months</option>
+                        <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else 'none' %}{% endif %};">
+                    <label class="form-label mb-1" style="font-size: 11.5px; font-weight: 600; color: var(--inv-primary-dk);">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" class="inv-search-input" style="padding: 8px 12px;" value="{{ start_date }}">
+                </div>
+
+                <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else 'none' %}{% endif %};">
+                    <label class="form-label mb-1" style="font-size: 11.5px; font-weight: 600; color: var(--inv-primary-dk);">End Date</label>
+                    <input type="date" name="end_date" id="end_date" class="inv-search-input" style="padding: 8px 12px;" value="{{ end_date }}">
+                </div>
+
+                <div class="col-md-3 col-sm-12 d-flex gap-2">
+                    <button type="submit" class="inv-btn inv-btn-primary w-100 justify-content-center">
+                        <i class="bi bi-filter"></i> Filter
+                    </button>
+                    <a href="/inventory/{{ material.id }}/ledger" class="inv-btn inv-btn-outline w-100 justify-content-center">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- ── Ledger Table ── -->
+        <div class="inv-card-body no-pad">
+            {% if ledger %}
+            <div class="inv-table-wrap">
+                <table class="inv-table">
+                    <thead>
+                        <tr>
+                            <th width="15%">Date</th>
+                            <th width="18%">Reference</th>
+                            <th width="14%">Operation</th>
+                            <th class="col-num" width="13%">In (Received)</th>
+                            <th class="col-num" width="13%">Out (Issued)</th>
+                            <th class="col-num" width="10%">Rate (₹)</th>
+                            <th class="col-num" width="12%">Balance</th>
+                            <th>By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set type_badge = {
+                            'PURCHASE':             ('inv-badge-green',      'Purchase'),
+                            'SALE':                 ('inv-badge-danger',    'Sale'),
+                            'MANUAL_ADJUSTMENT':    ('inv-badge-warning',    'Adjustment'),
+                            'WEIGHT_ADJUSTMENT':    ('inv-badge-warning',    'Wt Adjust'),
+                            'PROCESSING':           ('inv-badge-info',          'Processing'),
+                            'REFURBISHMENT':        ('inv-badge-info',          'Refurbishment'),
+                            'DISMANTLING':          ('inv-badge-gray', 'Dismantling'),
+                            'SORTING':              ('inv-badge-gray', 'Sorting'),
+                            'INTERNAL_CONSUMPTION': ('inv-badge-danger',      'Internal Use'),
+                            'RETURN':               ('inv-badge-green',    'Return'),
+                            'TRANSFER':             ('inv-badge-teal', 'Transfer')
+                        } %}
+                        {% for item in ledger %}
+                        {% set qty_change = item.quantity_change if item.quantity_change is defined else (item.qty if item.type == 'Purchase' else -item.qty) %}
+                        {% set mov_type = item.movement_type if item.movement_type is defined else (item.type or '') %}
+                        <tr>
+                            <td style="white-space: nowrap; font-size: 11.5px; color: var(--text-muted);">
+                                {{ (item.date or item.created_at or '')[:10] }}
+                            </td>
+                            <td>
+                                <span style="font-family: monospace; font-size: 12px; color: var(--text-muted);">{{ item.ref_number or item.reference_number or '—' }}</span>
+                            </td>
+                            <td>
+                                {% set cls, lbl = type_badge.get(mov_type, ('inv-badge-gray', mov_type|replace('_',' ')|title if mov_type else item.get('type','—'))) %}
+                                <span class="inv-badge {{ cls }}">{{ lbl }}</span>
+                            </td>
+                            <td class="col-num" style="color: var(--success); font-weight: 700;">
+                                {% if qty_change > 0 %}+{{ '%.2f'|format(qty_change) }}{% else %}—{% endif %}
+                            </td>
+                            <td class="col-num" style="color: var(--danger); font-weight: 700;">
+                                {% if qty_change < 0 %}{{ '%.2f'|format(qty_change|abs) }}{% else %}—{% endif %}
+                            </td>
+                            <td class="col-num" style="color: var(--text-muted);">₹{{ '%.2f'|format(item.rate or 0) }}</td>
+                            <td class="col-num" style="font-weight: 700; color: var(--text-primary);">
+                                {{ '%.2f'|format(item.balance) }} {{ material.uom }}
+                            </td>
+                            <td style="font-size: 12px; color: var(--text-muted);">{{ item.performed_by if item.performed_by is defined else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            
-            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">Start Date</label>
-                <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ start_date }}">
-            </div>
 
-            <div class="col-md-2 col-sm-6 custom-date-field" style="display: {% if date_filter == 'custom' %}block{% else %}none{% endif %};">
-                <label class="form-label mb-1" style="font-size:11.5px; font-weight:600; color:#0f766e;">End Date</label>
-                <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+            {% if total_pages > 1 %}
+            <div class="inv-pagination" style="border-top: 1px solid var(--border);">
+                <span>Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries</span>
+                <div class="inv-page-btns">
+                    {% if page > 1 %}
+                    <a href="?{{ modify_query(page=page-1) }}" class="inv-page-btn">‹</a>
+                    {% else %}
+                    <span class="inv-page-btn disabled">‹</span>
+                    {% endif %}
+                    {% for p in range(1, total_pages + 1) %}
+                    <a href="?{{ modify_query(page=p) }}" class="inv-page-btn {{ 'active' if p == page else '' }}">{{ p }}</a>
+                    {% endfor %}
+                    {% if page < total_pages %}
+                    <a href="?{{ modify_query(page=page+1) }}" class="inv-page-btn">›</a>
+                    {% else %}
+                    <span class="inv-page-btn disabled">›</span>
+                    {% endif %}
+                </div>
             </div>
+            {% endif %}
 
-            <div class="col-md-3 col-sm-12 d-flex gap-2">
-                <button type="submit" class="btn btn-sm text-white px-3 py-2 w-100" style="font-size:12.5px; background-color:#0d9488;">
-                    <i class="bi bi-filter"></i> Apply Filter
+            <!-- Export Buttons -->
+            <div class="p-3 border-top d-flex justify-content-start gap-2" style="background: var(--surface-raised);">
+                <button type="button" class="inv-btn inv-btn-outline" onclick="exportExcel()">
+                    <i class="bi bi-file-earmark-excel" style="color: var(--success);"></i> Export Excel
                 </button>
-                <a href="/inventory/{{ material.id }}/ledger" class="btn btn-sm btn-outline-secondary px-3 py-2 w-100" style="font-size:12.5px;">
-                    Reset
-                </a>
+                <button type="button" class="inv-btn inv-btn-outline" onclick="exportPDF()">
+                    <i class="bi bi-file-earmark-pdf" style="color: var(--danger);"></i> Export PDF
+                </button>
             </div>
-        </form>
-    </div>
 
-    <!-- ── Ledger Table ────────────────────────────────────────── -->
-    <div class="erp-card-body p-0">
-        {% if ledger %}
-        <div style="overflow-x:auto;">
-        <table class="erp-table">
-            <thead>
-                <tr>
-                    <th width="15%">Date</th>
-                    <th width="18%">Reference</th>
-                    <th width="14%">Operation</th>
-                    <th style="text-align:right;" width="13%">In (Received)</th>
-                    <th style="text-align:right;" width="13%">Out (Issued)</th>
-                    <th style="text-align:right;" width="10%">Rate (₹)</th>
-                    <th style="text-align:right;" width="12%">Balance</th>
-                    <th width="10%">By</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% set type_badge = {
-                    'PURCHASE':             ('bg-light text-primary border border-primary',    'Purchase'),
-                    'SALE':                 ('bg-light text-success border border-success',    'Sale'),
-                    'MANUAL_ADJUSTMENT':    ('bg-light text-warning border border-warning',    'Adjustment'),
-                    'WEIGHT_ADJUSTMENT':    ('bg-light text-warning border border-warning',    'Wt Adjust'),
-                    'PROCESSING':           ('bg-light text-info border border-info',          'Processing'),
-                    'REFURBISHMENT':        ('bg-light text-info border border-info',          'Refurbishment'),
-                    'DISMANTLING':          ('bg-light text-secondary border border-secondary','Dismantling'),
-                    'SORTING':              ('bg-light text-secondary border border-secondary','Sorting'),
-                    'INTERNAL_CONSUMPTION': ('bg-light text-danger border border-danger',      'Internal Use'),
-                    'RETURN':               ('bg-light text-primary border border-primary',    'Return'),
-                    'TRANSFER':             ('bg-light text-secondary border border-secondary','Transfer')
-                } %}
-                {% for item in ledger %}
-                {% set qty_change = item.quantity_change if item.quantity_change is defined else (item.qty if item.type == 'Purchase' else -item.qty) %}
-                {% set mov_type = item.movement_type if item.movement_type is defined else (item.type or '') %}
-                <tr>
-                    <td>{{ (item.date or item.created_at or '')[:10] }}</td>
-                    <td>
-                        <span class="font-mono text-muted" style="font-size:12px;">{{ item.ref_number or item.reference_number or '—' }}</span>
-                    </td>
-                    <td>
-                        {% set cls, lbl = type_badge.get(mov_type, ('bg-light text-secondary border', mov_type|replace('_',' ')|title if mov_type else item.get('type','—'))) %}
-                        <span class="badge {{ cls }}" style="font-size:9.5px; padding:3px 7px;">{{ lbl }}</span>
-                    </td>
-                    <td style="text-align:right; font-family:monospace; font-weight:600; color:#2563eb;">
-                        {% if qty_change > 0 %}+{{ '%.2f'|format(qty_change) }}{% else %}—{% endif %}
-                    </td>
-                    <td style="text-align:right; font-family:monospace; font-weight:600; color:#dc2626;">
-                        {% if qty_change < 0 %}{{ '%.2f'|format(qty_change|abs) }}{% else %}—{% endif %}
-                    </td>
-                    <td style="text-align:right; font-family:monospace; color:#6b7280;">₹ {{ '%.2f'|format(item.rate or 0) }}</td>
-                    <td style="text-align:right; font-family:monospace; font-weight:700; color:#374151;">
-                        {{ '%.2f'|format(item.balance) }} {{ material.uom }}
-                    </td>
-                    <td style="font-size:12px; color:#6b7280;">{{ item.performed_by if item.performed_by is defined else '—' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        </div>
-        {% if total_pages > 1 %}
-        <nav aria-label="Page navigation" class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2 bg-light">
-            <div class="text-muted small" style="font-size:12.5px;">
-                Showing {{ (page - 1) * 15 + 1 }} to {{ page * 15 if page * 15 < total_items else total_items }} of {{ total_items }} entries
+            {% else %}
+            <div class="inv-empty" style="padding: 36px;">
+                <div class="inv-empty-icon"><i class="bi bi-journal-text"></i></div>
+                <div class="inv-empty-title">No transactions found</div>
+                <div class="inv-empty-subtitle">No history found for this material within the date criteria.</div>
             </div>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=page-1) }}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-                {% for p in range(1, total_pages + 1) %}
-                <li class="page-item {% if p == page %}active{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=p) }}">{{ p }}</a>
-                </li>
-                {% endfor %}
-                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                    <a class="page-link" href="?{{ modify_query(page=page+1) }}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        {% endif %}
-
-        <!-- Export Excel and PDF buttons -->
-        <div class="p-3 bg-light border-top d-flex justify-content-start gap-2">
-            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportExcel()" style="font-size:13px; font-weight:600; border-radius:8px;">
-                <i class="bi bi-file-earmark-spreadsheet" style="color:#0d9488; font-size:15px;"></i> Export to Excel
-            </button>
-            <button type="button" class="btn-erp-secondary btn-sm" onclick="exportPDF()" style="font-size:13px; font-weight:600; border-radius:8px;">
-                <i class="bi bi-file-earmark-pdf" style="color:#dc3545; font-size:15px;"></i> Export to PDF
-            </button>
+            {% endif %}
         </div>
-
-        {% else %}
-        <div class="empty-state">
-            <div class="empty-icon">📖</div>
-            <p>No transaction history statement found for this material within the date criteria.</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
 <script>
 function toggleCustomDates() {
     const select = document.getElementById('date_filter');

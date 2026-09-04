@@ -1,105 +1,178 @@
 {% extends "shared/base.html" %}
 
-{% block title %}Sales Invoices – Right Ewaste ERP{% endblock %}
-{% block page_title %}Sales Management{% endblock %}
+{% block title %}Sales Workspace – Right Ewaste ERP{% endblock %}
+{% block page_title %}Sales Workspace{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item active">Sales Invoices</li>
+<li class="breadcrumb-item active">Sales Workspace</li>
 {% endblock %}
 
 {% block content %}
+<link href="/static/css/invoice_print.css" rel="stylesheet" media="print">
 <link href="/static/css/sales.css?v=2" rel="stylesheet">
 
-<!-- ── KPI Cards ─────────────────────────────────────────────── -->
+<!-- ── Workspace Header ────────────────────────────────────────── -->
+<div class="erp-page-header">
+    <div>
+        <h1 class="erp-page-title">Sales Workspace</h1>
+        <p class="erp-page-subtitle">Manage sales invoices, customer billing, and tax registers.</p>
+    </div>
+    <div class="erp-page-actions">
+        <a href="/sales" class="sv3-tb-btn" title="Refresh register data">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </a>
+        <a href="/sales/add" class="sv3-tb-btn primary">
+            <i class="bi bi-plus-lg"></i> New Sales Invoice
+        </a>
+    </div>
+</div>
+
+<!-- ── Filtered Results Summary (KPI Row) ────────────────────────── -->
+{% set filtered_total_value = invoices | sum(attribute='grand_total') %}
+{% set filtered_taxable_value = invoices | sum(attribute='subtotal') %}
+{% set filtered_cgst_value = invoices | sum(attribute='cgst') %}
+{% set filtered_sgst_value = invoices | sum(attribute='sgst') %}
+{% set filtered_igst_value = invoices | sum(attribute='igst') %}
+{% set filtered_gst_total = filtered_cgst_value + filtered_sgst_value + filtered_igst_value %}
+{% set cancelled_count = invoices | selectattr('status', 'equalto', 'CANCELLED') | list | length %}
+
 <div class="sv3-kpi-grid">
     <div class="sv3-kpi green">
         <div class="sv3-kpi-icon"><i class="bi bi-receipt"></i></div>
-        <div class="sv3-kpi-value">{{ invoices|length }}</div>
-        <div class="sv3-kpi-label">Total Invoices</div>
-        <div class="sv3-kpi-sparkline"></div>
-    </div>
-    <div class="sv3-kpi blue">
-        <div class="sv3-kpi-icon"><i class="bi bi-calendar-check"></i></div>
-        <div class="sv3-kpi-value">
-            {{ invoices | selectattr('invoice_date', 'equalto', today) | list | length if today is defined else '—' }}
-        </div>
-        <div class="sv3-kpi-label">Today's Invoices</div>
-        <div class="sv3-kpi-sparkline"></div>
-    </div>
-    <div class="sv3-kpi amber">
-        <div class="sv3-kpi-icon"><i class="bi bi-hourglass-split"></i></div>
-        <div class="sv3-kpi-value">
-            {{ invoices | selectattr('status', 'equalto', 'DRAFT') | list | length }}
-        </div>
-        <div class="sv3-kpi-label">Draft</div>
-        <div class="sv3-kpi-sparkline"></div>
-    </div>
-    <div class="sv3-kpi green" style="border-left-color:#10b981;">
-        <div class="sv3-kpi-icon" style="background:#d1fae5;color:#065f46;"><i class="bi bi-check-circle"></i></div>
-        <div class="sv3-kpi-value">
-            {{ invoices | selectattr('status', 'in', ['CONFIRMED','PAID']) | list | length }}
-        </div>
-        <div class="sv3-kpi-label">Confirmed / Paid</div>
-        <div class="sv3-kpi-sparkline" style="background:linear-gradient(90deg,#6ee7b7,#10b981);"></div>
-    </div>
-    <div class="sv3-kpi red">
-        <div class="sv3-kpi-icon"><i class="bi bi-x-circle"></i></div>
-        <div class="sv3-kpi-value">
-            {{ invoices | selectattr('status', 'equalto', 'CANCELLED') | list | length }}
-        </div>
-        <div class="sv3-kpi-label">Cancelled</div>
+        <div class="sv3-kpi-value">{{ total_items }}</div>
+        <div class="sv3-kpi-label">Filtered Invoices</div>
         <div class="sv3-kpi-sparkline"></div>
     </div>
     <div class="sv3-kpi teal">
         <div class="sv3-kpi-icon"><i class="bi bi-currency-rupee"></i></div>
-        <div class="sv3-kpi-value" style="font-size:17px;">
-            ₹{{ "{:,.0f}".format(invoices | sum(attribute='grand_total')) }}
-        </div>
-        <div class="sv3-kpi-label">Total Value</div>
+        <div class="sv3-kpi-value">₹{{ "{:,.2f}".format(filtered_total_value) }}</div>
+        <div class="sv3-kpi-label">Filtered Total Sales</div>
+        <div class="sv3-kpi-sparkline"></div>
+    </div>
+    <div class="sv3-kpi blue">
+        <div class="sv3-kpi-icon"><i class="bi bi-cash-stack"></i></div>
+        <div class="sv3-kpi-value">₹{{ "{:,.2f}".format(filtered_taxable_value) }}</div>
+        <div class="sv3-kpi-label">Filtered Taxable Sales</div>
+        <div class="sv3-kpi-sparkline"></div>
+    </div>
+    <div class="sv3-kpi purple">
+        <div class="sv3-kpi-icon"><i class="bi bi-percent"></i></div>
+        <div class="sv3-kpi-value">₹{{ "{:,.2f}".format(filtered_gst_total) }}</div>
+        <div class="sv3-kpi-label">Filtered GST Collected</div>
+        <div class="sv3-kpi-sparkline"></div>
+    </div>
+    <div class="sv3-kpi red">
+        <div class="sv3-kpi-icon"><i class="bi bi-x-circle"></i></div>
+        <div class="sv3-kpi-value">{{ cancelled_count }}</div>
+        <div class="sv3-kpi-label">Cancelled Invoices</div>
         <div class="sv3-kpi-sparkline"></div>
     </div>
 </div>
 
-<!-- ── Main Table Card ────────────────────────────────────────── -->
-<div class="erp-card" style="border-radius:14px; overflow:hidden;">
+<!-- ── Main Operational Card ───────────────────────────────────── -->
+<div class="erp-card" style="border-radius:2px; overflow:hidden; position:relative; border:1px solid var(--border);">
 
     <!-- Toolbar -->
     <div class="sv3-toolbar">
         <div class="sv3-search-box">
             <i class="bi bi-search"></i>
-            <input type="text" id="sv3-live-search" placeholder="Search invoice no., customer, GSTIN…"
-                   value="{{ q or '' }}" oninput="sv3LiveSearch(this.value)">
+            <form method="GET" action="/sales" style="margin:0;">
+                <input type="text" name="q" placeholder="Search number, customer, GSTIN, HSN..."
+                       value="{{ q or '' }}">
+                <!-- Hidden inputs for active parameters to avoid clearing them on simple search -->
+                {% if customer_id %}<input type="hidden" name="customer_id" value="{{ customer_id }}">{% endif %}
+                {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+                {% if date_filter %}<input type="hidden" name="date_filter" value="{{ date_filter }}">{% endif %}
+            </form>
         </div>
 
         <button class="sv3-tb-btn" id="sv3-filter-toggle" onclick="sv3ToggleFilter()" title="Advanced Filters">
             <i class="bi bi-funnel"></i> Filters
-            {% set active_filters = [] %}
-            {% if customer_id and customer_id != 'all' %}{% set _ = active_filters.append(1) %}{% endif %}
-            {% if material_id and material_id != 'all' %}{% set _ = active_filters.append(1) %}{% endif %}
-            {% if status and status != 'all' %}{% set _ = active_filters.append(1) %}{% endif %}
-            {% if date_filter and date_filter != 'all' %}{% set _ = active_filters.append(1) %}{% endif %}
-            {% if gst_type and gst_type != 'all' %}{% set _ = active_filters.append(1) %}{% endif %}
-            {% if active_filters %}
-            <span class="sv3-filter-badge">{{ active_filters|length }}</span>
+            {% set active_filters_count = 0 %}
+            {% if customer_id and customer_id != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if material_id and material_id != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if status and status != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if date_filter and date_filter != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if gst_type and gst_type != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if gstin and gstin != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if dispatch_location and dispatch_location != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if hsn_sac and hsn_sac != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if gst_rate and gst_rate != 'all' %}{% set active_filters_count = active_filters_count + 1 %}{% endif %}
+            {% if active_filters_count > 0 %}
+            <span class="sv3-filter-badge">{{ active_filters_count }}</span>
             {% endif %}
         </button>
 
+        <!-- Column configuration -->
+        <div class="dropdown" style="display:inline-block;">
+            <button class="sv3-tb-btn dropdown-toggle" type="button" id="colConfigBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-layout-three-columns"></i> Columns
+            </button>
+            <ul class="dropdown-menu p-3 col-dropdown-menu" aria-labelledby="colConfigBtn" style="min-width: 180px; z-index:100;">
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-date" id="col-date-check" checked onchange="toggleTableColumn('col-date')">
+                        <label class="form-check-label" for="col-date-check">Date</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-customer" id="col-customer-check" checked onchange="toggleTableColumn('col-customer')">
+                        <label class="form-check-label" for="col-customer-check">Customer</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-shipto" id="col-shipto-check" checked onchange="toggleTableColumn('col-shipto')">
+                        <label class="form-check-label" for="col-shipto-check">Ship To State</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-dispatch" id="col-dispatch-check" checked onchange="toggleTableColumn('col-dispatch')">
+                        <label class="form-check-label" for="col-dispatch-check">Dispatch From</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-taxable" id="col-taxable-check" checked onchange="toggleTableColumn('col-taxable')">
+                        <label class="form-check-label" for="col-taxable-check">Taxable Value</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-gst" id="col-gst-check" checked onchange="toggleTableColumn('col-gst')">
+                        <label class="form-check-label" for="col-gst-check">GST Total</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-tcs" id="col-tcs-check" checked onchange="toggleTableColumn('col-tcs')">
+                        <label class="form-check-label" for="col-tcs-check">TCS</label>
+                    </div>
+                </li>
+                <li>
+                    <div class="form-check">
+                        <input class="form-check-input col-toggle" type="checkbox" value="col-total" id="col-total-check" checked onchange="toggleTableColumn('col-total')">
+                        <label class="form-check-label" for="col-total-check">Grand Total</label>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
         <div class="sv3-tb-sep"></div>
 
-        <button class="sv3-tb-btn" onclick="exportExcel()" title="Export to Excel">
-            <i class="bi bi-file-earmark-spreadsheet" style="color:#2d6a4f;"></i> Excel
-        </button>
-        <button class="sv3-tb-btn" onclick="exportPDF()" title="Export to PDF">
-            <i class="bi bi-file-earmark-pdf" style="color:#dc3545;"></i> PDF
+        <button class="sv3-tb-btn" onclick="exportExcel()" title="Export Excel Report">
+            <i class="bi bi-file-earmark-spreadsheet" style="color:#2d6a4f;"></i> Export Excel
         </button>
 
         <div class="sv3-tb-sep"></div>
 
-        <a href="/sales/register" class="sv3-tb-btn" title="Sales Register">
-            <i class="bi bi-file-earmark-bar-graph"></i> Register
+        <a href="/sales/register" class="sv3-tb-btn" title="View Detailed Sales Register Audit Log">
+            <i class="bi bi-file-earmark-bar-graph"></i> Report Register
         </a>
-        <a href="/sales/dashboard" class="sv3-tb-btn" title="Sales Dashboard">
+        <a href="/sales/dashboard" class="sv3-tb-btn" title="View Sales Analytics Dashboard">
             <i class="bi bi-grid-1x2"></i> Dashboard
         </a>
 
@@ -107,13 +180,74 @@
             <button class="sv3-tb-btn danger" id="sv3-bulk-btn" style="display:none;" onclick="sv3BulkAction()">
                 <i class="bi bi-check2-square"></i> Bulk Actions (<span id="sv3-sel-count">0</span>)
             </button>
-            <a href="/sales/add" class="sv3-tb-btn primary">
-                <i class="bi bi-plus-lg"></i> New Invoice
-            </a>
         </div>
     </div>
 
-    <!-- Filter Panel -->
+    <!-- Active Filter Chips & Saved Views Tabs -->
+    <div class="px-4 py-2 bg-light border-bottom">
+        <!-- Saved Views Tabs -->
+        <div class="saved-views-tabs">
+            <a href="/sales" class="tab-item {% if not status and not date_filter and not gst_type %}active{% endif %}">All Invoices</a>
+            <a href="/sales?status=DRAFT" class="tab-item {% if status == 'DRAFT' %}active{% endif %}">Drafts</a>
+            <a href="/sales?date_filter=this_month" class="tab-item {% if date_filter == 'this_month' %}active{% endif %}">This Month</a>
+            <a href="/sales?status=CANCELLED" class="tab-item {% if status == 'CANCELLED' %}active{% endif %}">Cancelled</a>
+            <a href="/sales?gst_type=INTER" class="tab-item {% if gst_type == 'INTER' %}active{% endif %}">Inter-State</a>
+            <a href="/sales?gst_type=INTRA" class="tab-item {% if gst_type == 'INTRA' %}active{% endif %}">Intra-State</a>
+        </div>
+
+        <!-- Filter Chips -->
+        {% set active_chips = [] %}
+        {% if customer_id and customer_id != 'all' %}
+            {% for p in parties %}
+                {% if p.id|string == customer_id %}
+                    {% set _ = active_chips.append({'label': 'Customer', 'val_lbl': p.company_name, 'param': 'customer_id'}) %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        {% if material_id and material_id != 'all' %}
+            {% for m in materials %}
+                {% if m.id|string == material_id %}
+                    {% set _ = active_chips.append({'label': 'Material', 'val_lbl': m.material_name, 'param': 'material_id'}) %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        {% if status and status != 'all' %}
+            {% set _ = active_chips.append({'label': 'Status', 'val_lbl': status|title, 'param': 'status'}) %}
+        {% endif %}
+        {% if date_filter and date_filter != 'all' %}
+            {% set _ = active_chips.append({'label': 'Date Range', 'val_lbl': date_filter.replace('_',' ')|title, 'param': 'date_filter'}) %}
+        {% endif %}
+        {% if gst_type and gst_type != 'all' %}
+            {% set _ = active_chips.append({'label': 'GST Type', 'val_lbl': gst_type, 'param': 'gst_type'}) %}
+        {% endif %}
+        {% if gstin and gstin != 'all' %}
+            {% set _ = active_chips.append({'label': 'Customer GSTIN', 'val_lbl': gstin, 'param': 'gstin'}) %}
+        {% endif %}
+        {% if dispatch_location and dispatch_location != 'all' %}
+            {% set _ = active_chips.append({'label': 'Dispatch', 'val_lbl': dispatch_location, 'param': 'dispatch_location'}) %}
+        {% endif %}
+        {% if hsn_sac and hsn_sac != 'all' %}
+            {% set _ = active_chips.append({'label': 'HSN/SAC', 'val_lbl': hsn_sac, 'param': 'hsn_sac'}) %}
+        {% endif %}
+        {% if gst_rate and gst_rate != 'all' %}
+            {% set _ = active_chips.append({'label': 'GST Rate', 'val_lbl': gst_rate ~ '%', 'param': 'gst_rate'}) %}
+        {% endif %}
+
+        {% if active_chips %}
+        <div class="d-flex flex-wrap align-items-center gap-2" style="font-size: 12.5px;">
+            <span class="text-muted fw-bold">Active Filters:</span>
+            {% for chip in active_chips %}
+            <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1.5 px-2.5 py-1.5" style="border-radius: 8px;">
+                <strong>{{ chip.label }}:</strong> {{ chip.val_lbl }}
+                <a href="?{{ modify_query(**{chip.param: 'all'}) }}" class="text-success text-decoration-none fw-bold" style="cursor: pointer; margin-left: 2px;">&times;</a>
+            </span>
+            {% endfor %}
+            <a href="/sales" class="btn btn-xs btn-outline-danger py-0.5 px-2 font-size-11" style="border-radius: 6px;">Clear All</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Filter Panel Form -->
     <div class="sv3-filter-panel" id="sv3-filter-panel">
         <form method="GET" action="/sales" id="filter-form">
             <div class="sv3-filter-grid">
@@ -127,12 +261,81 @@
                     </select>
                 </div>
                 <div>
+                    <label>Customer GSTIN</label>
+                    <input type="text" name="gstin" class="form-control form-control-sm" value="{{ gstin if gstin != 'all' else '' }}" placeholder="Customer GSTIN">
+                </div>
+                <div>
+                    <label>Billing State</label>
+                    <select name="state" class="form-select form-select-sm">
+                        <option value="all">All States</option>
+                        {% for s in states %}
+                        <option value="{{ s }}" {% if state == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Ship-To State Code</label>
+                    <input type="text" name="shipping_state_code" class="form-control form-control-sm" value="{{ shipping_state_code if shipping_state_code != 'all' else '' }}" placeholder="State code (e.g. 27)">
+                </div>
+                <div>
+                    <label>Dispatch From</label>
+                    <select name="dispatch_location" class="form-select form-select-sm">
+                        <option value="all">All Dispatch Locations</option>
+                        {% for d in dispatch_locations %}
+                        <option value="{{ d.name }}" {% if dispatch_location == d.name %}selected{% endif %}>{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
                     <label>Material</label>
                     <select name="material_id" class="form-select form-select-sm">
                         <option value="all">All Materials</option>
                         {% for m in materials %}
                         <option value="{{ m.id }}" {% if material_id == m.id|string %}selected{% endif %}>{{ m.material_name }}</option>
                         {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>HSN/SAC</label>
+                    <select name="hsn_sac" class="form-select form-select-sm">
+                        <option value="all">All HSNs</option>
+                        {% for h in hsns %}
+                        <option value="{{ h }}" {% if hsn_sac == h %}selected{% endif %}>{{ h }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>UOM</label>
+                    <select name="uom" class="form-select form-select-sm">
+                        <option value="all">All UOMs</option>
+                        {% for u in uoms %}
+                        <option value="{{ u }}" {% if uom == u %}selected{% endif %}>{{ u }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>GST Type</label>
+                    <select name="gst_type" class="form-select form-select-sm">
+                        <option value="all"   {% if gst_type == 'all' or not gst_type %}selected{% endif %}>All Types</option>
+                        <option value="INTRA" {% if gst_type == 'INTRA' %}selected{% endif %}>Intra-State</option>
+                        <option value="INTER" {% if gst_type == 'INTER' %}selected{% endif %}>Inter-State</option>
+                    </select>
+                </div>
+                <div>
+                    <label>GST Rate</label>
+                    <select name="gst_rate" class="form-select form-select-sm">
+                        <option value="all">All Rates</option>
+                        {% for r in gst_rates %}
+                        <option value="{{ r }}" {% if gst_rate == r|string %}selected{% endif %}>{{ r }}%</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>TCS Applicable</label>
+                    <select name="tcs_applicable" class="form-select form-select-sm">
+                        <option value="all">All Options</option>
+                        <option value="yes" {% if tcs_applicable == 'yes' %}selected{% endif %}>Yes</option>
+                        <option value="no" {% if tcs_applicable == 'no' %}selected{% endif %}>No</option>
                     </select>
                 </div>
                 <div>
@@ -144,14 +347,6 @@
                         <option value="CANCELLED" {% if status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
                         <option value="PRINTED"   {% if status == 'PRINTED' %}selected{% endif %}>Printed</option>
                         <option value="PAID"      {% if status == 'PAID' %}selected{% endif %}>Paid</option>
-                    </select>
-                </div>
-                <div>
-                    <label>GST Type</label>
-                    <select name="gst_type" class="form-select form-select-sm">
-                        <option value="all"   {% if gst_type == 'all' or not gst_type %}selected{% endif %}>All Types</option>
-                        <option value="INTRA" {% if gst_type == 'INTRA' %}selected{% endif %}>Intra-State</option>
-                        <option value="INTER" {% if gst_type == 'INTER' %}selected{% endif %}>Inter-State</option>
                     </select>
                 </div>
                 <div>
@@ -167,22 +362,21 @@
                     </select>
                 </div>
                 <div>
-                    <label>State</label>
-                    <select name="state" class="form-select form-select-sm">
-                        <option value="all">All States</option>
-                        {% for s in states %}
-                        <option value="{{ s }}" {% if state == s %}selected{% endif %}>{{ s }}</option>
+                    <label>Company Bank Account</label>
+                    <select name="company_bank_account_number" class="form-select form-select-sm">
+                        <option value="all">All Bank Accounts</option>
+                        {% for b in bank_accounts %}
+                        <option value="{{ b.account_number }}" {% if company_bank_account_number == b.account_number %}selected{% endif %}>{{ b.bank_name }} - {{ b.account_number }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label>Category</label>
-                    <select name="category" class="form-select form-select-sm">
-                        <option value="all">All Categories</option>
-                        {% for cat in categories_list %}
-                        <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ cat }}</option>
-                        {% endfor %}
-                    </select>
+                    <label>Transporter</label>
+                    <input type="text" name="transporter" class="form-control form-control-sm" value="{{ transporter if transporter != 'all' else '' }}" placeholder="Transporter Name">
+                </div>
+                <div>
+                    <label>Vehicle Number</label>
+                    <input type="text" name="vehicle_number" class="form-control form-control-sm" value="{{ vehicle_number if vehicle_number != 'all' else '' }}" placeholder="Vehicle Number">
                 </div>
                 <div>
                     <label>Created By</label>
@@ -235,95 +429,139 @@
         </form>
     </div>
 
-    <!-- Table -->
+    <!-- ── Desktop Register Table View ─────────────────────────────── -->
     {% if invoices %}
-    <div class="sv3-table-wrap">
-    <table class="sv3-table" id="sv3-main-table">
-        <thead>
-            <tr>
-                <th style="width:40px; text-align:center;">
-                    <input type="checkbox" id="sv3-select-all" onchange="sv3SelectAll(this)" style="cursor:pointer;">
-                </th>
-                <th>Invoice No.</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>State</th>
-                <th style="text-align:center;">Items</th>
-                <th style="text-align:right;">Taxable</th>
-                <th style="text-align:right;">GST</th>
-                <th style="text-align:right;">Grand Total</th>
-                <th>Status</th>
-                <th style="text-align:center; width:100px;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for inv in invoices %}
-            <tr data-search="{{ inv.invoice_number }} {{ inv.company_name }} {{ inv.gstin or '' }} {{ inv.state or '' }}" data-id="{{ inv.id }}">
-                <td style="text-align:center;">
-                    <input type="checkbox" class="sv3-row-check" value="{{ inv.id }}" onchange="sv3UpdateBulk()" style="cursor:pointer;">
-                </td>
-                <td>
-                    <a href="/sales/{{ inv.id }}/view" class="sv3-inv-no">{{ inv.invoice_number }}</a>
-                </td>
-                <td style="white-space:nowrap; color:var(--text-muted); font-size:12.5px;">{{ inv.invoice_date }}</td>
-                <td>
-                    <div class="sv3-customer-cell">{{ inv.company_name }}</div>
-                    {% if inv.gstin %}
-                    <div class="sv3-customer-sub">{{ inv.gstin }}</div>
-                    {% endif %}
-                </td>
-                <td style="font-size:12.5px; color:var(--text-muted);">{{ inv.state or '—' }}</td>
-                <td style="text-align:center;">
-                    <span class="sv3-badge" style="background:#e8f5e9;color:#1b5e20;font-size:10.5px;">{{ inv.item_count }}</span>
-                </td>
-                <td class="sv3-tax">₹{{ "%.2f"|format(inv.subtotal) }}</td>
-                <td class="sv3-tax">
-                    {% if inv.cgst > 0 %}C+S: ₹{{ "%.2f"|format(inv.cgst + inv.sgst) }}
-                    {% elif inv.igst > 0 %}IGST: ₹{{ "%.2f"|format(inv.igst) }}
-                    {% else %}—{% endif %}
-                </td>
-                <td class="sv3-amount" style="color:#1b5e20;">₹{{ "%.2f"|format(inv.grand_total) }}</td>
-                <td>
-                    {% if inv.status == 'CONFIRMED' %}
-                        <span class="sv3-badge sv3-badge-confirmed">Confirmed</span>
-                    {% elif inv.status == 'DRAFT' %}
-                        <span class="sv3-badge sv3-badge-draft">Draft</span>
-                    {% elif inv.status == 'CANCELLED' %}
-                        <span class="sv3-badge sv3-badge-cancelled">Cancelled</span>
-                    {% elif inv.status == 'PRINTED' %}
-                        <span class="sv3-badge sv3-badge-printed">Printed</span>
-                    {% elif inv.status == 'PAID' %}
-                        <span class="sv3-badge sv3-badge-paid">Paid</span>
-                    {% else %}
-                        <span class="sv3-badge" style="background:#f3f4f6;color:#6b7280;">{{ inv.status }}</span>
-                    {% endif %}
-                </td>
-                <td style="text-align:center;">
-                    <div class="sv3-action-wrap">
-                        <button class="sv3-action-btn" onclick="sv3ToggleMenu(this)">
-                            Actions <i class="bi bi-chevron-down" style="font-size:10px;"></i>
-                        </button>
-                        <div class="sv3-action-menu">
-                            <a href="/sales/{{ inv.id }}/view"><i class="bi bi-eye"></i> View</a>
-                            <a href="/sales/{{ inv.id }}/edit"><i class="bi bi-pencil"></i> Edit</a>
-                            <a href="/sales/{{ inv.id }}/duplicate"><i class="bi bi-files"></i> Duplicate</a>
-                            <hr>
-                            <a href="/sales/{{ inv.id }}/view" onclick="setTimeout(()=>window.print(),400)">
-                                <i class="bi bi-printer"></i> Print
-                            </a>
-                            <a href="/sales/{{ inv.id }}/pdf"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
-                            <hr>
-                            <form method="POST" action="/sales/{{ inv.id }}/delete" style="display:contents;" onsubmit="return confirm('Delete this invoice?');">
-                                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="danger-item"><i class="bi bi-trash"></i> Delete</button>
-                            </form>
+    <div class="sv3-table-wrap sv4-desktop-table">
+        <table class="sv3-table" id="sv3-main-table">
+            <thead>
+                <tr>
+                    <th style="width:40px; text-align:center;">
+                        <input type="checkbox" id="sv3-select-all" onchange="sv3SelectAll(this)" style="cursor:pointer;">
+                    </th>
+                    <th>Invoice No.</th>
+                    <th class="col-date">Date</th>
+                    <th class="col-customer">Customer</th>
+                    <th class="col-shipto">Ship To State</th>
+                    <th class="col-dispatch">Dispatch From</th>
+                    <th class="col-taxable" style="text-align:right;">Taxable</th>
+                    <th class="col-gst" style="text-align:right;">GST</th>
+                    <th class="col-tcs" style="text-align:right;">TCS</th>
+                    <th class="col-total" style="text-align:right;">Grand Total</th>
+                    <th>Status</th>
+                    <th style="text-align:center; width:120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr data-search="{{ inv.invoice_number }} {{ inv.company_name }} {{ inv.gstin or '' }}" data-id="{{ inv.id }}" style="cursor: pointer;">
+                    <td style="text-align:center;" onclick="event.stopPropagation();">
+                        <input type="checkbox" class="sv3-row-check" value="{{ inv.id }}" onchange="sv3UpdateBulk()" style="cursor:pointer;">
+                    </td>
+                    <td onclick="openDetailsDrawer('{{ inv.id }}')">
+                        <span class="sv3-inv-no">{{ inv.invoice_number }}</span>
+                    </td>
+                    <td class="col-date" onclick="openDetailsDrawer('{{ inv.id }}')" style="white-space:nowrap; color:var(--text-muted); font-size:12.5px;">
+                        {{ inv.invoice_date }}
+                    </td>
+                    <td class="col-customer" onclick="openDetailsDrawer('{{ inv.id }}')">
+                        <div class="sv3-customer-cell">{{ inv.company_name }}</div>
+                        {% if inv.gstin %}
+                        <div class="sv3-customer-sub">{{ inv.gstin }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="col-shipto" onclick="openDetailsDrawer('{{ inv.id }}')" style="font-size:12.5px; color:var(--text-muted);">
+                        {{ inv.shipping_state or inv.billing_state or '—' }} 
+                        {% if inv.shipping_state_code or inv.billing_state_code %}
+                            (Code: {{ inv.shipping_state_code or inv.billing_state_code }})
+                        {% endif %}
+                    </td>
+                    <td class="col-dispatch" onclick="openDetailsDrawer('{{ inv.id }}')" style="font-size:12.5px; color:var(--text-muted);">
+                        {{ inv.dispatch_location or '—' }}
+                    </td>
+                    <td class="col-taxable sv3-tax" onclick="openDetailsDrawer('{{ inv.id }}')">₹{{ "%.2f"|format(inv.subtotal) }}</td>
+                    <td class="col-gst sv3-tax" onclick="openDetailsDrawer('{{ inv.id }}')">
+                        {% if inv.cgst > 0 %}C+S: ₹{{ "%.2f"|format(inv.cgst + inv.sgst) }}
+                        {% elif inv.igst > 0 %}IGST: ₹{{ "%.2f"|format(inv.igst) }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="col-tcs sv3-tax" onclick="openDetailsDrawer('{{ inv.id }}')">
+                        {% if inv.tcs_amount > 0 %}₹{{ "%.2f"|format(inv.tcs_amount) }}{% else %}—{% endif %}
+                    </td>
+                    <td class="col-total sv3-amount" onclick="openDetailsDrawer('{{ inv.id }}')" style="color:#1b5e20;">
+                        ₹{{ "%.2f"|format(inv.grand_total) }}
+                    </td>
+                    <td onclick="openDetailsDrawer('{{ inv.id }}')">
+                        {% if inv.status == 'CONFIRMED' %}
+                            <span class="sv3-badge sv3-badge-confirmed">Confirmed</span>
+                        {% elif inv.status == 'DRAFT' %}
+                            <span class="sv3-badge sv3-badge-draft">Draft</span>
+                        {% elif inv.status == 'CANCELLED' %}
+                            <span class="sv3-badge sv3-badge-cancelled">Cancelled</span>
+                        {% elif inv.status == 'PRINTED' %}
+                            <span class="sv3-badge sv3-badge-printed">Printed</span>
+                        {% elif inv.status == 'PAID' %}
+                            <span class="sv3-badge sv3-badge-paid">Paid</span>
+                        {% else %}
+                            <span class="sv3-badge" style="background:#f3f4f6;color:#6b7280;">{{ inv.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;" onclick="event.stopPropagation();">
+                        <div class="sv3-action-wrap">
+                            <button class="sv3-action-btn" onclick="sv3ToggleMenu(this)">
+                                Actions <i class="bi bi-chevron-down" style="font-size:10px;"></i>
+                            </button>
+                            <div class="sv3-action-menu">
+                                <a href="/sales/{{ inv.id }}/view"><i class="bi bi-eye"></i> View Preview</a>
+                                <a href="/sales/{{ inv.id }}/edit"><i class="bi bi-pencil"></i> Edit</a>
+                                <a href="/sales/{{ inv.id }}/duplicate"><i class="bi bi-files"></i> Duplicate</a>
+                                <hr>
+                                <a href="/sales/{{ inv.id }}/view" onclick="setTimeout(()=>window.print(),400)">
+                                    <i class="bi bi-printer"></i> Print Invoice
+                                </a>
+                                <a href="/sales/{{ inv.id }}/pdf"><i class="bi bi-file-earmark-pdf"></i> Download PDF</a>
+                                <hr>
+                                <form method="POST" action="/sales/{{ inv.id }}/delete" style="display:contents;" onsubmit="return confirm('Cancel / Delete this sales invoice?');">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="danger-item"><i class="bi bi-trash"></i> Cancel/Delete</button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── Mobile Responsive Card View ──────────────────────────────── -->
+    <div class="sv4-mobile-cards" style="display:none;">
+        {% for inv in invoices %}
+        <div class="sv4-mobile-card d-flex flex-column gap-2" onclick="openDetailsDrawer('{{ inv.id }}')">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="sv3-inv-no">{{ inv.invoice_number }}</span>
+                {% if inv.status == 'CONFIRMED' %}
+                    <span class="sv3-badge sv3-badge-confirmed">Confirmed</span>
+                {% elif inv.status == 'DRAFT' %}
+                    <span class="sv3-badge sv3-badge-draft">Draft</span>
+                {% elif inv.status == 'CANCELLED' %}
+                    <span class="sv3-badge sv3-badge-cancelled">Cancelled</span>
+                {% elif inv.status == 'PRINTED' %}
+                    <span class="sv3-badge sv3-badge-printed">Printed</span>
+                {% elif inv.status == 'PAID' %}
+                    <span class="sv3-badge sv3-badge-paid">Paid</span>
+                {% endif %}
+            </div>
+            <div style="font-weight:600; color:var(--text-dark);">{{ inv.company_name }}</div>
+            <div class="d-flex justify-content-between text-muted" style="font-size:12px;">
+                <span>{{ inv.invoice_date }}</span>
+                <span class="fw-bold text-success" style="font-family:monospace;">₹{{ "%.2f"|format(inv.grand_total) }}</span>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-2" onclick="event.stopPropagation();">
+                <a href="/sales/{{ inv.id }}/view" class="btn btn-xs btn-outline-secondary py-1 px-2.5" style="font-size:11px;">View</a>
+                <a href="/sales/{{ inv.id }}/pdf" class="btn btn-xs btn-outline-danger py-1 px-2.5" style="font-size:11px;">PDF</a>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 
     <!-- Pagination -->
@@ -359,6 +597,27 @@
     {% endif %}
 
 </div><!-- erp-card -->
+
+<!-- ── Details Drawer ──────────────────────────────────────────── -->
+<div id="invoice-details-drawer" class="invoice-drawer">
+    <div class="drawer-header">
+        <h5 class="drawer-title" id="drawer-invoice-num">Invoice Details</h5>
+        <button class="btn-close-drawer" onclick="closeDetailsDrawer()">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawer-content">
+        <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="mt-2 text-muted">Fetching invoice details...</p>
+        </div>
+    </div>
+    <div class="drawer-footer">
+        <a id="drawer-view-link" href="#" class="btn btn-sm btn-primary">Open Full Invoice</a>
+        <a id="drawer-edit-link" href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <a id="drawer-pdf-link" href="#" class="btn btn-sm btn-outline-danger">Download PDF</a>
+        <button id="drawer-print-btn" onclick="window.print()" class="btn btn-sm btn-outline-dark">Print</button>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -375,12 +634,12 @@ function toggleCustomDates() {
     });
 }
 
-/* ── Live search ────────────────────────────────────────────── */
-function sv3LiveSearch(q) {
-    const term = q.toLowerCase();
-    document.querySelectorAll('#sv3-main-table tbody tr').forEach(tr => {
-        const hay = (tr.dataset.search || '').toLowerCase();
-        tr.style.display = (!term || hay.includes(term)) ? '' : 'none';
+/* ── Columns config toggle ─────────────────────────────────────── */
+function toggleTableColumn(colClass) {
+    const cb = document.querySelector(`.col-toggle[value="${colClass}"]`);
+    const ths = document.querySelectorAll(`.${colClass}`);
+    ths.forEach(el => {
+        el.style.display = cb.checked ? '' : 'none';
     });
 }
 
@@ -402,7 +661,7 @@ function sv3UpdateBulk() {
 
 function sv3BulkAction() {
     const ids = [...document.querySelectorAll('.sv3-row-check:checked')].map(c => c.value);
-    alert('Selected IDs: ' + ids.join(', ') + '\n\nBulk actions (export, delete) can be configured here.');
+    alert('Selected IDs: ' + ids.join(', ') + '\n\nBulk actions (export) can be performed.');
 }
 
 /* ── Action dropdown ────────────────────────────────────────── */
@@ -424,15 +683,184 @@ function exportExcel() {
     const p = new URLSearchParams(window.location.search);
     window.location.href = '/sales/export?' + p.toString();
 }
-function exportPDF() {
-    const p = new URLSearchParams(window.location.search);
-    window.location.href = '/sales/export/pdf?' + p.toString();
+
+/* ── Details Drawer AJAX handler ───────────────────────────────── */
+function openDetailsDrawer(invoiceId) {
+    const drawer = document.getElementById('invoice-details-drawer');
+    drawer.classList.add('open');
+    
+    const body = document.getElementById('drawer-content');
+    body.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="mt-2 text-muted">Fetching invoice details...</p>
+        </div>
+    `;
+    
+    fetch(`/api/sales/${invoiceId}/details`)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to retrieve invoice details.');
+            return response.json();
+        })
+        .then(data => {
+            const inv = data.invoice;
+            const party = data.party || {};
+            const items = data.items || [];
+            
+            // Set footer link targets
+            document.getElementById('drawer-invoice-num').textContent = inv.invoice_number;
+            document.getElementById('drawer-view-link').href = `/sales/${invoiceId}/view`;
+            document.getElementById('drawer-edit-link').href = `/sales/${invoiceId}/edit`;
+            document.getElementById('drawer-pdf-link').href = `/sales/${invoiceId}/pdf`;
+            
+            let itemsHtml = '';
+            items.forEach((item, idx) => {
+                itemsHtml += `
+                    <tr style="border-bottom:1px solid #cbd5e1;">
+                        <td style="padding: 6px 4px;">${idx + 1}</td>
+                        <td style="padding: 6px 4px;"><strong>${item.description || item.material_name || '—'}</strong></td>
+                        <td style="padding: 6px 4px; text-align:center;">${item.quantity ? parseFloat(item.quantity).toFixed(2) : '—'}</td>
+                        <td style="padding: 6px 4px; text-align:center;">${item.uom || '—'}</td>
+                        <td style="padding: 6px 4px; text-align:right; font-family:monospace;">₹ ${parseFloat(item.rate || 0).toFixed(2)}</td>
+                        <td style="padding: 6px 4px; text-align:right; font-family:monospace; font-weight:700;">₹ ${parseFloat(item.amount || 0).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            body.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge ${inv.status === 'CONFIRMED' ? 'bg-success' : (inv.status === 'DRAFT' ? 'bg-warning' : 'bg-danger')}" style="padding: 5px 10px;">
+                        ${inv.status}
+                    </span>
+                    <span class="text-muted" style="font-size:12px;">FY: ${inv.financial_year || '—'}</span>
+                </div>
+                
+                <table class="drawer-meta-table">
+                    <tr>
+                        <td class="lbl">Date:</td>
+                        <td>${inv.invoice_date}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Customer:</td>
+                        <td>
+                            <strong>${inv.billing_party_name || party.company_name || '—'}</strong><br>
+                            <span class="text-muted" style="font-family:monospace; font-size:11px;">GSTIN: ${inv.billing_gstin || party.gstin || '—'}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Billing Address:</td>
+                        <td>${inv.billing_address || party.billing_address || '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Shipping State:</td>
+                        <td>${inv.shipping_state || inv.billing_state || '—'} (Code: ${inv.shipping_state_code || inv.billing_state_code || '—'})</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Dispatch From:</td>
+                        <td>${inv.dispatch_location || '—'}<br><span class="text-muted" style="font-size:11px;">${inv.dispatch_address || ''}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Transporter:</td>
+                        <td>${inv.transporter || '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Vehicle No:</td>
+                        <td><span class="mono">${inv.vehicle_number || '—'}</span></td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Bank Details:</td>
+                        <td>${inv.company_bank_name || '—'} - Account: ${inv.company_bank_account_number || '—'}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Created By:</td>
+                        <td>${inv.created_by || 'System'}</td>
+                    </tr>
+                </table>
+                
+                <h6 class="border-bottom pb-1 mb-2 fw-bold text-success">Line Items (${items.length})</h6>
+                <table style="width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:16px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #94a3b8; background: #f8fafc; font-weight:700;">
+                            <th style="padding: 4px;">#</th>
+                            <th style="padding: 4px;">Particulars</th>
+                            <th style="padding: 4px; text-align:center;">Qty</th>
+                            <th style="padding: 4px; text-align:center;">UOM</th>
+                            <th style="padding: 4px; text-align:right;">Rate</th>
+                            <th style="padding: 4px; text-align:right;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+                
+                <h6 class="border-bottom pb-1 mb-2 fw-bold text-success">Tax & Summary</h6>
+                <table class="drawer-meta-table">
+                    <tr>
+                        <td class="lbl">Subtotal:</td>
+                        <td style="text-align:right; font-family:monospace;">₹ ${parseFloat(inv.subtotal || 0).toFixed(2)}</td>
+                    </tr>
+                    ${data.is_intra ? `
+                    <tr>
+                        <td class="lbl">CGST:</td>
+                        <td style="text-align:right; font-family:monospace;">₹ ${parseFloat(inv.cgst || 0).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">SGST:</td>
+                        <td style="text-align:right; font-family:monospace;">₹ ${parseFloat(inv.sgst || 0).toFixed(2)}</td>
+                    </tr>
+                    ` : `
+                    <tr>
+                        <td class="lbl">IGST:</td>
+                        <td style="text-align:right; font-family:monospace;">₹ ${parseFloat(inv.igst || 0).toFixed(2)}</td>
+                    </tr>
+                    `}
+                    ${inv.tcs_amount ? `
+                    <tr>
+                        <td class="lbl">TCS:</td>
+                        <td style="text-align:right; font-family:monospace;">₹ ${parseFloat(inv.tcs_amount || 0).toFixed(2)}</td>
+                    </tr>
+                    ` : ''}
+                    ${inv.round_off ? `
+                    <tr>
+                        <td class="lbl">Round Off:</td>
+                        <td style="text-align:right; font-family:monospace; color:${inv.round_off < 0 ? 'red' : 'green'};">${inv.round_off >= 0 ? '+' : ''}${parseFloat(inv.round_off).toFixed(2)}</td>
+                    </tr>
+                    ` : ''}
+                    <tr style="font-size:14px; font-weight:bold; border-top: 1.5px solid #1a5c38;">
+                        <td class="lbl text-success">Grand Total:</td>
+                        <td style="text-align:right; font-family:monospace; color:#1a5c38;">₹ ${parseFloat(inv.grand_total || 0).toFixed(2)}</td>
+                    </tr>
+                </table>
+                <div style="font-size:11px; color:#64748b; font-style:italic;">
+                    <strong>Words:</strong> ${inv.amount_in_words || '—'}
+                </div>
+            `;
+        })
+        .catch(err => {
+            body.innerHTML = `
+                <div class="alert alert-danger p-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> ${err.message}
+                </div>
+            `;
+        });
 }
 
-/* ── Auto-open filter panel if filters active ──────────────── */
-{% set has_filters = (customer_id and customer_id != 'all') or (material_id and material_id != 'all') or (status and status != 'all') or (date_filter and date_filter != 'all') or (gst_type and gst_type != 'all') %}
-{% if has_filters %}
+function closeDetailsDrawer() {
+    document.getElementById('invoice-details-drawer').classList.remove('open');
+}
+
+// Auto-open filters if active filters count > 0
+{% if active_filters_count > 0 %}
 document.getElementById('sv3-filter-panel').classList.add('open');
 {% endif %}
+
+// Close drawer on clicking outside
+document.addEventListener('click', function(e) {
+    const drawer = document.getElementById('invoice-details-drawer');
+    if (drawer.classList.contains('open') && !drawer.contains(e.target) && !e.target.closest('#sv3-main-table tbody tr') && !e.target.closest('.sv4-mobile-card')) {
+        closeDetailsDrawer();
+    }
+});
 </script>
 {% endblock %}

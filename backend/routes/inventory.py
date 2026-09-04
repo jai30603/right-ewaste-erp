@@ -42,9 +42,11 @@ def inventory():
     month = request.args.get("month", "all").strip()
     start_date = request.args.get("start_date", "").strip()
     end_date = request.args.get("end_date", "").strip()
+    stock_status = request.args.get("stock_status", "").strip()
 
     parsed_start, parsed_end = get_filter_date_range(date_filter, year, month, start_date, end_date)
-    summary = get_stock_summary(q, category, parsed_start, parsed_end)
+    # Call get_inventory directly to leverage stock_status query options
+    summary = get_inventory(search_query=q, category=category, stock_status=stock_status or None)
     categories = get_all_categories()
 
     # Calculate Summary Metrics
@@ -72,6 +74,7 @@ def inventory():
         month=month,
         start_date=start_date,
         end_date=end_date,
+        stock_status=stock_status,
         total_materials=total_materials,
         low_stock_alerts=low_stock_alerts,
         total_purchased=total_purchased,
@@ -469,3 +472,38 @@ def export_ledger_pdf(material_id):
     base_filename = f"ledger_{material['material_code']}_report"
     filename = get_report_filename(base_filename, "pdf", date_filter, year, month, start_date, end_date)
     return send_pdf_response(pdf_bytes, filename)
+
+
+@inventory_bp.route("/inventory/batches")
+def inventory_batches():
+    query = request.args.get("q", "").strip()
+    status_filter = request.args.get("status", "all").strip()
+    from repositories.batch_repository import get_all_batches
+    batches = get_all_batches(query=query, status=status_filter)
+    return render_template(
+        "inventory/batch_list.html",
+        batches=batches,
+        query=query,
+        status_filter=status_filter,
+    )
+
+
+@inventory_bp.route("/inventory/timeline")
+def inventory_timeline():
+    query = request.args.get("q", "").strip()
+    search_results = {}
+    if query:
+        from repositories.batch_repository import get_all_batches
+        from repositories.sales_repository import get_all_invoices
+        from repositories.purchase_repository import get_all_purchase_invoices
+        search_results = {
+            "batches": get_all_batches(query=query),
+            "purchases": get_all_purchase_invoices(search_query=query),
+            "sales": get_all_invoices(q=query),
+        }
+    return render_template(
+        "inventory/material_timeline.html",
+        query=query,
+        search_results=search_results,
+    )
+

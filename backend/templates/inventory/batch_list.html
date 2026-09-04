@@ -1,5 +1,5 @@
 {% extends "shared/base.html" %}
-{% block title %}Material Batches – Inventory Workspace{% endblock %}
+{% block title %}Material Batches Workspace – Right Ewaste ERP{% endblock %}
 
 {% block styles %}
 <link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
@@ -11,13 +11,50 @@
 
 <div class="inv-page-body">
 
+  {# ── SECTION 1: BATCH WORKSPACE KPIs ── #}
+  {% set active_batches = batches|selectattr('status', 'equalto', 'ACTIVE')|list if batches else [] %}
+  {% set processing_batches = batches|selectattr('status', 'equalto', 'PROCESSING')|list if batches else [] %}
+  {% set completed_batches = batches|selectattr('status', 'equalto', 'COMPLETED')|list if batches else [] %}
+  <div class="inv-kpi-grid mb-4" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+    <div class="inv-kpi-card kpi-teal">
+      <div class="inv-kpi-icon icon-teal"><i class="bi bi-stack"></i></div>
+      <div class="inv-kpi-value">{{ batches|length if batches else 0 }}</div>
+      <div class="inv-kpi-label">Total Batches</div>
+      <div class="inv-kpi-sub">Registered Batches</div>
+    </div>
+    <div class="inv-kpi-card kpi-success">
+      <div class="inv-kpi-icon icon-green"><i class="bi bi-play-circle"></i></div>
+      <div class="inv-kpi-value">{{ active_batches|length }}</div>
+      <div class="inv-kpi-label">Active Batches</div>
+      <div class="inv-kpi-sub">Ready for Processing</div>
+    </div>
+    <div class="inv-kpi-card">
+      <div class="inv-kpi-icon icon-info"><i class="bi bi-gear-wide-connected"></i></div>
+      <div class="inv-kpi-value">{{ processing_batches|length }}</div>
+      <div class="inv-kpi-label">Processing</div>
+      <div class="inv-kpi-sub">Active Production Jobs</div>
+    </div>
+    <div class="inv-kpi-card">
+      <div class="inv-kpi-icon icon-purple"><i class="bi bi-weight"></i></div>
+      <div class="inv-kpi-value">
+        {% if batches %}
+          {{ "%.1f"|format(batches|sum(attribute='remaining_weight')) }}
+        {% else %}
+          0.0
+        {% endif %}
+      </div>
+      <div class="inv-kpi-label">Remaining Wt (kg)</div>
+      <div class="inv-kpi-sub">Raw Weight in Store</div>
+    </div>
+  </div>
+
   <!-- Toolbar ──────────────────────────────────────────────────────────── -->
-  <form method="get" action="/inventory/batches">
+  <form method="get" action="/inventory/batches" id="batchesFilterForm">
     <div class="inv-toolbar">
       <div class="inv-search-wrap">
         <i class="bi bi-search"></i>
-        <input type="text" name="query" id="batchSearch" class="inv-search-input"
-               placeholder="Search batch, material, supplier, invoice…"
+        <input type="text" name="q" id="batchSearch" class="inv-search-input"
+               placeholder="Search batch number, supplier, invoice…"
                value="{{ query or '' }}" autocomplete="off">
       </div>
 
@@ -32,18 +69,18 @@
       <div class="inv-toolbar-sep d-none d-md-block"></div>
 
       <div class="inv-view-toggle d-none d-md-flex">
-        <button type="button" class="inv-view-btn" data-view="cards" onclick="invSetView('cards')" title="Card View">
-          <i class="bi bi-grid"></i>
-        </button>
         <button type="button" class="inv-view-btn" data-view="table" onclick="invSetView('table')" title="Table View">
           <i class="bi bi-table"></i>
+        </button>
+        <button type="button" class="inv-view-btn" data-view="cards" onclick="invSetView('cards')" title="Card Grid">
+          <i class="bi bi-grid"></i>
         </button>
       </div>
 
       <button type="submit" class="inv-btn inv-btn-primary">
         <i class="bi bi-funnel"></i> Filter
       </button>
-      {% if query or status %}
+      {% if query or (status and status != 'all') %}
       <a href="/inventory/batches" class="inv-btn inv-btn-outline"><i class="bi bi-x"></i> Clear</a>
       {% endif %}
     </div>
@@ -52,7 +89,7 @@
   {% if batches %}
 
   <!-- ── CARD VIEW ─────────────────────────────────────────────────────── -->
-  <div data-inv-view="cards">
+  <div data-inv-view="cards" style="display:none;">
     <div class="inv-batch-grid">
       {% for batch in batches %}
       {% set st = batch.processing_status or batch.status or '' %}
@@ -68,7 +105,7 @@
         {% set badge_cls = 'inv-badge-warning' %}
       {% endif %}
 
-      <div class="inv-batch-card">
+      <div class="inv-batch-card" onclick="invShowDrawer('/inventory/batch/{{ batch.batch_number }}', 'Batch Traceability Details')">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
           <div>
             <div class="inv-batch-num">
@@ -88,11 +125,7 @@
           <div>
             <div class="br-label">Invoice</div>
             <div class="br-value" style="font-family:monospace;font-size:11px;">
-              {% if batch.purchase_invoice_id %}
-              <a href="/purchase/{{ batch.purchase_invoice_id }}/view" style="color:var(--inv-primary);">
-                {{ batch.invoice_number or '—' }}
-              </a>
-              {% else %}{{ batch.invoice_number or '—' }}{% endif %}
+              {{ batch.invoice_number or '—' }}
             </div>
           </div>
           <div>
@@ -115,7 +148,7 @@
           {% endif %}
         </div>
 
-        <div class="inv-batch-footer">
+        <div class="inv-batch-footer" onclick="event.stopPropagation()">
           <div style="font-size:11px;color:var(--text-xmuted);">
             <i class="bi bi-clock"></i>
             {% if batch.age_days is defined %}
@@ -125,9 +158,9 @@
             {% endif %}
           </div>
           <div style="display:flex;gap:6px;">
-            <a href="/inventory/batch/{{ batch.batch_number }}" class="inv-btn inv-btn-primary" style="font-size:12px;padding:6px 12px;">
+            <button type="button" onclick="invShowDrawer('/inventory/batch/{{ batch.batch_number }}', 'Batch Traceability Details')" class="inv-btn inv-btn-primary" style="font-size:12px;padding:6px 12px;">
               <i class="bi bi-diagram-3"></i> Trace
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -136,7 +169,7 @@
   </div>
 
   <!-- ── TABLE VIEW ────────────────────────────────────────────────────── -->
-  <div data-inv-view="table" style="display:none;">
+  <div data-inv-view="table">
     <div class="inv-card">
       <div class="inv-table-wrap">
         <table class="inv-table">
@@ -146,9 +179,9 @@
               <th data-sort>Material</th>
               <th data-sort>Supplier</th>
               <th>Invoice</th>
-              <th data-sort>Date</th>
-              <th class="col-num" data-sort>Qty</th>
-              <th class="col-num" data-sort>Weight</th>
+              <th data-sort>Created Date</th>
+              <th class="col-num" data-sort>Qty In</th>
+              <th class="col-num" data-sort>Weight In</th>
               <th class="col-num" data-sort>Remaining Wt</th>
               <th>Status</th>
               <th class="col-center">Action</th>
@@ -157,7 +190,7 @@
           <tbody>
             {% for batch in batches %}
             {% set st = batch.processing_status or batch.status or '' %}
-            <tr>
+            <tr style="cursor: pointer;" onclick="invHandleRowClick(event, this, '/inventory/batch/{{ batch.batch_number }}', 'Batch Traceability Details')">
               <td>
                 <span style="font-family:monospace;font-size:12.5px;font-weight:700;color:var(--inv-primary);">
                   {{ batch.batch_number or '—' }}
@@ -167,7 +200,7 @@
               <td style="color:var(--text-muted);">{{ batch.supplier_name or '—' }}</td>
               <td>
                 {% if batch.purchase_invoice_id %}
-                <a href="/purchase/{{ batch.purchase_invoice_id }}/view" style="font-family:monospace;font-size:12px;color:var(--inv-primary);">
+                <a href="/purchase/{{ batch.purchase_invoice_id }}/view" onclick="event.stopPropagation();" style="font-family:monospace;font-size:12px;color:var(--inv-primary);">
                   {{ batch.invoice_number or '—' }}
                 </a>
                 {% else %}
@@ -191,10 +224,10 @@
                   <span class="inv-badge inv-badge-warning">{{ st or '—' }}</span>
                 {% endif %}
               </td>
-              <td class="col-center">
-                <a href="/inventory/batch/{{ batch.batch_number }}" class="inv-btn inv-btn-outline" style="font-size:12px;padding:5px 10px;">
+              <td class="col-center" onclick="event.stopPropagation()">
+                <button type="button" onclick="invShowDrawer('/inventory/batch/{{ batch.batch_number }}', 'Batch Traceability Details')" class="inv-btn inv-btn-outline" style="font-size:12px;padding:5px 10px;">
                   <i class="bi bi-diagram-3"></i> Trace
-                </a>
+                </button>
               </td>
             </tr>
             {% endfor %}
@@ -221,7 +254,7 @@
   </div>
   {% endif %}
 
-</div><!-- /inv-page-body -->
+</div>
 
 {% endblock %}
 
@@ -230,7 +263,14 @@
 <script>
 window.INV_PAGE = 'batches';
 document.addEventListener('DOMContentLoaded', () => {
-  invInitViewToggle('cards');
+  invInitViewToggle('table');
 });
+
+function invHandleRowClick(event, row, url, title) {
+  if (event.target.closest('a') || event.target.closest('button')) {
+    return;
+  }
+  invShowDrawer(url, title);
+}
 </script>
 {% endblock %}

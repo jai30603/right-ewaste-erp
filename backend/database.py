@@ -14,23 +14,7 @@ def initialize_database():
         conn.execute("PRAGMA foreign_keys = ON")
         cursor = conn.cursor()
         
-        # Pre-schema migration for storage_providers columns if table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='storage_providers'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(storage_providers)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "provider_type" not in cols:
-                cursor.execute("ALTER TABLE storage_providers ADD COLUMN provider_type TEXT")
-            if "is_active" not in cols:
-                cursor.execute("ALTER TABLE storage_providers ADD COLUMN is_active INTEGER DEFAULT 0")
-            if "health_status" not in cols:
-                cursor.execute("ALTER TABLE storage_providers ADD COLUMN health_status TEXT DEFAULT 'UNKNOWN'")
-            if "last_connection_test" not in cols:
-                cursor.execute("ALTER TABLE storage_providers ADD COLUMN last_connection_test DATETIME")
-            if "last_synchronization" not in cols:
-                cursor.execute("ALTER TABLE storage_providers ADD COLUMN last_synchronization DATETIME")
-            if "updated_at" not in cols:
-                cursor.execute("ALTER TABLE storage_providers ADD COLUMN updated_at DATETIME")
+
 
         # 1. Run all schema SQL scripts dynamically from database/schema
         schema_dir = BASE_DIR / "database" / "schema"
@@ -40,6 +24,66 @@ def initialize_database():
                 with open(sql_file, "r", encoding="utf-8") as f:
                     sql_script = f.read()
                 cursor.executescript(sql_script)
+        
+        # Create company_bank table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS company_bank (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                bank_name TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                ifsc_code TEXT NOT NULL,
+                branch_name TEXT,
+                account_type TEXT DEFAULT 'Current',
+                is_active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # Seed default company bank if empty
+        cursor.execute("SELECT COUNT(*) FROM company_bank")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO company_bank (bank_name, account_number, ifsc_code, branch_name, account_type)
+                VALUES ('HDFC Bank Ltd', '50200087654321', 'HDFC0001203', 'Sector 63, Noida', 'Current Account')
+            """)
+            cursor.execute("""
+                INSERT INTO company_bank (bank_name, account_number, ifsc_code, branch_name, account_type)
+                VALUES ('State Bank of India', '30099887766', 'SBIN0004560', 'Bhiwandi Branch', 'Current Account')
+            """)
+
+        # Create dispatch_location table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dispatch_location (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                location_name TEXT NOT NULL UNIQUE,
+                address_line_1 TEXT NOT NULL,
+                address_line_2 TEXT,
+                city TEXT NOT NULL,
+                state TEXT NOT NULL,
+                state_code TEXT NOT NULL,
+                gstin TEXT,
+                is_active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # Seed default dispatch location if empty
+        cursor.execute("SELECT COUNT(*) FROM dispatch_location")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("""
+                INSERT INTO dispatch_location (location_name, address_line_1, address_line_2, city, state, state_code, gstin)
+                VALUES ('Main Facility (Noida)', 'Building C-1, Sector 63', 'Industrial Area', 'Noida', 'Uttar Pradesh', '09', '09AAACR1234A1Z9')
+            """)
+            cursor.execute("""
+                INSERT INTO dispatch_location (location_name, address_line_1, address_line_2, city, state, state_code, gstin)
+                VALUES ('Warehouse Bhiwandi', 'Building No. C1, 1st Floor', 'Antariksh Logidrome, Village Amane', 'Bhiwandi', 'Maharashtra', '27', '27AALCR5544C1ZB')
+            """)
+        
+        # Seed default Service / Charge material if not present
+        cursor.execute("SELECT id FROM material WHERE material_code = 'SERVICE_CHARGE'")
+        if not cursor.fetchone():
+            cursor.execute("""
+                INSERT INTO material (id, material_code, material_name, hsn_code, uom, gst_percentage, tracking_type)
+                VALUES (999999, 'SERVICE_CHARGE', 'Service / Charge', '9987', 'NOS', 18.0, 'QUANTITY_ONLY')
+            """)
         
         # 2. Run idempotent migrations to add columns if tables exist but lack them
         
@@ -62,6 +106,60 @@ def initialize_database():
                 cursor.execute("ALTER TABLE sales_invoice ADD COLUMN print_count INTEGER DEFAULT 0")
             if "pdf_download_count" not in columns:
                 cursor.execute("ALTER TABLE sales_invoice ADD COLUMN pdf_download_count INTEGER DEFAULT 0")
+            if "billing_party_name" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN billing_party_name TEXT")
+            if "billing_address" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN billing_address TEXT")
+            if "billing_gstin" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN billing_gstin TEXT")
+            if "billing_state" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN billing_state TEXT")
+            if "billing_state_code" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN billing_state_code TEXT")
+            if "billing_contact" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN billing_contact TEXT")
+            if "shipping_party_name" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN shipping_party_name TEXT")
+            if "shipping_address" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN shipping_address TEXT")
+            if "shipping_gstin" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN shipping_gstin TEXT")
+            if "shipping_state" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN shipping_state TEXT")
+            if "shipping_state_code" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN shipping_state_code TEXT")
+            if "shipping_contact" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN shipping_contact TEXT")
+            if "dispatch_location" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN dispatch_location TEXT")
+            if "dispatch_address" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN dispatch_address TEXT")
+            if "dispatch_gstin" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN dispatch_gstin TEXT")
+            if "dispatch_state" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN dispatch_state TEXT")
+            if "dispatch_state_code" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN dispatch_state_code TEXT")
+            if "company_bank_name" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN company_bank_name TEXT")
+            if "company_bank_account_number" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN company_bank_account_number TEXT")
+            if "company_bank_ifsc" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN company_bank_ifsc TEXT")
+            if "company_bank_branch" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN company_bank_branch TEXT")
+            if "financial_year" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN financial_year TEXT")
+            if "tcs_rate" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN tcs_rate REAL DEFAULT 0.0")
+            if "tcs_amount" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN tcs_amount REAL DEFAULT 0.0")
+            if "tcs_base_amount" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN tcs_base_amount REAL DEFAULT 0.0")
+            if "tcs_applicable" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN tcs_applicable INTEGER DEFAULT 0")
+            if "amount_in_words" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice ADD COLUMN amount_in_words TEXT")
 
         # Migrations for purchase_invoice
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='purchase_invoice'")
@@ -232,6 +330,24 @@ def initialize_database():
                 cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN batch_id INTEGER")
             if "batch_number" not in columns:
                 cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN batch_number TEXT")
+            if "item_type" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN item_type TEXT DEFAULT 'Goods'")
+            if "description" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN description TEXT")
+            if "hsn_sac" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN hsn_sac TEXT")
+            if "uom" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN uom TEXT DEFAULT 'KGS'")
+            if "item_reference" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN item_reference TEXT")
+            if "gst_percentage" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN gst_percentage REAL DEFAULT 18.0")
+            if "cgst" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN cgst REAL DEFAULT 0.0")
+            if "sgst" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN sgst REAL DEFAULT 0.0")
+            if "igst" not in columns:
+                cursor.execute("ALTER TABLE sales_invoice_item ADD COLUMN igst REAL DEFAULT 0.0")
 
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='number_series'")
         if cursor.fetchone():
@@ -251,225 +367,7 @@ def initialize_database():
             except Exception:
                 pass
 
-        # Seed EDMS Storage Provider & Root Folders
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='storage_providers'")
-        if cursor.fetchone():
-            cursor.execute("""
-                INSERT OR IGNORE INTO storage_providers (id, provider_key, provider_name, status, config_json, is_default)
-                VALUES (1, 'local', 'Local Storage Provider', 'ACTIVE', '{"base_dir": "storage"}', 1)
-            """)
 
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='folders'")
-        if cursor.fetchone():
-            import uuid
-            root_folders = [
-                ('Company Drive', 'COMPANY', '/company'),
-                ('Users', 'USER', '/users'),
-                ('Modules', 'MODULE', '/modules'),
-                ('System', 'SYSTEM', '/system'),
-                ('Temporary', 'TEMPORARY', '/temp'),
-                ('Trash', 'TRASH', '/trash')
-            ]
-        # Idempotent Migrations for multi-repository support
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='folders'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(folders)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "repository_id" not in cols:
-                cursor.execute("ALTER TABLE folders ADD COLUMN repository_id INTEGER")
-                cursor.execute("UPDATE folders SET repository_id = 1")
-                cursor.execute("UPDATE folders SET repository_id = 2 WHERE path = '/company' OR path LIKE '/company/%'")
-
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='documents'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(documents)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "repository_id" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN repository_id INTEGER")
-                cursor.execute("UPDATE documents SET repository_id = 1")
-                cursor.execute("UPDATE documents SET repository_id = 2 WHERE folder_id IN (SELECT id FROM folders WHERE repository_id = 2)")
-
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='recycle_bin'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(recycle_bin)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "repository_id" not in cols:
-                cursor.execute("ALTER TABLE recycle_bin ADD COLUMN repository_id INTEGER")
-                cursor.execute("UPDATE recycle_bin SET repository_id = 1")
-
-        # Migrations for documents table (Content Intelligence)
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='documents'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(documents)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "version" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN version INTEGER DEFAULT 1")
-            if "classification" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN classification TEXT DEFAULT 'INTERNAL'")
-            if "lifecycle_status" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN lifecycle_status TEXT DEFAULT 'UPLOADED'")
-            if "ocr_text" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN ocr_text TEXT")
-            if "ai_summary" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN ai_summary TEXT")
-            if "retention_until" not in cols:
-                cursor.execute("ALTER TABLE documents ADD COLUMN retention_until TIMESTAMP")
-
-        # Users UUID migration
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(users)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "uuid" not in cols:
-                cursor.execute("ALTER TABLE users ADD COLUMN uuid TEXT")
-            
-            cursor.execute("SELECT id, uuid FROM users")
-            users_list = cursor.fetchall()
-            import uuid
-            for u in users_list:
-                if not u[1]:
-                    cursor.execute("UPDATE users SET uuid = ? WHERE id = ?", (str(uuid.uuid4()), u[0]))
-
-        # Storage providers config backfill
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='storage_providers'")
-        if cursor.fetchone():
-            cursor.execute("UPDATE storage_providers SET config_json = 'KTQ=' WHERE config_json = '{}'")
-
-        # Seed Document Tags
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_tags'")
-        if cursor.fetchone():
-            initial_tags = [
-                ('GST', '#10b981'),
-                ('Invoice', '#3b82f6'),
-                ('Vendor', '#6366f1'),
-                ('Certificate', '#8b5cf6'),
-                ('Hazardous', '#ef4444'),
-                ('Internal', '#64748b'),
-                ('Audit', '#f59e0b'),
-                ('Compliance', '#14b8a6'),
-                ('Safety', '#ec4899'),
-                ('Legal', '#06b6d4')
-            ]
-            for tag_name, color in initial_tags:
-                cursor.execute("INSERT OR IGNORE INTO document_tags (tag_name, color_hex) VALUES (?, ?)", (tag_name, color))
-
-        # Migrations for conversations table to support groups
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='conversations'")
-        if cursor.fetchone():
-            cursor.execute("PRAGMA table_info(conversations)")
-            cols = [row[1] for row in cursor.fetchall()]
-            if "type" not in cols:
-                cursor.execute("ALTER TABLE conversations ADD COLUMN type TEXT DEFAULT 'DIRECT'")
-            if "name" not in cols:
-                cursor.execute("ALTER TABLE conversations ADD COLUMN name TEXT")
-            if "description" not in cols:
-                cursor.execute("ALTER TABLE conversations ADD COLUMN description TEXT")
-            if "created_by" not in cols:
-                cursor.execute("ALTER TABLE conversations ADD COLUMN created_by INTEGER")
-            if "owner_id" not in cols:
-                cursor.execute("ALTER TABLE conversations ADD COLUMN owner_id INTEGER")
-
-        # Seed default groups
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='conversations'")
-        if cursor.fetchone():
-            default_groups = [
-                ('General', 'Company-wide general discussions'),
-                ('Purchase Team', 'Purchases and supplier discussions'),
-                ('Sales Team', 'Sales and customer invoices'),
-                ('Processing Team', 'Processing jobs and e-waste processing'),
-                ('Inventory Team', 'Stock, warehouse, and material balance'),
-                ('Warehouse', 'Warehouse logistics and material movements'),
-                ('HR', 'HR, payroll, and leave management'),
-                ('Management', 'ERP management and business decisions')
-            ]
-            for gname, desc in default_groups:
-                cursor.execute("SELECT id FROM conversations WHERE type='GROUP' AND name=?", (gname,))
-                if not cursor.fetchone():
-                    cursor.execute("""
-                        INSERT INTO conversations (type, name, description, created_by, owner_id, status)
-                        VALUES ('GROUP', ?, ?, 1, 1, 'ACTIVE')
-                    """, (gname, desc))
-                    conv_id = cursor.lastrowid
-                    
-                    # Auto-add all active users to default groups
-                    cursor.execute("SELECT id FROM users WHERE status='ACTIVE'")
-                    for urow in cursor.fetchall():
-                        cursor.execute("""
-                            INSERT OR IGNORE INTO conversation_participants (conversation_id, user_id)
-                            VALUES (?, ?)
-                        """, (conv_id, urow[0]))
-
-        # Seed default modules in module_registry
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='module_registry'")
-        if cursor.fetchone():
-            default_modules = [
-                ('EDMS', 'bi bi-folder-symlink-fill', '{"description": "Enterprise Document Management System"}'),
-                ('Tasks', 'bi bi-clipboard-check-fill', '{"description": "ERP Operations Tasks"}'),
-                ('Purchase', 'bi bi-cart-fill', '{"description": "Purchase Inward Module"}'),
-                ('Sales', 'bi bi-receipt', '{"description": "Sales Invoices Module"}'),
-                ('Inventory', 'bi bi-boxes', '{"description": "Inventory Stock & Warehouse"}')
-            ]
-            for mname, micon, mconfig in default_modules:
-                cursor.execute("SELECT id FROM module_registry WHERE module_name = ?", (mname,))
-                if not cursor.fetchone():
-                    cursor.execute("""
-                        INSERT INTO module_registry (module_name, module_icon, config_json)
-                        VALUES (?, ?, ?)
-                    """, (mname, micon, mconfig))
-
-            # Seed default resource registries
-            default_resources = [
-                ('DOCUMENT', 'EDMS', '{"deep_link_template": "/api/v1/documents/{id}/download", "label": "EDMS Document"}'),
-                ('TASK', 'Tasks', '{"deep_link_template": "/tasks/view/{id}", "label": "ERP Task"}'),
-                ('PURCHASE_ORDER', 'Purchase', '{"deep_link_template": "/purchase/orders/view/{id}", "label": "Purchase Order"}'),
-                ('INVENTORY_ITEM', 'Inventory', '{"deep_link_template": "/inventory/items/view/{id}", "label": "Inventory Item"}')
-            ]
-            for rtype, smod, rconfig in default_resources:
-                cursor.execute("SELECT id FROM resource_registry WHERE resource_type = ?", (rtype,))
-                if not cursor.fetchone():
-                    cursor.execute("""
-                        INSERT INTO resource_registry (resource_type, source_module, config_json)
-                        VALUES (?, ?, ?)
-                    """, (rtype, smod, rconfig))            # Backfill Phase 3 tables
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='chat_file_reference'")
-            if cursor.fetchone():
-                cursor.execute("""
-                    INSERT INTO chat_file_reference (document_id, message_id, conversation_id, sender_id, shared_at)
-                    SELECT CAST(sr.resource_id AS INTEGER), sr.message_id, m.conversation_id, sr.shared_by, sr.shared_at
-                    FROM shared_resources sr
-                    JOIN messages m ON sr.message_id = m.id
-                    JOIN documents d ON CAST(sr.resource_id AS INTEGER) = d.id
-                    JOIN users u ON sr.shared_by = u.id
-                    WHERE sr.resource_type = 'DOCUMENT'
-                      AND NOT EXISTS (
-                          SELECT 1 FROM chat_file_reference cfr
-                          WHERE cfr.message_id = sr.message_id AND cfr.document_id = CAST(sr.resource_id AS INTEGER)
-                      );
-                """)
-                cursor.execute("""
-                    INSERT INTO conversation_attachment (conversation_id, message_id, document_id)
-                    SELECT m.conversation_id, sr.message_id, CAST(sr.resource_id AS INTEGER)
-                    FROM shared_resources sr
-                    JOIN messages m ON sr.message_id = m.id
-                    JOIN documents d ON CAST(sr.resource_id AS INTEGER) = d.id
-                    WHERE sr.resource_type = 'DOCUMENT'
-                      AND NOT EXISTS (
-                          SELECT 1 FROM conversation_attachment ca
-                          WHERE ca.message_id = sr.message_id AND ca.document_id = CAST(sr.resource_id AS INTEGER)
-                      );
-                """)
-                cursor.execute("""
-                    INSERT INTO attachment_metadata (document_id, original_repository_id, file_type, file_size, sender_id, shared_at)
-                    SELECT CAST(sr.resource_id AS INTEGER), COALESCE(d.repository_id, 1), d.extension, d.size_bytes, sr.shared_by, sr.shared_at
-                    FROM shared_resources sr
-                    JOIN documents d ON CAST(sr.resource_id AS INTEGER) = d.id
-                    JOIN users u ON sr.shared_by = u.id
-                    WHERE sr.resource_type = 'DOCUMENT'
-                      AND NOT EXISTS (
-                          SELECT 1 FROM attachment_metadata am
-                          WHERE am.document_id = CAST(sr.resource_id AS INTEGER)
-                      );
-                """)
  
             conn.commit()
     finally:

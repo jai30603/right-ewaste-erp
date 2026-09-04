@@ -36,8 +36,10 @@ def get_erp_data_for_report(report_date, conn=None):
                 c_dict = _row_to_dict(cursor, row)
                 if c_dict.get("company_name"):
                     company_info["company_name"] = c_dict["company_name"]
-                if c_dict.get("address"):
-                    company_info["branch_location"] = c_dict["address"]
+                addr_parts = [c_dict.get("address_line_1"), c_dict.get("address_line_2"), c_dict.get("city"), c_dict.get("state"), c_dict.get("pincode")]
+                addr_str = ", ".join([p for p in addr_parts if p])
+                if addr_str:
+                    company_info["branch_location"] = addr_str
         except Exception:
             pass
 

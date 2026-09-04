@@ -33,7 +33,7 @@ class CompanySettingsTest(unittest.TestCase):
         # Test GET request
         response = self.client.get("/company")
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Company Information", response.data)
+        self.assertIn(b"Company Profile", response.data)
 
         # Retrieve current company name to restore later
         original_company = get_company()

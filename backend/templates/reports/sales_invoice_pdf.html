@@ -370,7 +370,6 @@ table.totals .grand-value {
         </td>
         <td class="company-cell">
           {% if company %}
-          <div class="company-name">{{ company.company_name }}</div>
           <div class="company-tagline">ITAD &amp; E-Waste Recycling</div>
           <div class="company-info">
             {{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}<br>
@@ -581,22 +580,11 @@ table.totals .grand-value {
     </table>
   </div><!-- /totals-band -->
 
-  <!-- ⑤ TERMS & CONDITIONS / BANK DETAILS ─────────────────────── -->
+  <!-- ⑤ BANK DETAILS ─────────────────────── -->
   <div class="bottom-band">
     <table class="bottom-band-table">
       <tr>
-        <td class="terms-col">
-          <span class="section-cap">Terms &amp; Conditions</span>
-          <ol class="terms-list">
-            <li>Goods once sold cannot be returned without prior written approval.</li>
-            <li>Payment is due as per agreed terms; interest applicable on delayed payments.</li>
-            <li>All disputes are subject to local jurisdiction only.</li>
-            <li>E-waste materials are recycled in compliance with E-Waste (Management) Rules.</li>
-            <li>No warranty implied unless expressly stated in writing.</li>
-          </ol>
-        </td>
-        <td class="divider-col"></td>
-        <td class="bank-col">
+        <td class="bank-col" style="width: 100%;">
           {% if company %}
           <span class="section-cap">Bank Details</span>
           <table class="bank-grid">

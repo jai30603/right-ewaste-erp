@@ -128,110 +128,90 @@ class PayrollService:
             return None, "Payroll record not found."
 
         try:
-            from xhtml2pdf import pisa
+            from backend.services.pdf_service import compile_html_to_pdf
             month_name = datetime.date(rec["payroll_year"], rec["payroll_month"], 1).strftime("%B %Y")
 
             html_content = f"""
             <html>
             <head>
                 <style>
-                    body {{ font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #1e293b; padding: 20px; }}
+                    body {{ font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 11px; color: #1e293b; padding: 20px; }}
                     .header {{ text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px; }}
                     .title {{ font-size: 18px; font-weight: bold; color: #1e3a8a; }}
-                    .subtitle {{ font-size: 12px; color: #64748b; }}
-                    .box {{ border: 1px solid #cbd5e1; padding: 10px; margin-bottom: 15px; border-radius: 4px; }}
-                    table {{ width: 100%; border-collapse: collapse; margin-top: 5px; }}
-                    th, td {{ padding: 6px; text-align: left; border-bottom: 1px solid #e2e8f0; }}
-                    th {{ background-color: #f8fafc; font-weight: bold; }}
-                    .total {{ font-weight: bold; background-color: #eff6ff; }}
+                    .subtitle {{ font-size: 12px; color: #64748b; margin-top: 5px; }}
+                    .meta-table, .payslip-table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+                    .meta-table td {{ padding: 4px; vertical-align: top; }}
+                    .payslip-table th, .payslip-table td {{ border: 1px solid #e2e8f0; padding: 8px; text-align: left; }}
+                    .payslip-table th {{ background-color: #f8fafc; font-weight: bold; }}
+                    .section-title {{ font-size: 12px; font-weight: bold; color: #1e3a8a; margin-top: 15px; margin-bottom: 8px; }}
+                    .box {{ border: 1px solid #e2e8f0; padding: 12px; border-radius: 4px; margin-bottom: 15px; }}
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <div class="title">RIGHT EWASTE ERP</div>
-                    <div class="subtitle">Payslip for the month of {month_name}</div>
+                    <div class="title">RIGHT EWASTE RECYCLING PVT LTD</div>
+                    <div class="subtitle">Salary Payslip for {month_name}</div>
                 </div>
 
-                <div class="box">
-                    <table>
-                        <tr>
-                            <td><strong>Employee Code:</strong> {rec.get('employee_code')}</td>
-                            <td><strong>Employee Name:</strong> {rec.get('full_name')}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Department:</strong> {rec.get('department') or 'N/A'}</td>
-                            <td><strong>Designation:</strong> {rec.get('designation') or 'N/A'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Bank Name:</strong> {rec.get('bank_name') or 'N/A'}</td>
-                            <td><strong>Account No:</strong> {rec.get('account_number') or 'N/A'}</td>
-                        </tr>
-                    </table>
-                </div>
+                <div class="section-title">Employee Details</div>
+                <table class="meta-table">
+                    <tr>
+                        <td><strong>Employee Name:</strong> {rec.get('full_name')}</td>
+                        <td><strong>Employee Code:</strong> {rec.get('employee_code')}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Department:</strong> {rec.get('department') or '—'}</td>
+                        <td><strong>Designation:</strong> {rec.get('designation') or '—'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pay Period:</strong> {month_name}</td>
+                        <td><strong>Paid Days:</strong> {rec.get('paid_days', 30)}</td>
+                    </tr>
+                </table>
 
-                <div class="box">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Attendance Summary</div>
-                    <table>
+                <div class="section-title">Salary Breakup</div>
+                <table class="payslip-table">
+                    <thead>
                         <tr>
-                            <th>Working Days</th>
-                            <th>Present Days</th>
-                            <th>Leave Days</th>
-                            <th>Absent Days</th>
+                            <th>Earnings</th>
+                            <th>Amount (₹)</th>
+                            <th>Deductions</th>
+                            <th>Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Basic Salary</td>
+                            <td>{rec.get('basic_salary', 0):,.2f}</td>
+                            <td>Provident Fund (PF)</td>
+                            <td>{rec.get('provident_fund', 0):,.2f}</td>
                         </tr>
                         <tr>
-                            <td>{rec.get('working_days')}</td>
-                            <td>{rec.get('present_days')}</td>
-                            <td>{rec.get('leave_days')}</td>
-                            <td>{rec.get('absent_days')}</td>
+                            <td>HRA</td>
+                            <td>{rec.get('hra', 0):,.2f}</td>
+                            <td>Professional Tax (PT)</td>
+                            <td>{rec.get('professional_tax', 0):,.2f}</td>
                         </tr>
-                    </table>
-                </div>
-
-                <div class="box">
-                    <div style="font-weight: bold; margin-bottom: 5px;">Earnings & Deductions Breakdown</div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Earnings Component</th>
-                                <th>Amount (INR)</th>
-                                <th>Deductions Component</th>
-                                <th>Amount (INR)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Basic Salary</td>
-                                <td>₹{rec.get('basic_salary', 0):,.2f}</td>
-                                <td>Provident Fund (PF)</td>
-                                <td>₹{rec.get('provident_fund', 0):,.2f}</td>
-                            </tr>
-                            <tr>
-                                <td>House Rent Allowance (HRA)</td>
-                                <td>₹{rec.get('hra', 0):,.2f}</td>
-                                <td>Professional Tax (PT)</td>
-                                <td>₹{rec.get('professional_tax', 0):,.2f}</td>
-                            </tr>
-                            <tr>
-                                <td>Conveyance Allowance</td>
-                                <td>₹{rec.get('conveyance_allowance', 0):,.2f}</td>
-                                <td>Income Tax (TDS)</td>
-                                <td>₹{rec.get('income_tax', 0):,.2f}</td>
-                            </tr>
-                            <tr>
-                                <td>Other Allowances</td>
-                                <td>₹{rec.get('other_allowances', 0):,.2f}</td>
-                                <td>Other Deductions</td>
-                                <td>₹{rec.get('other_deductions', 0):,.2f}</td>
-                            </tr>
-                            <tr class="total">
-                                <td><strong>Gross Earnings:</strong></td>
-                                <td><strong>₹{rec.get('gross_salary', 0):,.2f}</strong></td>
-                                <td><strong>Total Deductions:</strong></td>
-                                <td><strong>₹{rec.get('total_deductions', 0):,.2f}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                        <tr>
+                            <td>Special Allowance</td>
+                            <td>{rec.get('special_allowance', 0):,.2f}</td>
+                            <td>TDS / Income Tax</td>
+                            <td>{rec.get('income_tax', 0):,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td>Overtime Pay</td>
+                            <td>{rec.get('overtime_pay', 0):,.2f}</td>
+                            <td>Other Deductions</td>
+                            <td>{rec.get('other_deductions', 0):,.2f}</td>
+                        </tr>
+                        <tr style="font-weight: bold; background-color: #f8fafc;">
+                            <td>Total Earnings</td>
+                            <td>{rec.get('gross_salary', 0):,.2f}</td>
+                            <td>Total Deductions</td>
+                            <td>{rec.get('total_deductions', 0):,.2f}</td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <div class="box" style="background-color: #ecfdf5; border-color: #a7f3d0; text-align: center;">
                     <div style="font-size: 14px; font-weight: bold; color: #065f46;">
@@ -245,12 +225,12 @@ class PayrollService:
             </body>
             </html>
             """
-            pdf_out = io.BytesIO()
-            pisa_status = pisa.CreatePDF(html_content, dest=pdf_out)
-            if not pisa_status.err:
-                pdf_out.seek(0)
-                return pdf_out, None
+            pdf_bytes = compile_html_to_pdf(html_content)
+            pdf_out = io.BytesIO(pdf_bytes)
+            pdf_out.seek(0)
+            return pdf_out, None
         except Exception as e:
+            print("Error generating payslip PDF:", e)
             pass
 
         return None, "Failed to render PDF."
@@ -328,12 +308,12 @@ class PayrollService:
 
         if format_type == "pdf":
             try:
-                from xhtml2pdf import pisa
+                from backend.services.pdf_service import compile_html_to_pdf
                 html_content = f"""
                 <html>
                 <head>
                     <style>
-                        body {{ font-family: Helvetica, Arial, sans-serif; font-size: 10px; }}
+                        body {{ font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 10px; }}
                         h2 {{ text-align: center; color: #1e293b; }}
                         table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
                         th, td {{ border: 1px solid #cbd5e1; padding: 5px; text-align: left; }}
@@ -361,13 +341,12 @@ class PayrollService:
                 </body>
                 </html>
                 """
-                pdf_out = io.BytesIO()
-                pisa_status = pisa.CreatePDF(html_content, dest=pdf_out)
-                if not pisa_status.err:
-                    pdf_out.seek(0)
-                    return pdf_out, "application/pdf", f"{filename}.pdf"
-            except Exception:
-                pass
+                pdf_bytes = compile_html_to_pdf(html_content)
+                pdf_out = io.BytesIO(pdf_bytes)
+                pdf_out.seek(0)
+                return pdf_out, "application/pdf", f"{filename}.pdf"
+            except Exception as e:
+                print("Error in payroll register PDF generation:", e)
 
             out_str = io.StringIO()
             writer = csv.writer(out_str)

@@ -1,5 +1,5 @@
 {% extends "shared/base.html" %}
-{% block title %}Stock – Inventory Workspace{% endblock %}
+{% block title %}Stock Workspace – Right Ewaste ERP{% endblock %}
 
 {% block styles %}
 <link href="{{ url_for('static', filename='css/inventory.css') }}" rel="stylesheet">
@@ -12,7 +12,6 @@
 <div class="inv-page-body">
 
   <!-- KPI Strip ────────────────────────────────────────────────────────── -->
-  {# item fields from get_stock_summary → get_inventory: id, code, name, category, unit, current_stock, current_weight, rate, purchased_qty, sold_qty, stock_status #}
   <div class="inv-kpi-grid" style="grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); margin-bottom:18px;">
     <div class="inv-kpi-card kpi-teal">
       <div class="inv-kpi-icon icon-teal"><i class="bi bi-boxes"></i></div>
@@ -45,13 +44,22 @@
 
   <!-- Toolbar ──────────────────────────────────────────────────────────── -->
   <form method="get" action="/inventory" id="stockFilterForm">
+    <input type="hidden" name="stock_status" id="stockStatusInput" value="{{ stock_status or '' }}">
     <div class="inv-toolbar">
       <div class="inv-search-wrap">
         <i class="bi bi-search"></i>
         <input type="text" name="q" class="inv-search-input"
-               placeholder="Search material, code, category…"
+               placeholder="Search Material, Batch, SKU, Invoice..."
                value="{{ q or '' }}" autocomplete="off">
       </div>
+
+      <!-- Saved Views -->
+      <select class="inv-filter-select" id="savedViews" onchange="invApplySavedView(this.value)">
+        <option value="">Saved Views</option>
+        <option value="all" {% if not stock_status %}selected{% endif %}>All Items</option>
+        <option value="low" {% if stock_status == 'low' %}selected{% endif %}>Low Stock Alerts</option>
+        <option value="out" {% if stock_status == 'out' %}selected{% endif %}>Out of Stock</option>
+      </select>
 
       <select name="category" class="inv-filter-select" data-inv-autosubmit>
         <option value="all">All Categories</option>
@@ -76,6 +84,23 @@
         <input type="date" name="end_date" class="inv-date-input" value="{{ end_date or '' }}">
       </div>
 
+      <!-- Column Customizer Dropdown -->
+      <div class="inv-col-customizer-wrap">
+        <button type="button" class="inv-btn inv-btn-outline" onclick="invToggleColCustomizer()">
+          <i class="bi bi-layout-three-columns"></i> Columns
+        </button>
+        <div class="inv-col-menu" id="colMenu">
+          <label class="inv-col-item"><input type="checkbox" checked data-col="code"> Code</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="category"> Category</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="stock"> Stock</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="weight"> Weight</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="unit"> Unit</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="rate"> Rate</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="value"> Value</label>
+          <label class="inv-col-item"><input type="checkbox" checked data-col="status"> Status</label>
+        </div>
+      </div>
+
       <div class="inv-toolbar-sep d-none d-md-block"></div>
 
       <div class="inv-view-toggle d-none d-md-flex">
@@ -90,14 +115,11 @@
       <button type="submit" class="inv-btn inv-btn-primary">
         <i class="bi bi-funnel"></i> Filter
       </button>
-      {% if q or (category and category != 'all') or (date_filter and date_filter != 'all') %}
+      {% if q or (category and category != 'all') or (date_filter and date_filter != 'all') or stock_status %}
       <a href="/inventory" class="inv-btn inv-btn-outline"><i class="bi bi-x"></i> Clear</a>
       {% endif %}
       <a href="/inventory/export" class="inv-btn inv-btn-outline d-none d-md-inline-flex" title="Export Excel">
         <i class="bi bi-file-earmark-excel"></i>
-      </a>
-      <a href="/inventory/export/pdf" class="inv-btn inv-btn-outline d-none d-md-inline-flex" title="Export PDF">
-        <i class="bi bi-file-earmark-pdf"></i>
       </a>
     </div>
   </form>
@@ -110,7 +132,10 @@
       <div id="inv-bulk-bar" style="display:none; align-items:center; gap:12px; padding:10px 18px; background:var(--inv-primary-dim); border-bottom:1px solid var(--inv-tab-border);">
         <span class="inv-badge inv-badge-teal bulk-count">0</span>
         <span style="font-size:13px;color:var(--inv-primary);font-weight:600;">items selected</span>
-        <div style="margin-left:auto;">
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="inv-btn inv-btn-outline" style="font-size:12px; padding:4px 8px;" onclick="invBulkAdjust()">
+            <i class="bi bi-sliders"></i> Adjust Selection
+          </button>
           <button class="inv-btn inv-btn-ghost" style="font-size:12px;"
                   onclick="document.getElementById('inv-select-all').checked=false; invUpdateBulkBar();">
             <i class="bi bi-x"></i> Deselect
@@ -123,49 +148,49 @@
           <thead>
             <tr>
               <th class="col-check">
-                <input type="checkbox" class="inv-check" id="inv-select-all">
+                <input type="checkbox" class="inv-check" id="inv-select-all" onclick="invToggleAllRows(this)">
               </th>
-              <th data-sort>Code</th>
+              <th data-col="code" data-sort>Code</th>
               <th data-sort>Material</th>
-              <th data-sort>Category</th>
-              <th class="col-num" data-sort>Stock</th>
-              <th class="col-num" data-sort>Weight (kg)</th>
-              <th>Unit</th>
-              <th class="col-num" data-sort>Rate (₹)</th>
-              <th class="col-num" data-sort>Value (₹)</th>
-              <th>Status</th>
+              <th data-col="category" data-sort>Category</th>
+              <th data-col="stock" class="col-num" data-sort>Stock</th>
+              <th data-col="weight" class="col-num" data-sort>Weight (kg)</th>
+              <th data-col="unit">Unit</th>
+              <th data-col="rate" class="col-num" data-sort>Rate (₹)</th>
+              <th data-col="value" class="col-num" data-sort>Value (₹)</th>
+              <th data-col="status">Status</th>
               <th class="col-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for item in summary %}
             {# item fields: id, code, name, category, unit, current_stock, current_weight, rate, stock_status #}
-            <tr>
-              <td class="col-check">
-                <input type="checkbox" class="inv-check inv-row-check" value="{{ item.id }}">
+            <tr onclick="invHandleRowClick(event, this, '/inventory/{{ item.id }}', 'Material Details')">
+              <td class="col-check" onclick="event.stopPropagation()">
+                <input type="checkbox" class="inv-check inv-row-check" value="{{ item.id }}" onclick="invUpdateBulkBar()">
               </td>
-              <td>
+              <td data-col="code">
                 <span style="font-family:monospace;font-size:12px;color:var(--text-muted);">
                   {{ item.code or '—' }}
                 </span>
               </td>
               <td>
-                <a href="/inventory/{{ item.id }}" style="font-weight:600;color:var(--text-primary);">
+                <a href="javascript:void(0)" onclick="invShowDrawer('/inventory/{{ item.id }}', 'Material Details'); event.stopPropagation();" style="font-weight:600;color:var(--text-primary);">
                   {{ item.name or '—' }}
                 </a>
               </td>
-              <td><span class="inv-badge inv-badge-gray">{{ item.category or '—' }}</span></td>
-              <td class="col-num">
+              <td data-col="category"><span class="inv-badge inv-badge-gray">{{ item.category or '—' }}</span></td>
+              <td data-col="stock" class="col-num">
                 {% set stock = item.current_stock or 0 %}
                 <span style="font-weight:700;color:{{ 'var(--danger)' if stock <= 0 else ('var(--warning)' if stock < 10 else 'var(--text-primary)') }};">
                   {{ "%.2f"|format(stock) }}
                 </span>
               </td>
-              <td class="col-num">{{ "%.3f"|format(item.current_weight or 0) }}</td>
-              <td style="color:var(--text-muted);font-size:12px;">{{ item.unit or '—' }}</td>
-              <td class="col-num">{{ "%.2f"|format(item.rate or 0) }}</td>
-              <td class="col-num">₹{{ "%.2f"|format((item.current_stock or 0) * (item.rate or 0)) }}</td>
-              <td>
+              <td data-col="weight" class="col-num">{{ "%.3f"|format(item.current_weight or 0) }}</td>
+              <td data-col="unit" style="color:var(--text-muted);font-size:12px;">{{ item.unit or '—' }}</td>
+              <td data-col="rate" class="col-num">{{ "%.2f"|format(item.rate or 0) }}</td>
+              <td data-col="value" class="col-num">₹{{ "%.2f"|format((item.current_stock or 0) * (item.rate or 0)) }}</td>
+              <td data-col="status">
                 {% if item.stock_status == 'Out of Stock' %}
                   <span class="inv-badge inv-badge-danger">Out of Stock</span>
                 {% elif item.stock_status == 'Low Stock' %}
@@ -174,11 +199,11 @@
                   <span class="inv-badge inv-badge-green">Available</span>
                 {% endif %}
               </td>
-              <td class="col-center">
+              <td class="col-center" onclick="event.stopPropagation()">
                 <div style="display:flex;gap:4px;justify-content:center;">
-                  <a href="/inventory/{{ item.id }}" class="inv-btn inv-btn-ghost" style="padding:4px 8px;" title="Details">
+                  <button type="button" onclick="invShowDrawer('/inventory/{{ item.id }}', 'Material Details')" class="inv-btn inv-btn-ghost" style="padding:4px 8px;" title="Details">
                     <i class="bi bi-eye"></i>
-                  </a>
+                  </button>
                   <a href="/inventory/{{ item.id }}/ledger" class="inv-btn inv-btn-ghost" style="padding:4px 8px;" title="Ledger">
                     <i class="bi bi-journal-text"></i>
                   </a>
@@ -189,15 +214,18 @@
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="4" style="color:var(--text-muted);">
+              <td></td>
+              <td data-col="code"></td>
+              <td style="color:var(--text-muted);">
                 Showing {{ summary|length }} of {{ total_items or summary|length }} material{{ 's' if (total_items or 1) != 1 else '' }}
               </td>
-              <td class="col-num">{{ "%.2f"|format(summary|sum(attribute='current_stock') or 0) }}</td>
-              <td class="col-num">{{ "%.3f"|format(summary|sum(attribute='current_weight') or 0) }}</td>
-              <td></td>
-              <td></td>
-              <td class="col-num">₹{{ "%.2f"|format(total_stock_value or 0) }}</td>
-              <td></td>
+              <td data-col="category"></td>
+              <td data-col="stock" class="col-num">{{ "%.2f"|format(summary|sum(attribute='current_stock') or 0) }}</td>
+              <td data-col="weight" class="col-num">{{ "%.3f"|format(summary|sum(attribute='current_weight') or 0) }}</td>
+              <td data-col="unit"></td>
+              <td data-col="rate"></td>
+              <td data-col="value" class="col-num">₹{{ "%.2f"|format(total_stock_value or 0) }}</td>
+              <td data-col="status"></td>
               <td></td>
             </tr>
           </tfoot>
@@ -210,19 +238,19 @@
         <span>Page {{ page }} of {{ total_pages }} &nbsp;·&nbsp; {{ total_items }} materials</span>
         <div class="inv-page-btns">
           {% if page > 1 %}
-          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page=1" class="inv-page-btn">«</a>
-          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ page-1 }}" class="inv-page-btn">‹</a>
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&stock_status={{ stock_status or '' }}&page=1" class="inv-page-btn">«</a>
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&stock_status={{ stock_status or '' }}&page={{ page-1 }}" class="inv-page-btn">‹</a>
           {% else %}
           <span class="inv-page-btn disabled">«</span>
           <span class="inv-page-btn disabled">‹</span>
           {% endif %}
           {% for p in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
-          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ p }}"
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&stock_status={{ stock_status or '' }}&page={{ p }}"
              class="inv-page-btn {{ 'active' if p == page else '' }}">{{ p }}</a>
           {% endfor %}
           {% if page < total_pages %}
-          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ page+1 }}" class="inv-page-btn">›</a>
-          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&page={{ total_pages }}" class="inv-page-btn">»</a>
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&stock_status={{ stock_status or '' }}&page={{ page+1 }}" class="inv-page-btn">›</a>
+          <a href="?q={{ q or '' }}&category={{ category or '' }}&date_filter={{ date_filter or '' }}&stock_status={{ stock_status or '' }}&page={{ total_pages }}" class="inv-page-btn">»</a>
           {% else %}
           <span class="inv-page-btn disabled">›</span>
           <span class="inv-page-btn disabled">»</span>
@@ -236,7 +264,7 @@
         <div class="inv-empty-icon"><i class="bi bi-boxes"></i></div>
         <div class="inv-empty-title">No materials found</div>
         <div class="inv-empty-subtitle">
-          {% if q or (category and category != 'all') %}
+          {% if q or (category and category != 'all') or stock_status %}
           Try adjusting your search or filters.
           <a href="/inventory" class="d-block mt-2" style="color:var(--inv-primary);">Clear filters</a>
           {% else %}
@@ -253,7 +281,7 @@
     {% if summary %}
     <div class="inv-material-grid">
       {% for item in summary %}
-      <div class="inv-material-card">
+      <div class="inv-material-card" onclick="invShowDrawer('/inventory/{{ item.id }}', 'Material Details')">
         <div class="inv-mat-icon"><i class="bi bi-box-seam"></i></div>
         <div class="inv-mat-code">{{ item.code or 'N/A' }}</div>
         <div class="inv-mat-name">{{ item.name or '—' }}</div>
@@ -273,10 +301,10 @@
             <div class="stat-lbl">Value</div>
           </div>
         </div>
-        <div class="inv-mat-actions">
-          <a href="/inventory/{{ item.id }}" class="inv-btn inv-btn-primary flex-fill justify-content-center" style="font-size:12px;">
-            <i class="bi bi-eye"></i> View
-          </a>
+        <div class="inv-mat-actions" onclick="event.stopPropagation()">
+          <button type="button" onclick="invShowDrawer('/inventory/{{ item.id }}', 'Material Details')" class="inv-btn inv-btn-primary flex-fill justify-content-center" style="font-size:12px;">
+            <i class="bi bi-eye"></i> View Details
+          </button>
           <a href="/inventory/{{ item.id }}/ledger" class="inv-btn inv-btn-outline" style="font-size:12px;padding:8px 10px;" title="Ledger">
             <i class="bi bi-journal-text"></i>
           </a>
@@ -308,5 +336,93 @@
 <script>
 window.INV_PAGE = 'stock';
 document.addEventListener('DOMContentLoaded', () => { invInitViewToggle('table'); });
+
+function invApplySavedView(val) {
+  const statusInput = document.getElementById('stockStatusInput');
+  if (val === 'low') {
+    statusInput.value = 'low';
+  } else if (val === 'out') {
+    statusInput.value = 'out';
+  } else {
+    statusInput.value = '';
+  }
+  document.getElementById('stockFilterForm').submit();
+}
+
+function invToggleColCustomizer() {
+  document.getElementById('colMenu').classList.toggle('open');
+}
+
+// Close column customizer on outer click
+document.addEventListener('click', function(e) {
+  const wrap = document.querySelector('.inv-col-customizer-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('colMenu').classList.remove('open');
+  }
+});
+
+// Setup checkbox triggers for columns
+document.addEventListener('DOMContentLoaded', () => {
+  const checkboxes = document.querySelectorAll('.inv-col-item input');
+  checkboxes.forEach(cb => {
+    // Restore saved settings if any
+    const colName = cb.getAttribute('data-col');
+    const saved = localStorage.getItem('col_visible_' + colName);
+    if (saved !== null) {
+      cb.checked = (saved === 'true');
+      invToggleColumnVisibility(colName, cb.checked);
+    }
+
+    cb.addEventListener('change', () => {
+      const visible = cb.checked;
+      localStorage.setItem('col_visible_' + colName, visible);
+      invToggleColumnVisibility(colName, visible);
+    });
+  });
+});
+
+function invToggleColumnVisibility(colName, visible) {
+  const elements = document.querySelectorAll(`[data-col="${colName}"]`);
+  const display = visible ? '' : 'none';
+  elements.forEach(el => {
+    el.style.display = display;
+  });
+}
+
+function invToggleAllRows(masterCheckbox) {
+  const checkboxes = document.querySelectorAll('.inv-row-check');
+  checkboxes.forEach(cb => {
+    cb.checked = masterCheckbox.checked;
+  });
+  invUpdateBulkBar();
+}
+
+function invUpdateBulkBar() {
+  const checkboxes = document.querySelectorAll('.inv-row-check');
+  const checked = Array.from(checkboxes).filter(cb => cb.checked);
+  const bar = document.getElementById('inv-bulk-bar');
+  if (checked.length > 0) {
+    bar.style.display = 'flex';
+    bar.querySelector('.bulk-count').textContent = checked.length;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function invBulkAdjust() {
+  const checked = Array.from(document.querySelectorAll('.inv-row-check')).filter(cb => cb.checked);
+  if (checked.length > 0) {
+    const firstId = checked[0].value;
+    window.location.href = `/inventory/adjust?material_id=` + firstId;
+  }
+}
+
+function invHandleRowClick(event, row, url, title) {
+  // If target is check box or inside checkbox col, don't trigger click
+  if (event.target.closest('.col-check') || event.target.closest('a') || event.target.closest('button')) {
+    return;
+  }
+  invShowDrawer(url, title);
+}
 </script>
 {% endblock %}

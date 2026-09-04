@@ -4,20 +4,16 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Inventory Tokens ─────────────────────────────────────────────────────── */
+/* ── Inventory Tokens (Microsoft Azure / Dark Rectangular Enterprise UI) ── */
 :root {
-  --inv-primary:      #0d9488;   /* teal-600 */
-  --inv-primary-dk:   #0f766e;   /* teal-700 */
-  --inv-primary-lt:   #14b8a6;   /* teal-400 */
-  --inv-primary-dim:  rgba(13,148,136,0.12);
-  --inv-header-bg:    #ffffff;
-  --inv-tab-bg:       #f0fdf9;
-  --inv-tab-active:   #0d9488;
-  --inv-tab-border:   #99f6e4;
-}
-[data-theme="dark"] {
-  --inv-header-bg:    #1a2620;
-  --inv-tab-bg:       #131e18;
-  --inv-tab-border:   #1d4840;
+  --inv-primary:      var(--brand-primary, #10b981);
+  --inv-primary-dk:   var(--brand-accent, #059669);
+  --inv-primary-lt:   var(--brand-accent-lt, #34d399);
+  --inv-primary-dim:  var(--brand-accent-dim, rgba(16, 185, 129, 0.12));
+  --inv-header-bg:    var(--surface-sunken, #0d121c);
+  --inv-tab-bg:       var(--surface, #131a26);
+  --inv-tab-active:   var(--brand-primary, #10b981);
+  --inv-tab-border:   var(--border, #232f42);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1070,3 +1066,282 @@ mark.inv-hl {
 }
 .inv-fab:hover { background: var(--inv-primary-dk); transform: scale(1.05); }
 @media (max-width: 768px) { .inv-fab { display: flex; } }
+
+/* ── Slide-out Drawer Component ─────────────────────────────────────────── */
+.inv-drawer {
+  position: fixed;
+  top: 0;
+  right: -550px;
+  width: 550px;
+  max-width: 100vw;
+  height: 100vh;
+  background: var(--surface);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+  z-index: 1050;
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+.inv-drawer.open {
+  right: 0;
+}
+.inv-drawer-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-raised);
+}
+.inv-drawer-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.inv-drawer-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 13px;
+}
+.inv-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1040;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.inv-drawer-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Skeleton loaders */
+.inv-skeleton-row {
+  height: 16px;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  animation: invPulse 1.5s infinite ease-in-out;
+}
+.inv-skeleton-title {
+  height: 24px;
+  width: 60%;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  animation: invPulse 1.5s infinite ease-in-out;
+}
+@keyframes invPulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* ── Column Customizer Menu ─────────────────────────────────────────────── */
+.inv-col-customizer-wrap {
+  position: relative;
+  display: inline-block;
+}
+.inv-col-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  display: none;
+  min-width: 180px;
+  margin-top: 4px;
+}
+.inv-col-menu.open {
+  display: block;
+}
+.inv-col-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 0;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+.inv-col-item input {
+  cursor: pointer;
+}
+
+/* ── Expandable Details Rows ────────────────────────────────────────────── */
+.inv-table tr.detail-row {
+  background: var(--surface-sunken);
+  border-top: none;
+}
+.inv-table tr.detail-row td {
+  padding: 12px 18px;
+}
+.inv-detail-content {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ── Traceability Lifecycle Stages ───────────────────────────────────────── */
+.inv-lifecycle {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+.inv-lifecycle-node {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  position: relative;
+  padding-bottom: 8px;
+}
+.inv-lifecycle-node::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 40px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.inv-lifecycle-node:last-child::after {
+  display: none;
+}
+.inv-lifecycle-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--inv-primary-dim);
+  color: var(--inv-primary);
+  z-index: 2;
+  box-shadow: 0 0 0 4px var(--surface);
+  flex-shrink: 0;
+}
+.inv-lifecycle-body {
+  flex: 1;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.inv-lifecycle-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.inv-lifecycle-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.inv-lifecycle-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Interactive Process Flow Dashboard ─────────────────────────────────── */
+.flow-container-v3 {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.flow-step-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.flow-step-node:hover {
+  border-color: var(--inv-primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.flow-step-node.active {
+  background: var(--inv-primary-dim);
+  border-color: var(--inv-primary);
+}
+.flow-step-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.flow-step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.flow-step-info {
+  display: flex;
+  flex-direction: column;
+}
+.flow-step-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.flow-step-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.flow-step-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.flow-stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.flow-stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+.flow-stat-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+.flow-connector-line {
+  width: 2px;
+  height: 16px;
+  background: var(--border);
+  margin-left: 34px;
+}
+

@@ -104,6 +104,17 @@ def sync_document(document_type, document_id, performed_by="System User"):
 
             for row in rows:
                 row_dict = dict(row)
+                
+                # Skip inventory tracking for service / charge items or non-material lines
+                is_service = False
+                if document_type == "SALE" and row_dict.get("item_type") == "Service/Charge":
+                    is_service = True
+                if row_dict.get("material_id") == 999999 or row_dict.get("tracking_type") == "NONE" or not row_dict.get("material_id"):
+                    is_service = True
+                
+                if is_service:
+                    continue
+
                 quantity = multiplier * float(row_dict.get("quantity") or 0)
                 weight = multiplier * float(row_dict.get("weight") or 0)
                 

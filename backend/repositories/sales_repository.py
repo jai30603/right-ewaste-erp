@@ -30,7 +30,11 @@ def get_all_invoices(
     financial_year=None, month=None, customer_id=None,
     material_id=None, state=None, gst_type=None,
     status=None, payment_mode=None, sort_by=None,
-    category=None, created_by=None
+    category=None, created_by=None,
+    gstin=None, shipping_state_code=None, dispatch_location=None,
+    hsn_sac=None, item_type=None, uom=None,
+    gst_rate=None, tcs_applicable=None, transporter=None,
+    vehicle_number=None, company_bank_account_number=None
 ):
     conn = get_connection()
     cursor = conn.cursor()
@@ -111,6 +115,51 @@ def get_all_invoices(
         query += " AND si.payment_mode = ?"
         params.append(payment_mode)
 
+    if gstin and gstin != "all":
+        query += " AND (p.gstin = ? OR si.billing_gstin = ?)"
+        params.extend([gstin, gstin])
+        
+    if shipping_state_code and shipping_state_code != "all":
+        query += " AND si.shipping_state_code = ?"
+        params.append(shipping_state_code)
+        
+    if dispatch_location and dispatch_location != "all":
+        query += " AND si.dispatch_location = ?"
+        params.append(dispatch_location)
+        
+    if hsn_sac and hsn_sac != "all":
+        query += " AND EXISTS (SELECT 1 FROM sales_invoice_item sii WHERE sii.sales_invoice_id = si.id AND (sii.hsn_sac = ? OR sii.hsn_code = ?))"
+        params.extend([hsn_sac, hsn_sac])
+        
+    if item_type and item_type != "all":
+        query += " AND EXISTS (SELECT 1 FROM sales_invoice_item sii WHERE sii.sales_invoice_id = si.id AND sii.item_type = ?)"
+        params.append(item_type)
+        
+    if uom and uom != "all":
+        query += " AND EXISTS (SELECT 1 FROM sales_invoice_item sii WHERE sii.sales_invoice_id = si.id AND sii.uom = ?)"
+        params.append(uom)
+        
+    if gst_rate and gst_rate != "all":
+        query += " AND EXISTS (SELECT 1 FROM sales_invoice_item sii WHERE sii.sales_invoice_id = si.id AND sii.gst_percentage = ?)"
+        params.append(float(gst_rate))
+        
+    if tcs_applicable is not None and tcs_applicable != "all":
+        val = 1 if str(tcs_applicable).lower() in ('true', '1', 'yes') else 0
+        query += " AND si.tcs_applicable = ?"
+        params.append(val)
+        
+    if transporter and transporter != "all":
+        query += " AND si.transporter LIKE ?"
+        params.append(f"%{transporter}%")
+        
+    if vehicle_number and vehicle_number != "all":
+        query += " AND si.vehicle_number LIKE ?"
+        params.append(f"%{vehicle_number}%")
+        
+    if company_bank_account_number and company_bank_account_number != "all":
+        query += " AND si.company_bank_account_number = ?"
+        params.append(company_bank_account_number)
+
     if search_query:
         query += """ AND (
             si.invoice_number LIKE ? OR
@@ -124,12 +173,16 @@ def get_all_invoices(
             si.status LIKE ? OR
             EXISTS (
                 SELECT 1 FROM sales_invoice_item sii
-                JOIN material m ON sii.material_id = m.id
-                WHERE sii.sales_invoice_id = si.id AND m.material_name LIKE ?
+                LEFT JOIN material m ON sii.material_id = m.id
+                WHERE sii.sales_invoice_id = si.id AND (
+                    m.material_name LIKE ? OR
+                    sii.hsn_sac LIKE ? OR
+                    m.hsn_code LIKE ?
+                )
             )
         )"""
         like_str = f"%{search_query}%"
-        params.extend([like_str] * 10)
+        params.extend([like_str] * 12)
         
     if sort_by == "date_desc":
         query += " ORDER BY si.invoice_date DESC, si.invoice_number DESC"
@@ -170,7 +223,8 @@ def get_invoice_items(invoice_id):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT sii.*, m.material_name, m.uom, m.gst_percentage
+        SELECT sii.*, m.material_name, m.uom as master_uom, 
+               COALESCE(sii.gst_percentage, m.gst_percentage, 18.0) as gst_percentage
         FROM sales_invoice_item sii
         LEFT JOIN material m ON sii.material_id = m.id
         WHERE sii.sales_invoice_id = ?
@@ -181,8 +235,6 @@ def get_invoice_items(invoice_id):
     return items
 
 
-# ── Create (transactional) ────────────────────────────────────────────────────
-
 def create_sales_invoice(
     party_id, invoice_date, payment_mode,
     transporter, vehicle_number, remarks,
@@ -192,18 +244,45 @@ def create_sales_invoice(
     eway_bill_number=None,
     reference_number=None,
     status="CONFIRMED",
-    created_by=None
+    created_by=None,
+    billing_party_name=None,
+    billing_address=None,
+    billing_gstin=None,
+    billing_state=None,
+    billing_state_code=None,
+    billing_contact=None,
+    shipping_party_name=None,
+    shipping_address=None,
+    shipping_gstin=None,
+    shipping_state=None,
+    shipping_state_code=None,
+    shipping_contact=None,
+    dispatch_location=None,
+    dispatch_address=None,
+    dispatch_gstin=None,
+    dispatch_state=None,
+    dispatch_state_code=None,
+    company_bank_name=None,
+    company_bank_account_number=None,
+    company_bank_ifsc=None,
+    company_bank_branch=None,
+    financial_year=None,
+    tcs_applicable=False,
+    tcs_rate=0.0
 ):
     """
     Saves the invoice header and all line-items inside a single explicit
-    database transaction.
-
-    On success  → commits and returns the new invoice_id.
-    On any error → rolls back every INSERT so no partial data is written,
-                   then re-raises the exception for the route to handle.
+    database transaction, recording snapshot parameters and calculated tax splits.
     """
-    subtotal = round(sum(i["amount"] for i in items), 2)
-    gst      = calculate_gst(subtotal, items, company_state_code, party_state_code)
+    from services.calculation_service import calculate_invoice_result
+    calc = calculate_invoice_result(
+        items,
+        company_state_code,
+        billing_state_code=billing_state_code or party_state_code,
+        shipping_state_code=shipping_state_code,
+        tcs_applicable=tcs_applicable,
+        tcs_rate=tcs_rate
+    )
 
     conn   = get_connection()
     cursor = conn.cursor()
@@ -223,42 +302,94 @@ def create_sales_invoice(
                 payment_mode, transporter, vehicle_number,
                 subtotal, cgst, sgst, igst, round_off, grand_total,
                 remarks, status, eway_bill_number, reference_number,
-                created_by
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                created_by,
+                billing_party_name, billing_address, billing_gstin,
+                billing_state, billing_state_code, billing_contact,
+                shipping_party_name, shipping_address, shipping_gstin,
+                shipping_state, shipping_state_code, shipping_contact,
+                dispatch_location, dispatch_address, dispatch_gstin,
+                dispatch_state, dispatch_state_code,
+                company_bank_name, company_bank_account_number,
+                company_bank_ifsc, company_bank_branch,
+                financial_year,
+                tcs_rate, tcs_amount, tcs_base_amount,
+                tcs_applicable,
+                amount_in_words
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             invoice_number, invoice_date, party_id,
             payment_mode  or None,
             transporter   or None,
             vehicle_number or None,
-            subtotal,
-            gst["cgst"], gst["sgst"], gst["igst"],
-            gst["round_off"], gst["grand_total"],
+            calc["taxable_total"],
+            calc["cgst_total"], calc["sgst_total"], calc["igst_total"],
+            calc["round_off"], calc["grand_total"],
             remarks or None,
             status or "CONFIRMED",
             eway_bill_number or None,
             reference_number or None,
-            created_by or None
+            created_by or None,
+            billing_party_name or None,
+            billing_address or None,
+            billing_gstin or None,
+            billing_state or None,
+            billing_state_code or None,
+            billing_contact or None,
+            shipping_party_name or None,
+            shipping_address or None,
+            shipping_gstin or None,
+            shipping_state or None,
+            shipping_state_code or None,
+            shipping_contact or None,
+            dispatch_location or None,
+            dispatch_address or None,
+            dispatch_gstin or None,
+            dispatch_state or None,
+            dispatch_state_code or None,
+            company_bank_name or None,
+            company_bank_account_number or None,
+            company_bank_ifsc or None,
+            company_bank_branch or None,
+            financial_year or None,
+            calc["tcs_rate"], calc["tcs_amount"], calc["tcs_base_amount"],
+            1 if tcs_applicable else 0,
+            calc["amount_in_words"]
         ))
 
         invoice_id = cursor.lastrowid
         logger.info("Invoice header saved — id=%s", invoice_id)
 
         # ── Step 3: insert every line-item ────────────────────────────────
-        for idx, item in enumerate(items, start=1):
+        for idx, item in enumerate(items, start=0):
+            line_calc = calc["lines"][idx] if idx < len(calc["lines"]) else {
+                "taxable_amount": item["amount"], "gst_rate": item.get("gst_percentage", 18.0),
+                "cgst": 0.0, "sgst": 0.0, "igst": 0.0
+            }
             cursor.execute("""
                 INSERT INTO sales_invoice_item
                     (sales_invoice_id, material_id,
-                     quantity, weight, rate, amount)
-                VALUES (?,?,?,?,?,?)
+                     quantity, weight, rate, amount,
+                     item_type, description, hsn_sac, uom, item_reference,
+                     gst_percentage, cgst, sgst, igst)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 invoice_id,
-                item["material_id"],
+                item.get("material_id") or 999999,
                 item["qty"],
-                item["weight"],
+                item.get("weight") or 0.0,
                 item["rate"],
-                item["amount"],
+                line_calc["taxable_amount"],
+                item.get("item_type", "Goods"),
+                item.get("description"),
+                item.get("hsn_sac"),
+                item.get("uom", "KGS"),
+                item.get("item_reference"),
+                line_calc["gst_rate"],
+                line_calc["cgst"],
+                line_calc["sgst"],
+                line_calc["igst"]
             ))
-            logger.debug("  item %d saved (material_id=%s)", idx, item["material_id"])
+            logger.debug("  item %d saved (material_id=%s)", idx+1, item.get("material_id"))
 
         # ── Step 4: commit only when every insert succeeded ───────────────
         conn.execute("COMMIT")
@@ -272,7 +403,6 @@ def create_sales_invoice(
             "Invoice creation failed — rolled back. Error: %s", exc, exc_info=True
         )
         raise RuntimeError(f"Invoice save failed and was rolled back: {exc}") from exc
-
     finally:
         conn.close()
 
@@ -284,10 +414,41 @@ def update_sales_invoice(
     eway_bill_number=None,
     reference_number=None,
     status="CONFIRMED",
-    updated_by=None
+    updated_by=None,
+    billing_party_name=None,
+    billing_address=None,
+    billing_gstin=None,
+    billing_state=None,
+    billing_state_code=None,
+    billing_contact=None,
+    shipping_party_name=None,
+    shipping_address=None,
+    shipping_gstin=None,
+    shipping_state=None,
+    shipping_state_code=None,
+    shipping_contact=None,
+    dispatch_location=None,
+    dispatch_address=None,
+    dispatch_gstin=None,
+    dispatch_state=None,
+    dispatch_state_code=None,
+    company_bank_name=None,
+    company_bank_account_number=None,
+    company_bank_ifsc=None,
+    company_bank_branch=None,
+    financial_year=None,
+    tcs_applicable=False,
+    tcs_rate=0.0
 ):
-    subtotal = round(sum(i["amount"] for i in items), 2)
-    gst = calculate_gst(subtotal, items, company_state_code, party_state_code)
+    from services.calculation_service import calculate_invoice_result
+    calc = calculate_invoice_result(
+        items,
+        company_state_code,
+        billing_state_code=billing_state_code or party_state_code,
+        shipping_state_code=shipping_state_code,
+        tcs_applicable=tcs_applicable,
+        tcs_rate=tcs_rate
+    )
 
     conn = get_connection()
     cursor = conn.cursor()
@@ -300,6 +461,18 @@ def update_sales_invoice(
                 cgst = ?, sgst = ?, igst = ?, round_off = ?,
                 grand_total = ?, remarks = ?, status = ?,
                 eway_bill_number = ?, reference_number = ?,
+                billing_party_name = ?, billing_address = ?, billing_gstin = ?,
+                billing_state = ?, billing_state_code = ?, billing_contact = ?,
+                shipping_party_name = ?, shipping_address = ?, shipping_gstin = ?,
+                shipping_state = ?, shipping_state_code = ?, shipping_contact = ?,
+                dispatch_location = ?, dispatch_address = ?, dispatch_gstin = ?,
+                dispatch_state = ?, dispatch_state_code = ?,
+                company_bank_name = ?, company_bank_account_number = ?,
+                company_bank_ifsc = ?, company_bank_branch = ?,
+                financial_year = ?,
+                tcs_rate = ?, tcs_amount = ?, tcs_base_amount = ?,
+                tcs_applicable = ?,
+                amount_in_words = ?,
                 updated_by = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """, (
@@ -308,32 +481,73 @@ def update_sales_invoice(
             payment_mode or None,
             transporter or None,
             vehicle_number or None,
-            subtotal,
-            gst["cgst"],
-            gst["sgst"],
-            gst["igst"],
-            gst["round_off"],
-            gst["grand_total"],
+            calc["taxable_total"],
+            calc["cgst_total"],
+            calc["sgst_total"],
+            calc["igst_total"],
+            calc["round_off"],
+            calc["grand_total"],
             remarks or None,
             status or "CONFIRMED",
             eway_bill_number or None,
             reference_number or None,
+            billing_party_name or None,
+            billing_address or None,
+            billing_gstin or None,
+            billing_state or None,
+            billing_state_code or None,
+            billing_contact or None,
+            shipping_party_name or None,
+            shipping_address or None,
+            shipping_gstin or None,
+            shipping_state or None,
+            shipping_state_code or None,
+            shipping_contact or None,
+            dispatch_location or None,
+            dispatch_address or None,
+            dispatch_gstin or None,
+            dispatch_state or None,
+            dispatch_state_code or None,
+            company_bank_name or None,
+            company_bank_account_number or None,
+            company_bank_ifsc or None,
+            company_bank_branch or None,
+            financial_year or None,
+            calc["tcs_rate"], calc["tcs_amount"], calc["tcs_base_amount"],
+            1 if tcs_applicable else 0,
+            calc["amount_in_words"],
             updated_by or None,
             invoice_id,
         ))
+        
         cursor.execute("DELETE FROM sales_invoice_item WHERE sales_invoice_id = ?", (invoice_id,))
-        for item in items:
+        for idx, item in enumerate(items, start=0):
+            line_calc = calc["lines"][idx] if idx < len(calc["lines"]) else {
+                "taxable_amount": item["amount"], "gst_rate": item.get("gst_percentage", 18.0),
+                "cgst": 0.0, "sgst": 0.0, "igst": 0.0
+            }
             cursor.execute("""
                 INSERT INTO sales_invoice_item (
-                    sales_invoice_id, material_id, quantity, weight, rate, amount
-                ) VALUES (?,?,?,?,?,?)
+                    sales_invoice_id, material_id, quantity, weight, rate, amount,
+                    item_type, description, hsn_sac, uom, item_reference,
+                    gst_percentage, cgst, sgst, igst
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 invoice_id,
-                item["material_id"],
+                item.get("material_id") or 999999,
                 item["qty"],
-                item["weight"],
+                item.get("weight") or 0.0,
                 item["rate"],
-                item["amount"],
+                line_calc["taxable_amount"],
+                item.get("item_type", "Goods"),
+                item.get("description"),
+                item.get("hsn_sac"),
+                item.get("uom", "KGS"),
+                item.get("item_reference"),
+                line_calc["gst_rate"],
+                line_calc["cgst"],
+                line_calc["sgst"],
+                line_calc["igst"]
             ))
         conn.execute("COMMIT")
     except Exception:

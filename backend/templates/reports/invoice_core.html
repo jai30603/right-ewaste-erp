@@ -1,0 +1,404 @@
+{% set target_party = party or supplier %}
+
+<!-- Status Watermark Overlay -->
+{% if invoice.status == 'CANCELLED' %}
+<div class="invoice-watermark watermark-cancelled">CANCELLED</div>
+{% elif invoice.status == 'DRAFT' %}
+<div class="invoice-watermark watermark-draft">DRAFT</div>
+{% endif %}
+
+<!-- ── Letterhead Band ── -->
+<div class="letterhead-band">
+    <div class="logo-block">
+        <img src="/static/images/company_logo.png" alt="Right Ewaste Logo">
+        <div class="company-details">
+            <div class="company-tagline">Recycle for a better tomorrow</div>
+            <div>{{ company.address_line_1 }}{% if company.address_line_2 %}, {{ company.address_line_2 }}{% endif %}</div>
+            <div>{{ company.city }}, {{ company.state }} – {{ company.pincode }}</div>
+            <div><strong>GSTIN:</strong> {{ company.gstin or '—' }} &nbsp;|&nbsp; <strong>PAN:</strong> {{ company.pan or '—' }}</div>
+            <div><strong>Email:</strong> {{ company.email or 'info@rightewaste.com' }} &nbsp;|&nbsp; <strong>Phone:</strong> {{ company.phone or '—' }}</div>
+        </div>
+    </div>
+    <div class="invoice-meta-block">
+        <div class="invoice-title">
+            {% if invoice_type == 'sales' %}
+                TAX INVOICE
+            {% else %}
+                PURCHASE INVOICE
+            {% endif %}
+        </div>
+        <div class="invoice-num">
+            {% if invoice_type == 'sales' %}
+                {{ invoice.invoice_number }}
+            {% else %}
+                {{ invoice.purchase_invoice_number }}
+            {% endif %}
+        </div>
+        <div class="meta-details">
+            <div><strong>Date:</strong> {{ invoice.invoice_date }}</div>
+            {% if invoice.financial_year %}
+                <div><strong>Financial Year:</strong> {{ invoice.financial_year }}</div>
+            {% endif %}
+            {% if invoice_type == 'purchase' and invoice.intake_type %}
+                <div><strong>Intake Type:</strong> {{ invoice.intake_type }}</div>
+            {% endif %}
+            {% if invoice.status %}
+                <div><span class="status-badge status-{{ invoice.status.lower() }}">✓ {{ invoice.status }}</span></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ── Party & Details Address Grid ── -->
+<div class="info-grid">
+    {% if invoice_type == 'sales' %}
+        {% set has_dispatch = (invoice.dispatch_location and invoice.dispatch_location.strip()) or (invoice.dispatch_address and invoice.dispatch_address.strip()) %}
+        {% set has_shipping = (invoice.shipping_party_name and invoice.shipping_party_name.strip()) or (invoice.shipping_address and invoice.shipping_address.strip()) %}
+
+        <!-- Bill To (Recipient) -->
+        <div class="info-card">
+            <div class="info-card-title">Bill To (Recipient)</div>
+            <div class="info-card-content">
+                <strong>{{ invoice.billing_party_name or target_party.company_name or '—' }}</strong><br>
+                {{ invoice.billing_address or target_party.billing_address or '—' }}<br>
+                {% if invoice.billing_gstin or target_party.gstin %}
+                    <strong>GSTIN:</strong> {{ invoice.billing_gstin or target_party.gstin }}<br>
+                {% endif %}
+                <strong>State:</strong> {{ invoice.billing_state or target_party.state or '—' }} 
+                {% set st_code = invoice.billing_state_code or target_party.state_code %}
+                {% if st_code %}(Code: {{ st_code }}){% endif %}<br>
+                {% set b_phone = invoice.billing_contact or target_party.phone if (invoice.billing_contact != 'None' and target_party.phone != 'None') else '' %}
+                {% if b_phone and b_phone != 'None' %}
+                    <strong>Ph:</strong> {{ b_phone }}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if has_dispatch %}
+        <!-- Dispatched From Card (Priority 1) -->
+        <div class="info-card">
+            <div class="info-card-title">Dispatched From</div>
+            <div class="info-card-content">
+                {% if invoice.dispatch_location %}<strong>{{ invoice.dispatch_location }}</strong><br>{% endif %}
+                {{ invoice.dispatch_address or '—' }}<br>
+                {% if invoice.dispatch_gstin %}
+                    <strong>GSTIN:</strong> {{ invoice.dispatch_gstin }}<br>
+                {% endif %}
+                {% if invoice.dispatch_state or invoice.dispatch_state_code %}
+                    <strong>State:</strong> {{ invoice.dispatch_state or '—' }}
+                    {% if invoice.dispatch_state_code %}(Code: {{ invoice.dispatch_state_code }}){% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% elif has_shipping %}
+        <!-- Ship To (Destination) Card (Priority 2) -->
+        <div class="info-card">
+            <div class="info-card-title">Ship To (Destination)</div>
+            <div class="info-card-content">
+                {% if invoice.shipping_party_name %}<strong>{{ invoice.shipping_party_name }}</strong><br>{% endif %}
+                {{ invoice.shipping_address or '—' }}<br>
+                {% if invoice.shipping_gstin %}
+                    <strong>GSTIN:</strong> {{ invoice.shipping_gstin }}<br>
+                {% endif %}
+                {% if invoice.shipping_state or invoice.shipping_state_code %}
+                    <strong>State:</strong> {{ invoice.shipping_state or '—' }}
+                    {% if invoice.shipping_state_code %}(Code: {{ invoice.shipping_state_code }}){% endif %}<br>
+                {% endif %}
+                {% if invoice.shipping_contact and invoice.shipping_contact != 'None' %}
+                    <strong>Ph:</strong> {{ invoice.shipping_contact }}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <!-- Purchase 2-Column Address Grid -->
+        <div class="info-card">
+            <div class="info-card-title">Source (Supplier)</div>
+            <div class="info-card-content">
+                {% if target_party %}
+                    <strong>{{ target_party.company_name }}</strong><br>
+                    {% if target_party.billing_address %}{{ target_party.billing_address }}<br>{% endif %}
+                    {{ target_party.city }}{% if target_party.state %}, {{ target_party.state }}{% endif %}{% if target_party.pincode %} – {{ target_party.pincode }}{% endif %}<br>
+                    {% if target_party.gstin %}<strong>GSTIN:</strong> {{ target_party.gstin }}<br>{% endif %}
+                    {% if target_party.phone %}<strong>Ph:</strong> {{ target_party.phone }}{% endif %}
+                {% else %}
+                    <span style="color:#aaa;">No party information associated</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-title">Invoice Details &amp; Transport</div>
+            <div class="info-card-content">
+                <table class="info-table">
+                    <tr>
+                        <td class="lbl">Payment Mode:</td>
+                        <td class="val">{{ invoice.payment_mode or '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Transporter:</td>
+                        <td class="val">{{ invoice.transporter or '—' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl">Vehicle No.:</td>
+                        <td class="val"><span class="mono">{{ invoice.vehicle_number or '—' }}</span></td>
+                    </tr>
+                    {% if invoice_type == 'purchase' %}
+                        {% if invoice.vehicle_type %}
+                        <tr>
+                            <td class="lbl">Vehicle Type:</td>
+                            <td class="val">{{ invoice.vehicle_type }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.driver_name %}
+                        <tr>
+                            <td class="lbl">Driver Name:</td>
+                            <td class="val">{{ invoice.driver_name }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if invoice.weight_slip_number %}
+                        <tr>
+                            <td class="lbl">Weight Slip Ref:</td>
+                            <td class="val"><span class="mono">{{ invoice.weight_slip_number }}</span></td>
+                        </tr>
+                        {% endif %}
+                    {% endif %}
+                    {% if invoice.eway_bill_number %}
+                    <tr>
+                        <td class="lbl">E-Way Bill:</td>
+                        <td class="val"><span class="mono">{{ invoice.eway_bill_number }}</span></td>
+                    </tr>
+                    {% endif %}
+                    {% if invoice.reference_number %}
+                    <tr>
+                        <td class="lbl">Reference/PO:</td>
+                        <td class="val">{{ invoice.reference_number }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ── Transport Grid for Sales Invoices ── -->
+{% if invoice_type == 'sales' %}
+<div class="transport-details-grid mb-4" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; background: var(--primary-light); font-size: 10.5px; margin-bottom: 20px;">
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+        <div><strong>Transporter:</strong><br>{{ invoice.transporter or '—' }}</div>
+        <div><strong>Vehicle No:</strong><br><span class="mono">{{ invoice.vehicle_number or '—' }}</span></div>
+        <div><strong>Payment Mode:</strong><br>{{ invoice.payment_mode or '—' }}</div>
+        <div><strong>E-Way Bill:</strong><br><span class="mono">{{ invoice.eway_bill_number or '—' }}</span></div>
+        <div><strong>Reference/PO:</strong><br>{{ invoice.reference_number if invoice.reference_number and invoice.reference_number != invoice.invoice_number else '—' }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Items Table ── -->
+<table class="material-table">
+    <thead>
+        <tr>
+            <th style="text-align:left; width:32px;">#</th>
+            <th style="text-align:left;">Material / Description</th>
+            <th style="text-align:center; width:80px;">HSN/SAC</th>
+            {% if invoice_type == 'purchase' %}
+                <th style="text-align:center; width:100px;">Category</th>
+            {% endif %}
+            <th style="text-align:center; width:75px;">Qty</th>
+            <th style="text-align:center; width:65px;">UOM</th>
+            <th style="text-align:center; width:95px;">Weight (kg)</th>
+            <th style="text-align:right; width:85px;">Rate (₹)</th>
+            <th style="text-align:right; width:95px;">Taxable (₹)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td style="color:#888;">{{ loop.index }}</td>
+            <td style="font-weight:600; color:var(--text-dark);">
+                {{ item.description or item.material_name or '—' }}
+            </td>
+            <td class="mono" style="text-align:center;">{{ item.hsn_sac or item.hsn_code or '—' }}</td>
+            {% if invoice_type == 'purchase' %}
+                <td style="text-align:center; color:#475569;">{{ item.category or '—' }}</td>
+            {% endif %}
+            <td class="mono" style="text-align:center;">
+                {% if item.quantity is not none and item.quantity > 0 %}
+                    {{ "%.2f"|format(item.quantity) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td style="text-align:center; color:#475569;">{{ item.uom or '—' }}</td>
+            <td class="mono" style="text-align:center;">
+                {% if item.weight is not none and item.weight > 0 %}
+                    {{ "%.3f"|format(item.weight) }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td class="mono" style="text-align:right;">{{ "%.2f"|format(item.rate or 0) }}</td>
+            <td class="mono" style="text-align:right; font-weight:700; color:var(--text-dark);">
+                {{ "%.2f"|format(item.amount or 0) }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- ── Bottom Section ── -->
+<div class="bottom-section">
+    <div class="bottom-left-col">
+        <!-- Amount in Words -->
+        <div class="words-card">
+            <div class="words-title">Amount Chargeable in Words</div>
+            <div class="words-text">{{ invoice.grand_total | inr_words }}</div>
+        </div>
+
+        <!-- Bank Details -->
+        <div class="bank-card">
+            <div class="bank-title">Company Bank Account Details</div>
+            {% if invoice.company_bank_name or invoice.company_bank_account_number %}
+            <table class="bank-table">
+                <tr>
+                    <td class="lbl">Bank Name:</td>
+                    <td class="val">{{ invoice.company_bank_name or '—' }}</td>
+                    <td class="lbl">Account Number:</td>
+                    <td class="val">{{ invoice.company_bank_account_number or '—' }}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">IFSC Code:</td>
+                    <td class="val">{{ invoice.company_bank_ifsc or '—' }}</td>
+                    <td class="lbl">Branch:</td>
+                    <td class="val">{{ invoice.company_bank_branch or '—' }}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Account Type:</td>
+                    <td class="val" colspan="3">Current Account</td>
+                </tr>
+            </table>
+            {% else %}
+            <div style="font-size: 10px; padding: 4px 6px; color: var(--text-muted); font-style: italic;">Not Available</div>
+            {% endif %}
+        </div>
+
+        <!-- Tax Breakdown (Stage 2) -->
+        {% if invoice_type == 'sales' and tax_breakdown %}
+        <div style="margin-top:4px;">
+            <div style="font-size: 8.5px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.8px; margin-bottom: 4px;">HSN/SAC Tax Breakdown</div>
+            <table class="tax-breakdown-table" style="width: 100%; border-collapse: collapse; font-size: 9.5px; border: 1px solid var(--border-color);">
+                <thead>
+                    <tr style="background: var(--primary-light); color: var(--text-dark); border-bottom: 1.5px solid var(--border-color); font-weight: 700;">
+                        <th style="padding: 4px 6px; text-align: left;">HSN/SAC</th>
+                        <th style="padding: 4px 6px; text-align: center;">Tax Rate</th>
+                        <th style="padding: 4px 6px; text-align: right;">Taxable Value</th>
+                        {% if is_intra %}
+                        <th style="padding: 4px 6px; text-align: right;">CGST (₹)</th>
+                        <th style="padding: 4px 6px; text-align: right;">SGST (₹)</th>
+                        {% else %}
+                        <th style="padding: 4px 6px; text-align: right;">IGST (₹)</th>
+                        {% endif %}
+                        <th style="padding: 4px 6px; text-align: right;">Total Tax</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in tax_breakdown %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 4px 6px;">{{ row.hsn }}</td>
+                        <td style="padding: 4px 6px; text-align: center;">{{ row.rate }}%</td>
+                        <td style="padding: 4px 6px; text-align: right; font-family: monospace;">{{ "%.2f"|format(row.taxable) }}</td>
+                        {% if is_intra %}
+                        <td style="padding: 4px 6px; text-align: right; font-family: monospace;">{{ "%.2f"|format(row.cgst) }}</td>
+                        <td style="padding: 4px 6px; text-align: right; font-family: monospace;">{{ "%.2f"|format(row.sgst) }}</td>
+                        {% else %}
+                        <td style="padding: 4px 6px; text-align: right; font-family: monospace;">{{ "%.2f"|format(row.igst) }}</td>
+                        {% endif %}
+                        <td style="padding: 4px 6px; text-align: right; font-family: monospace; font-weight: 700;">{{ "%.2f"|format(row.total_tax) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Remarks -->
+        {% if invoice.remarks %}
+        <div class="remarks-card">
+            <div class="remarks-title">Declaration &amp; Remarks</div>
+            <div class="remarks-text">{{ invoice.remarks }}</div>
+        </div>
+        {% endif %}
+
+        {# Terms & Conditions (Purchase only) #}
+        {% if invoice_type != 'sales' %}
+        <div class="terms-card">
+            <div class="terms-title">Terms &amp; Conditions</div>
+            <ol class="terms-list">
+                <li>Goods once sold/received will not be taken back or exchanged.</li>
+                <li>Interest @ 18% per annum will be charged if payment is not made within the agreed timeframe.</li>
+                <li>All disputes are subject to Noida/Delhi jurisdiction only.</li>
+                <li>E-waste items must be handled and disposed of in accordance with CPCB/SPCB guidelines.</li>
+            </ol>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="bottom-right-col">
+        <!-- Totals Panel -->
+        <div class="totals-card">
+            <table class="totals-table">
+                <tr>
+                    <td class="lbl">Subtotal</td>
+                    <td class="val">₹ {{ "%.2f"|format(invoice.subtotal or 0) }}</td>
+                </tr>
+                {% if is_intra %}
+                <tr>
+                    <td class="lbl">CGST</td>
+                    <td class="val">₹ {{ "%.2f"|format(invoice.cgst or 0) }}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">SGST</td>
+                    <td class="val">₹ {{ "%.2f"|format(invoice.sgst or 0) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td class="lbl">IGST</td>
+                    <td class="val">₹ {{ "%.2f"|format(invoice.igst or 0) }}</td>
+                </tr>
+                {% endif %}
+                {% if invoice.tcs_amount %}
+                <tr>
+                    <td class="lbl">TCS {% if invoice.tcs_rate %}({{ invoice.tcs_rate }}%){% endif %}</td>
+                    <td class="val">₹ {{ "%.2f"|format(invoice.tcs_amount) }}</td>
+                </tr>
+                {% endif %}
+                {% if invoice.round_off %}
+                <tr>
+                    <td class="lbl">Round Off</td>
+                    <td class="val" style="color:{{ '#dc3545' if invoice.round_off < 0 else '#16a34a' }};">
+                        {{ '+' if invoice.round_off >= 0 else '' }}{{ "%.2f"|format(invoice.round_off) }}
+                    </td>
+                </tr>
+                {% endif %}
+                <tr class="grand-row">
+                    <td class="grand-lbl">Grand Total</td>
+                    <td class="grand-val">₹ {{ "%.2f"|format(invoice.grand_total or 0) }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Signature Section -->
+        <div class="sig-card">
+            <div class="sig-image-wrap">
+                <img src="/static/images/authorised_signatory.png" alt="Sign &amp; Stamp">
+            </div>
+            <div class="sig-line">Authorised Signatory</div>
+            <div class="sig-company">{{ company.company_name or 'Right Ewaste Recycle Pvt Ltd' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Print Footer ── -->
+<div class="print-footer">
+    <div>Thank you for choosing Right Ewaste. We promote environment-friendly e-waste solutions.</div>
+    <div style="font-family: monospace;">E. &amp; O.E. &nbsp;|&nbsp; Ref: ERP-V5.0</div>
+</div>

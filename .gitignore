@@ -30,3 +30,4 @@ Thumbs.db
 # EDMS Storage fallback / simulated uploads
 backend/storage/
 storage/
+backend/static/uploads/factory_reports/

@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter
 from backend.common.utils.date_utils import get_filter_date_range
 from backend.common.utils.format_utils import get_report_filename
 from backend.common.utils.flash_helpers import flash_success, flash_error, flash_warning, flash_info
-from backend.services.pdf_service import render_to_pdf, send_pdf_response
+from backend.services.pdf_service import render_to_pdf, send_pdf_response, render_url_to_pdf
 
 from repositories.purchase_repository import (
     get_all_purchase_invoices,
@@ -472,6 +472,7 @@ def add_purchase_invoice():
 
 
 @purchase_bp.route("/purchase/<int:invoice_id>/view")
+@purchase_bp.route("/purchase/view/<int:invoice_id>")
 def view_purchase_invoice(invoice_id):
     increment_purchase_print_count(invoice_id)
     ctx = _invoice_context(invoice_id)
@@ -480,14 +481,49 @@ def view_purchase_invoice(invoice_id):
     return render_template("purchase/purchase_invoice.html", **ctx)
 
 
+@purchase_bp.route("/print/purchase/<int:invoice_id>")
+def print_purchase_invoice(invoice_id):
+    ctx  = _invoice_context(invoice_id)
+    ctx["invoice_type"] = "purchase"
+    rendered_html = render_template("reports/invoice_print.html", **ctx)
+    
+    # Save a temporary copy for troubleshooting
+    try:
+        debug_path = os.path.join(os.path.dirname(__file__), "..", "static", "invoice_debug.html")
+        with open(debug_path, "w", encoding="utf-8") as f:
+            f.write(rendered_html)
+    except Exception as debug_err:
+        print("Failed to save invoice_debug.html:", debug_err)
+        
+    return rendered_html
+
 @purchase_bp.route("/purchase/<int:invoice_id>/pdf")
+@purchase_bp.route("/purchase/pdf/<int:invoice_id>")
 def download_purchase_pdf(invoice_id):
     increment_purchase_pdf_download_count(invoice_id)
     ctx = _invoice_context(invoice_id)
+    ctx["invoice_type"] = "purchase"
     from repositories.activity_log_repository import log_activity
     log_activity("System User", "Generate PDF", f"Downloaded PDF for purchase invoice {ctx['invoice']['purchase_invoice_number']}")
-    pdf_bytes = render_to_pdf("reports/purchase_invoice_pdf.html", ctx)
-    filename = f"{ctx['invoice']['purchase_invoice_number']}.pdf"
+    
+    from backend.services.pdf_service import compile_html_to_pdf, render_url_to_pdf, send_pdf_response
+    rendered_html = render_template("reports/invoice_print.html", **ctx)
+    
+    try:
+        pdf_bytes = compile_html_to_pdf(rendered_html)
+    except Exception as exc1:
+        try:
+            host = request.host_url if request else "http://127.0.0.1:5000/"
+            if host in {"http://localhost/", "http://127.0.0.1/"}:
+                host = "http://127.0.0.1:5000/"
+            invoice_url = f"{host.rstrip('/')}/print/purchase/{invoice_id}"
+            pdf_bytes = render_url_to_pdf(invoice_url)
+        except Exception as e:
+            logger.error("PDF generation failed for purchase invoice %s: %s (direct: %s)", invoice_id, e, exc1, exc_info=True)
+            flash_error("Unable to generate the purchase invoice PDF. Please try again.")
+            return redirect(url_for("purchase.view_purchase_invoice", invoice_id=invoice_id))
+        
+    filename = f"Purchase_Invoice_{ctx['invoice']['purchase_invoice_number']}.pdf".replace('/', '-').replace('\\', '-')
     return send_pdf_response(pdf_bytes, filename)
 
 

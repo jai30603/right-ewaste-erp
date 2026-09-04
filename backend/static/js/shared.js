@@ -32,27 +32,25 @@ function navigateBack(fallbackUrl) {
     }
 }
 
-// Theme handling
+// Theme handling - Absolute Dark Enterprise UI
 function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    var icon = document.getElementById('darkModeIcon');
-    if (icon) icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-    localStorage.setItem('erpTheme', theme);
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('dark-enterprise');
+    localStorage.setItem('erpTheme', 'dark');
 }
 
 function toggleDarkMode() {
-    var current = document.documentElement.getAttribute('data-theme');
-    applyTheme(current === 'dark' ? 'light' : 'dark');
+    applyTheme('dark');
 }
 
 (function () {
-    var saved = localStorage.getItem('erpTheme') || 'light';
-    document.documentElement.setAttribute('data-theme', saved);
+    localStorage.setItem('erpTheme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('dark-enterprise');
 })();
 
 document.addEventListener('DOMContentLoaded', function () {
-    var saved = localStorage.getItem('erpTheme') || 'light';
-    applyTheme(saved);
+    applyTheme('dark');
 
     // Close sidebar on mobile navigation
     var navLinks = document.querySelectorAll('.sidebar-nav a, .module-submenu a');

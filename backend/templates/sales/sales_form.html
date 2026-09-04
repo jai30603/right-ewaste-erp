@@ -3,593 +3,928 @@
 {% block title %}{% if invoice_id %}Edit Sales Invoice{% else %}New Sales Invoice{% endif %} – Right Ewaste ERP{% endblock %}
 {% block page_title %}{% if invoice_id %}Edit Sales Invoice{% else %}New Sales Invoice{% endif %}{% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="/sales" class="text-decoration-none text-muted">Sales Invoices</a></li>
-<li class="breadcrumb-item active">{% if invoice_id %}Edit Invoice{% else %}New Invoice{% endif %}</li>
+{% block styles %}
+<link href="/static/css/sales.css?v=2" rel="stylesheet">
+<style>
+/* Enterprise Dark Rectangular Form Styles */
+.sv4-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border, #232f42);
+  padding-bottom: 6px;
+}
+.sv4-card {
+  background: var(--surface, #131a26);
+  border: 1px solid var(--border, #232f42);
+  border-radius: 2px;
+  margin-bottom: 20px;
+}
+.sv4-card-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border, #232f42);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-sunken, #0d121c);
+}
+.sv4-card-header h5 {
+  font-size: 12.5px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary, #f8fafc);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sv4-card-body {
+  padding: 16px;
+}
+.sv4-form-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 4px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sv4-input {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  border-radius: 2px;
+  border: 1px solid var(--border, #232f42);
+  background: var(--surface-sunken, #0d121c);
+  color: var(--text-primary, #f8fafc);
+  transition: border-color 0.15s ease;
+}
+.sv4-input:focus {
+  border-color: var(--brand-primary, #10b981);
+  outline: none;
+  background: var(--surface-raised, #182232);
+}
+.sv4-input[readonly] {
+  background: var(--surface-sunken, #0d121c);
+  color: var(--text-muted, #94a3b8);
+}
+.sv4-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+}
+.sv4-table th {
+  background: var(--surface-sunken, #0d121c);
+  color: var(--text-muted, #94a3b8);
+  padding: 8px 10px;
+  font-weight: 700;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border, #232f42);
+}
+.sv4-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border, #232f42);
+  color: var(--text-secondary, #cbd5e1);
+}
+.sv4-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sv4-badge-active { background: var(--success-bg, #064e3b); color: var(--brand-accent-lt, #34d399); border: 1px solid var(--success-border, #059669); }
+.sv4-badge-draft { background: var(--warning-bg, #451a03); color: #fbbf24; border: 1px solid var(--warning-border, #d97706); }
+.sv4-badge-info { background: var(--info-bg, #082f49); color: #38bdf8; border: 1px solid var(--info-border, #0284c7); }
+</style>
 {% endblock %}
 
-{% macro val(field) %}{{ form[field] if form and form[field] is not none else '' }}{% endmacro %}
-
 {% block content %}
-<link href="/static/css/sales.css?v=2" rel="stylesheet">
-
-<!-- ── Page Header ────────────────────────────────────────────── -->
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-    <div>
-        <h4 style="font-size:20px; font-weight:800; color:var(--text-primary,#0f2318); margin:0;">
-            <i class="bi bi-receipt me-2" style="color:#2e7d32;"></i>
-            {% if invoice_id %}Edit Sales Invoice{% else %}New Sales Invoice{% endif %}
-        </h4>
-        <div style="font-size:13px; color:var(--text-muted,#6c7a75); margin-top:3px;">
-            {% if form and form.invoice_number %}
-                Invoice <strong style="font-family:monospace;">{{ form.invoice_number }}</strong>
-            {% else %}
-                Invoice number will be auto-generated on save
-            {% endif %}
-        </div>
-    </div>
-    <a href="/sales" class="sv3-btn sv3-btn-outline">
-        <i class="bi bi-x-circle"></i> Cancel
-    </a>
-</div>
-
-<form method="POST" action="{% if invoice_id %}/sales/{{ invoice_id }}/edit{% else %}/sales/add{% endif %}" novalidate id="invoice-form">
+<form method="POST" action="{% if invoice_id %}/sales/{{ invoice_id }}/edit{% else %}/sales/add{% endif %}" id="sales-form">
 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
-<div class="row g-4">
-
-    <!-- ── LEFT COLUMN ─────────────────────────────────────────── -->
-    <div class="col-lg-8">
-
-        <!-- Customer Card -->
-        <div class="sv3-form-card">
-            <div class="sv3-form-header">
-                <i class="bi bi-person-circle"></i>
-                <h5>Customer</h5>
-                <span style="margin-left:auto; font-size:11px; color:var(--text-muted,#6c7a75);">Select the billing customer</span>
+<!-- Edit/Create Workspace Container -->
+<div id="main-editor-container">
+  <div class="row g-4">
+    <!-- Main Left Column -->
+    <div class="col-lg-9">
+      
+      <!-- 1. Invoice Information Card -->
+      <div class="sv4-card">
+        <div class="sv4-card-header">
+          <i class="bi bi-info-circle text-primary"></i>
+          <h5>Invoice Information</h5>
+        </div>
+        <div class="sv4-card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <span class="sv4-form-label">Invoice Number</span>
+              <input type="text" name="invoice_number" class="sv4-input" readonly
+                     value="{{ form.invoice_number if form else 'Auto-Generated' }}">
             </div>
-            <div class="sv3-form-body">
-                <div class="row g-3">
-                    <div class="col-md-8">
-                        <label class="sv3-field-label">Customer <span class="req">*</span></label>
-                        <div class="d-flex gap-2">
-                            <select name="party_id" id="party-select"
-                                    class="form-select {{ 'is-invalid' if errors.party_id }}"
-                                    onchange="onPartyChange()" required
-                                    style="border-radius:8px; font-size:13px; height:38px; border-color:var(--border-color,#dde5e0);">
-                                <option value="">Choose customer…</option>
-                                {% for party in parties %}
-                                <option value="{{ party.id }}"
-                                        data-state-code="{{ party.state_code or '' }}"
-                                        {{ 'selected' if val('party_id') == party.id|string }}>
-                                    {{ party.company_name }} ({{ party.party_code }})
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <a href="/party/add" class="sv3-btn sv3-btn-secondary" style="padding:0 14px; white-space:nowrap;" title="Add new customer">
-                                <i class="bi bi-person-plus"></i>
-                            </a>
-                        </div>
-                        {% if errors.party_id %}
-                        <div style="color:#dc3545; font-size:12px; margin-top:4px;"><i class="bi bi-exclamation-circle"></i> {{ errors.party_id }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">Invoice Date <span class="req">*</span></label>
-                        <input type="date" name="invoice_date"
-                               class="sv3-form-control {{ 'is-invalid' if errors.invoice_date }}"
-                               value="{{ val('invoice_date') or today }}" required>
-                        {% if errors.invoice_date %}
-                        <div style="color:#dc3545; font-size:12px; margin-top:4px;">{{ errors.invoice_date }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Customer Info Banner -->
-                <div class="sv3-customer-banner" id="customer-info-banner">
-                    <div class="row g-2" style="font-size:13px;">
-                        <div class="col-sm-4"><strong>GSTIN:</strong> <span id="info-gstin" style="font-family:monospace;">—</span></div>
-                        <div class="col-sm-4"><strong>State:</strong> <span id="info-state">—</span></div>
-                        <div class="col-sm-4"><strong>State Code:</strong> <span id="info-state-code">—</span></div>
-                        <div class="col-12 mt-1"><strong>Address:</strong> <span id="info-address" style="color:var(--text-muted,#6c7a75);">—</span></div>
-                    </div>
-                </div>
+            <div class="col-md-3">
+              <span class="sv4-form-label">Invoice Date <span class="text-danger">*</span></span>
+              <input type="date" name="invoice_date" class="sv4-input" required
+                     value="{{ form.invoice_date if form else today }}">
             </div>
+            <div class="col-md-3">
+              <span class="sv4-form-label">Financial Year</span>
+              <input type="text" name="financial_year" class="sv4-input" placeholder="e.g. 2026-2027"
+                     value="{{ form.financial_year if form else '2026-2027' }}">
+            </div>
+            <div class="col-md-3">
+              <span class="sv4-form-label">Invoice Status</span>
+              <select name="status" class="sv4-input" style="height:31px; padding:2px 6px;">
+                <option value="DRAFT" {{ 'selected' if form and form.status == 'DRAFT' }}>Draft</option>
+                <option value="CONFIRMED" {{ 'selected' if not form or form.status == 'CONFIRMED' }}>Confirmed</option>
+                <option value="PRINTED" {{ 'selected' if form and form.status == 'PRINTED' }}>Printed</option>
+                <option value="CANCELLED" {{ 'selected' if form and form.status == 'CANCELLED' }}>Cancelled</option>
+                <option value="PAID" {{ 'selected' if form and form.status == 'PAID' }}>Paid</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Locations Section -->
+      <div class="sv4-section-title">Party & Locations</div>
+      <div class="row g-3 mb-4">
+        <!-- Bill To -->
+        <div class="col-md-4">
+          <div class="sv4-card" style="height: 100%;">
+            <div class="sv4-card-header">
+              <i class="bi bi-person-badge text-success"></i>
+              <h5>Bill To</h5>
+            </div>
+            <div class="sv4-card-body">
+              <div class="mb-3">
+                <span class="sv4-form-label">Select Customer <span class="text-danger">*</span></span>
+                <select name="party_id" id="party_id_selector" class="sv4-input" style="height:31px; padding:2px 6px;" onchange="onPartyChange(this)" required>
+                  <option value="">Choose Customer...</option>
+                  {% for p in parties %}
+                  <option value="{{ p.id }}" {{ 'selected' if form and form.party_id|string == p.id|string }}>{{ p.company_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">Billing Party Name</span>
+                <input type="text" name="billing_party_name" id="billing_party_name" class="sv4-input" value="{{ form.billing_party_name if form else '' }}">
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">GSTIN</span>
+                <input type="text" name="billing_gstin" id="billing_gstin" class="sv4-input" value="{{ form.billing_gstin if form else '' }}">
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">Address</span>
+                <textarea name="billing_address" id="billing_address" class="sv4-input" style="height:56px; font-size:12px;">{{ form.billing_address if form else '' }}</textarea>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <span class="sv4-form-label">State</span>
+                  <input type="text" name="billing_state" id="billing_state" class="sv4-input" value="{{ form.billing_state if form else '' }}">
+                </div>
+                <div class="col-6">
+                  <span class="sv4-form-label">Code</span>
+                  <input type="text" name="billing_state_code" id="billing_state_code" class="sv4-input" value="{{ form.billing_state_code if form else '' }}">
+                </div>
+              </div>
+              <div class="mt-2">
+                <span class="sv4-form-label">Contact / Phone</span>
+                <input type="text" name="billing_contact" id="billing_contact" class="sv4-input" value="{{ form.billing_contact if form else '' }}">
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Invoice Details Card -->
-        <div class="sv3-form-card">
-            <div class="sv3-form-header">
-                <i class="bi bi-file-text"></i>
-                <h5>Invoice Details</h5>
+        <!-- Ship To -->
+        <div class="col-md-4">
+          <div class="sv4-card" style="height: 100%;">
+            <div class="sv4-card-header">
+              <i class="bi bi-truck text-info"></i>
+              <h5>Ship To</h5>
+              <div class="ms-auto" style="font-size:11px;">
+                <input type="checkbox" id="same_as_bill" name="same_as_bill" checked onchange="toggleSameAsBill(this)">
+                <label for="same_as_bill" style="font-weight:600; cursor:pointer;">Same as Bill</label>
+              </div>
             </div>
-            <div class="sv3-form-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">Invoice Status</label>
-                        <select name="status" class="sv3-form-select">
-                            <option value="DRAFT"     {{ 'selected' if val('status') == 'DRAFT' }}>Draft</option>
-                            <option value="CONFIRMED" {{ 'selected' if val('status') == 'CONFIRMED' or not val('status') }}>Confirmed</option>
-                            <option value="CANCELLED" {{ 'selected' if val('status') == 'CANCELLED' }}>Cancelled</option>
-                            <option value="PRINTED"   {{ 'selected' if val('status') == 'PRINTED' }}>Printed</option>
-                            <option value="PAID"      {{ 'selected' if val('status') == 'PAID' }}>Paid</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">Payment Mode</label>
-                        <select name="payment_mode" class="sv3-form-select">
-                            <option value="">Select mode</option>
-                            {% for mode in payment_modes %}
-                            <option value="{{ mode }}" {{ 'selected' if val('payment_mode') == mode }}>{{ mode }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">Reference / PO No.</label>
-                        <input type="text" name="reference_number" class="sv3-form-control"
-                               value="{{ val('reference_number') }}" placeholder="Ref/PO No">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">Transporter</label>
-                        <input type="text" name="transporter" class="sv3-form-control"
-                               value="{{ val('transporter') }}" placeholder="e.g. Self">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">Vehicle Number</label>
-                        <input type="text" name="vehicle_number" class="sv3-form-control"
-                               value="{{ val('vehicle_number') }}" placeholder="MH01AB1234"
-                               style="text-transform:uppercase;">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="sv3-field-label">E-Way Bill Number</label>
-                        <input type="text" name="eway_bill_number" class="sv3-form-control"
-                               value="{{ val('eway_bill_number') }}" placeholder="12-digit number">
-                    </div>
-                    <div class="col-12">
-                        <label class="sv3-field-label">Remarks</label>
-                        <input type="text" name="remarks" class="sv3-form-control"
-                               value="{{ val('remarks') }}" placeholder="Optional notes for this invoice">
-                    </div>
+            <div class="sv4-card-body">
+              <div class="mb-2">
+                <span class="sv4-form-label">Shipping Party Name</span>
+                <input type="text" name="shipping_party_name" id="shipping_party_name" class="sv4-input" value="{{ form.shipping_party_name if form else '' }}">
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">GSTIN</span>
+                <input type="text" name="shipping_gstin" id="shipping_gstin" class="sv4-input" value="{{ form.shipping_gstin if form else '' }}">
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">Address</span>
+                <textarea name="shipping_address" id="shipping_address" class="sv4-input" style="height:56px; font-size:12px;">{{ form.shipping_address if form else '' }}</textarea>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <span class="sv4-form-label">State</span>
+                  <input type="text" name="shipping_state" id="shipping_state" class="sv4-input" value="{{ form.shipping_state if form else '' }}">
                 </div>
-            </div>
-        </div>
-
-        <!-- Materials Table Card -->
-        <div class="sv3-form-card">
-            <div class="sv3-form-header">
-                <i class="bi bi-list-ul"></i>
-                <h5>Invoice Items</h5>
-                {% if errors.get('items') %}
-                <span style="margin-left:10px; color:#dc3545; font-size:12px;">
-                    <i class="bi bi-exclamation-circle"></i> {{ errors['items'] }}
-                </span>
-                {% endif %}
-                <div class="ms-auto d-flex gap-2">
-                    <button type="button" class="sv3-btn sv3-btn-secondary" style="padding:6px 14px; font-size:12px;" onclick="addRow()">
-                        <i class="bi bi-plus-lg"></i> Add Row
-                    </button>
+                <div class="col-6">
+                  <span class="sv4-form-label">Code</span>
+                  <input type="text" name="shipping_state_code" id="shipping_state_code" class="sv4-input" value="{{ form.shipping_state_code if form else '' }}">
                 </div>
+              </div>
+              <div class="mt-2">
+                <span class="sv4-form-label">Contact / Phone</span>
+                <input type="text" name="shipping_contact" id="shipping_contact" class="sv4-input" value="{{ form.shipping_contact if form else '' }}">
+              </div>
             </div>
-            <div style="overflow-x:auto;">
-            <table class="sv3-items-table" id="items-table">
-                <thead>
-                    <tr>
-                        <th style="width:30px;">#</th>
-                        <th style="min-width:170px;">Material</th>
-                        <th style="width:70px; text-align:center;">HSN</th>
-                        <th style="width:55px; text-align:center;">UOM</th>
-                        <th style="width:80px; text-align:right;">Qty</th>
-                        <th style="width:90px; text-align:right;">Weight (kg)</th>
-                        <th style="width:90px; text-align:right;">Rate (₹)</th>
-                        <th style="width:100px; text-align:right;">Taxable</th>
-                        <th style="width:55px; text-align:center;">GST%</th>
-                        <th style="width:75px; text-align:right;">CGST</th>
-                        <th style="width:75px; text-align:right;">SGST</th>
-                        <th style="width:75px; text-align:right;">IGST</th>
-                        <th style="width:95px; text-align:right;">Line Total</th>
-                        <th style="width:38px;"></th>
-                    </tr>
-                </thead>
-                <tbody id="items-body"></tbody>
-            </table>
-            </div>
-            <div style="padding:12px 16px; border-top:1px solid var(--border-color,#eef2ef);">
-                <button type="button" class="sv3-btn sv3-btn-secondary" style="padding:7px 16px; font-size:12.5px;" onclick="addRow()">
-                    <i class="bi bi-plus-circle"></i> Add Another Row
-                </button>
-            </div>
+          </div>
         </div>
 
-    </div>
-
-    <!-- ── RIGHT COLUMN ────────────────────────────────────────── -->
-    <div class="col-lg-4">
-
-        <!-- Totals Card (sticky) -->
-        <div style="position:sticky; top:80px;">
-        <div class="sv3-totals-card">
-            <div class="sv3-form-header" style="border-bottom-width:1.5px;">
-                <i class="bi bi-calculator"></i>
-                <h5>Invoice Summary</h5>
-                <span id="gst-type-badge" style="margin-left:auto; font-size:11px; font-weight:700;
-                      padding:3px 10px; border-radius:20px; background:#f4f7f5; color:#6c7a75;">
-                    Select customer for GST
-                </span>
+        <!-- Dispatched From -->
+        <div class="col-md-4">
+          <div class="sv4-card" style="height: 100%;">
+            <div class="sv4-card-header">
+              <i class="bi bi-geo-alt text-warning"></i>
+              <h5>Dispatched From</h5>
             </div>
-
-            <div class="sv3-totals-row">
-                <span class="lbl">Subtotal (Taxable)</span>
-                <span class="val">₹ <span id="subtotal-display">0.00</span></span>
+            <div class="sv4-card-body">
+              <div class="mb-3">
+                <span class="sv4-form-label">Dispatch Location Dropdown</span>
+                <select id="dispatch_selector" class="sv4-input" style="height:31px; padding:2px 6px;" onchange="onDispatchChange(this)">
+                  <option value="">Select location...</option>
+                  {% for loc in dispatch_locations %}
+                  <option value="{{ loc.id }}">{{ loc.location_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">Location Name</span>
+                <input type="text" name="dispatch_location" id="dispatch_location" class="sv4-input" value="{{ form.dispatch_location if form else '' }}">
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">GSTIN</span>
+                <input type="text" name="dispatch_gstin" id="dispatch_gstin" class="sv4-input" value="{{ form.dispatch_gstin if form else '' }}">
+              </div>
+              <div class="mb-2">
+                <span class="sv4-form-label">Address</span>
+                <textarea name="dispatch_address" id="dispatch_address" class="sv4-input" style="height:56px; font-size:12px;">{{ form.dispatch_address if form else '' }}</textarea>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <span class="sv4-form-label">State</span>
+                  <input type="text" name="dispatch_state" id="dispatch_state" class="sv4-input" value="{{ form.dispatch_state if form else '' }}">
+                </div>
+                <div class="col-6">
+                  <span class="sv4-form-label">Code</span>
+                  <input type="text" name="dispatch_state_code" id="dispatch_state_code" class="sv4-input" value="{{ form.dispatch_state_code if form else '' }}">
+                </div>
+              </div>
             </div>
-            <div class="sv3-totals-row" id="cgst-row" style="display:none;">
-                <span class="lbl">CGST</span>
-                <span class="val" style="color:#1565c0;">₹ <span id="cgst-display">0.00</span></span>
-            </div>
-            <div class="sv3-totals-row" id="sgst-row" style="display:none;">
-                <span class="lbl">SGST</span>
-                <span class="val" style="color:#1565c0;">₹ <span id="sgst-display">0.00</span></span>
-            </div>
-            <div class="sv3-totals-row" id="igst-row" style="display:none;">
-                <span class="lbl">IGST</span>
-                <span class="val" style="color:#1565c0;">₹ <span id="igst-display">0.00</span></span>
-            </div>
-            <div class="sv3-totals-row" id="round-off-row">
-                <span class="lbl">Round Off</span>
-                <span class="val" id="round-off-display" style="color:#6c7a75;">—</span>
-            </div>
-            <div class="sv3-totals-grand">
-                <span class="lbl">Grand Total</span>
-                <span class="val">₹ <span id="grand-total-display">0.00</span></span>
-            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Save Actions -->
-        <div style="margin-top:16px; display:flex; flex-direction:column; gap:10px;">
-            <button type="submit" class="sv3-btn sv3-btn-primary" style="width:100%; justify-content:center; padding:13px;">
-                <i class="bi bi-check-lg"></i>
-                {% if invoice_id %}Update Invoice{% else %}Save Invoice{% endif %}
+      <!-- 3. Transport & Payment details -->
+      <div class="sv4-card">
+        <div class="sv4-card-header">
+          <i class="bi bi-wallet2 text-success"></i>
+          <h5>Transport &amp; Bank Settings</h5>
+        </div>
+        <div class="sv4-card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <span class="sv4-form-label">Transporter</span>
+              <input type="text" name="transporter" class="sv4-input" placeholder="e.g. Self" value="{{ form.transporter if form else '' }}">
+            </div>
+            <div class="col-md-3">
+              <span class="sv4-form-label">Vehicle Number</span>
+              <input type="text" name="vehicle_number" class="sv4-input" placeholder="e.g. MH04GP4300" style="text-transform:uppercase;" value="{{ form.vehicle_number if form else '' }}">
+            </div>
+            <div class="col-md-3">
+              <span class="sv4-form-label">Payment Mode</span>
+              <select name="payment_mode" class="sv4-input" style="height:31px; padding:2px 6px;">
+                {% for mode in payment_modes %}
+                <option value="{{ mode }}" {{ 'selected' if form and form.payment_mode == mode }}>{{ mode }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <span class="sv4-form-label">Company Bank Account</span>
+              <select id="bank_selector" class="sv4-input" style="height:31px; padding:2px 6px;" onchange="onBankChange(this)">
+                <option value="">Select account...</option>
+                {% for bank in bank_accounts %}
+                <option value="{{ bank.id }}">{{ bank.bank_name }} - {{ bank.account_number }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <!-- Hidden Snapshot fields populated when bank selected -->
+          <div class="row g-2 mt-2 pt-2 border-top" style="font-size:12px; color:var(--text-muted,#666);">
+            <div class="col-md-3"><strong>Bank:</strong> <input type="text" name="company_bank_name" id="company_bank_name" class="sv4-input py-1" value="{{ form.company_bank_name if form else '' }}"></div>
+            <div class="col-md-3"><strong>Account Number:</strong> <input type="text" name="company_bank_account_number" id="company_bank_account_number" class="sv4-input py-1" value="{{ form.company_bank_account_number if form else '' }}"></div>
+            <div class="col-md-3"><strong>IFSC:</strong> <input type="text" name="company_bank_ifsc" id="company_bank_ifsc" class="sv4-input py-1" value="{{ form.company_bank_ifsc if form else '' }}"></div>
+            <div class="col-md-3"><strong>Branch:</strong> <input type="text" name="company_bank_branch" id="company_bank_branch" class="sv4-input py-1" value="{{ form.company_bank_branch if form else '' }}"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Line Items Card -->
+      <div class="sv4-card">
+        <div class="sv4-card-header">
+          <i class="bi bi-list-stars text-danger"></i>
+          <h5>Line Items</h5>
+          <div class="ms-auto">
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="addRow()">
+              <i class="bi bi-plus-circle"></i> Add Item Row
             </button>
-            <a href="/sales" class="sv3-btn sv3-btn-outline" style="width:100%; justify-content:center;">
-                <i class="bi bi-arrow-left"></i> Cancel & Return
-            </a>
+          </div>
         </div>
+        <div class="sv4-card-body p-0" style="overflow-x:auto;">
+          <table class="sv4-table" id="items-table">
+            <thead>
+              <tr>
+                <th style="width:30px;">#</th>
+                <th style="width:110px;">Type</th>
+                <th style="min-width:180px;">Material / Description</th>
+                <th style="width:80px;">HSN/SAC</th>
+                <th style="width:80px; text-align:right;">Qty</th>
+                <th style="width:80px;">UOM</th>
+                <th style="width:80px; text-align:right;">Weight (kg)</th>
+                <th style="width:90px; text-align:right;">Rate (₹)</th>
+                <th style="width:100px; text-align:right;">Taxable</th>
+                <th style="width:50px; text-align:center;">GST%</th>
+                <th style="width:120px;">Reference</th>
+                <th style="width:40px; text-align:center;"></th>
+              </tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+          </table>
+        </div>
+      </div>
 
-        <!-- Tips Card -->
-        <div style="margin-top:16px; background:var(--bg-alt,#f8faf8); border-radius:12px; padding:16px; border:1px solid var(--border-color,#e8eeeb);">
-            <div style="font-size:11px; font-weight:700; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;">
-                <i class="bi bi-lightbulb"></i> Tips
+      <!-- 5. Additional Information Card -->
+      <div class="sv4-card">
+        <div class="sv4-card-header">
+          <i class="bi bi-chat-left-text text-secondary"></i>
+          <h5>Additional Information</h5>
+        </div>
+        <div class="sv4-card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <span class="sv4-form-label">Internal Reference / PO Number</span>
+              <input type="text" name="reference_number" class="sv4-input" placeholder="e.g. PO-987654" value="{{ form.reference_number if form else '' }}">
             </div>
-            <ul style="font-size:12px; color:var(--text-muted,#6c7a75); padding-left:16px; margin:0; line-height:2;">
-                <li>Select customer first — GST type (CGST/SGST vs IGST) is auto-detected from state code</li>
-                <li>Rate is per unit; for weight-tracked materials use the Weight column</li>
-                <li>Grand total is auto-rounded to nearest rupee</li>
-            </ul>
+            <div class="col-md-6">
+              <span class="sv4-form-label">E-Way Bill Number</span>
+              <input type="text" name="eway_bill_number" class="sv4-input" placeholder="12-digit number" value="{{ form.eway_bill_number if form else '' }}">
+            </div>
+            <div class="col-12">
+              <span class="sv4-form-label">Remarks</span>
+              <textarea name="remarks" class="sv4-input" style="height:60px;" placeholder="Declaration & remarks printed on invoice printout...">{{ form.remarks if form else '' }}</textarea>
+            </div>
+          </div>
         </div>
+      </div>
 
-        </div><!-- sticky -->
     </div>
 
-</div><!-- row -->
+    <!-- Right Sidebar Recalcs -->
+    <div class="col-lg-3">
+      <div style="position:sticky; top:20px;">
+        <!-- Summary Totals -->
+        <div class="sv3-totals-card" style="padding:16px; margin-bottom:16px;">
+          <!-- Place of Supply Tax Split Banner -->
+          <div id="tax-treatment-banner" class="alert alert-info py-1 px-2 mb-2" style="font-size:11.5px; font-weight:600; text-align:center;">
+            Loading tax split...
+          </div>
+          
+          <div class="sv4-section-title" style="margin-bottom:8px;">Subtotals</div>
+          <div class="sv3-totals-row">
+            <span class="lbl">Subtotal (Taxable)</span>
+            <span class="val" style="font-weight:700;">₹ <span id="subtotal-display">0.00</span></span>
+          </div>
+          <div class="sv3-totals-row" id="cgst-row" style="display:none;">
+            <span class="lbl">CGST</span>
+            <span class="val">₹ <span id="cgst-display">0.00</span></span>
+          </div>
+          <div class="sv3-totals-row" id="sgst-row" style="display:none;">
+            <span class="lbl">SGST</span>
+            <span class="val">₹ <span id="sgst-display">0.00</span></span>
+          </div>
+          <div class="sv3-totals-row" id="igst-row" style="display:none;">
+            <span class="lbl">IGST</span>
+            <span class="val">₹ <span id="igst-display">0.00</span></span>
+          </div>
 
-<!-- Hidden totals submitted to backend -->
-<input type="hidden" name="hidden_subtotal"    id="hidden-subtotal"    value="0">
-<input type="hidden" name="hidden_cgst"        id="hidden-cgst"        value="0">
-<input type="hidden" name="hidden_sgst"        id="hidden-sgst"        value="0">
-<input type="hidden" name="hidden_igst"        id="hidden-igst"        value="0">
-<input type="hidden" name="hidden_round_off"   id="hidden-round-off"   value="0">
-<input type="hidden" name="hidden_grand_total" id="hidden-grand-total" value="0">
+          <!-- TCS Section -->
+          <div class="form-check form-switch mb-2 pt-2 border-top" style="font-size:12.5px;">
+            <input class="form-check-input" type="checkbox" name="tcs_applicable" id="tcs_applicable" {% if (form and form.tcs_applicable) or (form and form.get and form.get('tcs_applicable') == 'on') %}checked{% endif %} onchange="triggerRecalculate()">
+            <label class="form-check-label fw-bold" for="tcs_applicable">Apply TCS?</label>
+          </div>
+          <div id="tcs-rate-container" class="mb-2" style="display: {% if (form and form.tcs_applicable) or (form and form.get and form.get('tcs_applicable') == 'on') %}block{% else %}none{% endif %};">
+            <span class="sv4-form-label" style="font-size:11px; margin-bottom:2px;">TCS Rate (%)</span>
+            {% set cur_tcs_str = (form.get('tcs_rate') if form and form.get else (form.tcs_rate if form and 'tcs_rate' in form else '0.076')) or '0.076' %}
+            {% set cur_tcs = cur_tcs_str | float %}
+            <select name="tcs_rate" id="tcs_rate" class="sv4-input py-1" style="font-size:12px; height:28px;" onchange="triggerRecalculate()">
+              <option value="0.076" {% if cur_tcs == 0.076 %}selected{% endif %}>0.076% (Default)</option>
+              <option value="0.1" {% if cur_tcs == 0.1 %}selected{% endif %}>0.1%</option>
+            </select>
+          </div>
+          <div class="sv3-totals-row" id="tcs-row" style="display:none;">
+            <span class="lbl">TCS Amount</span>
+            <span class="val">₹ <span id="tcs-display">0.00</span></span>
+          </div>
+
+          <div class="sv3-totals-row">
+            <span class="lbl">Round Off</span>
+            <span class="val" id="round-off-display">—</span>
+          </div>
+          <div class="sv3-totals-grand border-top pt-2 mt-2">
+            <span class="lbl" style="font-size:14px; font-weight:800;">Grand Total</span>
+            <span class="val" style="font-size:15px; font-weight:800; color:#2e7d32;">₹ <span id="grand-total-display">0.00</span></span>
+          </div>
+        </div>
+
+        <!-- Sticky Actions Bar -->
+        <div class="d-flex flex-column gap-2">
+          <button type="button" class="sv3-btn sv3-btn-secondary" style="justify-content:center;" onclick="toggleReviewMode()">
+            <i class="bi bi-eye"></i> Toggle Review Mode
+          </button>
+          <button type="submit" class="sv3-btn sv3-btn-primary" style="justify-content:center;">
+            <i class="bi bi-save"></i> Save Invoice
+          </button>
+          <a href="/sales" class="sv3-btn sv3-btn-outline" style="justify-content:center;">
+            <i class="bi bi-arrow-left"></i> Cancel & Return
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Review Overview Container -->
+<div id="review-container" style="display:none;" class="mb-4">
+  <div class="sv4-card">
+    <div class="sv4-card-header">
+      <i class="bi bi-check2-square text-success"></i>
+      <h5>Review &amp; Verify Sales Invoice Details</h5>
+      <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="toggleReviewMode()">
+        <i class="bi bi-pencil"></i> Return to Editor
+      </button>
+    </div>
+    <div class="sv4-card-body">
+      <div class="row g-4 mb-3">
+        <div class="col-md-4">
+          <h6 class="fw-bold border-bottom pb-1 mb-2">Billing Information</h6>
+          <div id="rev-billing-details" style="font-size:12.5px; line-height:1.6;"></div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="fw-bold border-bottom pb-1 mb-2">Shipping Information</h6>
+          <div id="rev-shipping-details" style="font-size:12.5px; line-height:1.6;"></div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="fw-bold border-bottom pb-1 mb-2">Dispatch &amp; Bank Information</h6>
+          <div id="rev-dispatch-details" style="font-size:12.5px; line-height:1.6;"></div>
+        </div>
+      </div>
+      
+      <h6 class="fw-bold border-bottom pb-1 mb-2 mt-4">Invoice Items List</h6>
+      <div id="rev-items-details"></div>
+
+      <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-end">
+        <button type="button" class="sv3-btn sv3-btn-outline" onclick="toggleReviewMode()">
+          <i class="bi bi-pencil"></i> Edit Details
+        </button>
+        <button type="submit" class="sv3-btn sv3-btn-primary">
+          <i class="bi bi-check2"></i> Submit &amp; Save Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden inputs for amounts submit -->
+<input type="hidden" name="hidden_subtotal" id="hidden-subtotal" value="0.00">
+<input type="hidden" name="hidden_cgst" id="hidden-cgst" value="0.00">
+<input type="hidden" name="hidden_sgst" id="hidden-sgst" value="0.00">
+<input type="hidden" name="hidden_igst" id="hidden-igst" value="0.00">
+<input type="hidden" name="hidden_round_off" id="hidden-round-off" value="0.00">
+<input type="hidden" name="hidden_grand_total" id="hidden-grand-total" value="0.00">
 
 </form>
 
-<!-- ── Row Template ───────────────────────────────────────────── -->
+<!-- Row Input template -->
 <template id="row-template">
-    <tr>
-        <td style="color:#aaa; font-size:11px; padding-top:14px; text-align:center;" class="row-num"></td>
-        <td>
-            <select name="material_id[]" class="form-select form-select-sm material-select"
-                    style="font-size:12.5px; border-radius:6px;" onchange="onMaterialChange(this)" required>
-                <option value="">Select material</option>
-                {% for m in materials %}
-                <option value="{{ m.id }}"
-                        data-gst="{{ m.gst_percentage }}"
-                        data-uom="{{ m.uom or '' }}"
-                        data-hsn="{{ m.hsn_code or '' }}"
-                        data-tracking-type="{{ m.tracking_type or 'BOTH' }}">
-                    {{ m.material_name }}
-                </option>
-                {% endfor %}
-            </select>
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm hsn-code readonly-cell"
-                   readonly style="text-align:center; font-size:12px; width:65px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm uom-code readonly-cell"
-                   readonly style="text-align:center; font-size:12px; width:50px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" name="qty[]" class="form-control form-control-sm qty-input"
-                   min="0" step="0.01" value="0"
-                   style="text-align:right; font-size:12.5px; width:72px; border-radius:6px;" oninput="calcRow(this)">
-        </td>
-        <td>
-            <input type="number" name="weight[]" class="form-control form-control-sm"
-                   min="0" step="0.001" value="0"
-                   style="text-align:right; font-size:12.5px; width:82px; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" name="rate[]" class="form-control form-control-sm rate-input"
-                   min="0" step="0.01" value="0"
-                   style="text-align:right; font-size:12.5px; width:82px; border-radius:6px;" oninput="calcRow(this)">
-        </td>
-        <td>
-            <input type="number" name="amount[]" class="form-control form-control-sm amount-input readonly-cell"
-                   readonly value="0.00"
-                   style="text-align:right; font-size:12.5px; font-weight:700; color:#1b5e20; width:92px; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" name="gst_percentage[]" class="form-control form-control-sm gst-pct readonly-cell"
-                   readonly value="0"
-                   style="text-align:center; font-size:12px; width:48px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm row-cgst readonly-cell" readonly value="0.00"
-                   style="text-align:right; font-size:11.5px; width:68px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm row-sgst readonly-cell" readonly value="0.00"
-                   style="text-align:right; font-size:11.5px; width:68px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm row-igst readonly-cell" readonly value="0.00"
-                   style="text-align:right; font-size:11.5px; width:68px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm row-total readonly-cell" readonly value="0.00"
-                   style="text-align:right; font-size:12.5px; font-weight:700; width:88px; margin:0 auto; border-radius:6px;">
-        </td>
-        <td style="text-align:center;">
-            <button type="button" class="btn btn-sm btn-outline-danger"
-                    style="padding:3px 8px; border-radius:6px;" onclick="deleteRow(this)" title="Remove row">
-                <i class="bi bi-trash"></i>
-            </button>
-        </td>
-    </tr>
+  <tr>
+    <td class="row-index-lbl" style="text-align:center; vertical-align:middle; color:#888;"></td>
+    <td>
+      <select name="item_type[]" class="sv4-input" style="height:28px; padding:2px 4px;" onchange="onItemTypeChange(this)">
+        <option value="Goods">Goods</option>
+        <option value="Service/Charge">Service</option>
+      </select>
+    </td>
+    <td>
+      <!-- Goods Mode select option -->
+      <div class="goods-select-wrap">
+        <select name="material_id[]" class="sv4-input material-selector-select" style="height:28px; padding:2px 4px;" onchange="onMaterialChange(this)">
+          <option value="">Choose Material...</option>
+          {% for m in materials %}
+          <option value="{{ m.id }}" data-hsn="{{ m.hsn_code or '' }}" data-uom="{{ m.uom or '' }}" data-gst="{{ m.gst_percentage or 18 }}">{{ m.material_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Service Mode Free Text field -->
+      <div class="service-text-wrap" style="display:none;">
+        <input type="text" name="description[]" class="sv4-input py-1" placeholder="Enter Service/Charge Description...">
+      </div>
+    </td>
+    <td>
+      <input type="text" name="hsn_sac[]" class="sv4-input py-1 hsn-input-box" style="text-align:center;">
+    </td>
+    <td>
+      <input type="number" name="qty[]" class="sv4-input py-1 qty-input-box text-end" value="1" step="0.01" oninput="calcRow(this)">
+    </td>
+    <td>
+      <input type="text" name="uom[]" class="sv4-input py-1 uom-input-box" value="KGS" style="text-align:center;">
+    </td>
+    <td>
+      <input type="number" name="weight[]" class="sv4-input py-1 weight-input-box text-end" value="0" step="0.001">
+    </td>
+    <td>
+      <input type="number" name="rate[]" class="sv4-input py-1 rate-input-box text-end" value="0" step="0.01" oninput="calcRow(this)">
+    </td>
+    <td>
+      <input type="number" name="amount[]" class="sv4-input py-1 amount-input-box text-end" readonly value="0.00">
+    </td>
+    <td>
+      <input type="number" name="gst_percentage[]" class="sv4-input py-1 gst-input-box text-center" value="18" step="0.1" oninput="calcRow(this)">
+    </td>
+    <td>
+      <input type="text" name="item_reference[]" class="sv4-input py-1" placeholder="Optional ref">
+    </td>
+    <td style="text-align:center; vertical-align:middle;">
+      <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="removeRow(this)">
+        <i class="bi bi-trash"></i>
+      </button>
+    </td>
+  </tr>
 </template>
 
 {% endblock %}
 
 {% block scripts %}
-<style>
-/* Override Bootstrap form-select inside sv3-items-table */
-#items-table .form-select,
-#items-table .form-control { background-color: transparent; }
-#items-table .readonly-cell { background: var(--bg-alt,#f5f8f5) !important; }
-</style>
-
 <script>
 const COMPANY_STATE_CODE = "{{ company_state_code }}";
-let rowCount = 0;
 
-/* ── Row management ──────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', () => {
+  // Pre-load items
+  {% if existing_items %}
+    {% for it in existing_items %}
+      addRow();
+      let lastTr = document.querySelector('#items-body').lastElementChild;
+      let typeSel = lastTr.querySelector('select[name="item_type[]"]');
+      typeSel.value = "{{ it.item_type or 'Goods' }}";
+      onItemTypeChange(typeSel);
+      
+      if ("{{ it.item_type or 'Goods' }}" === "Goods") {
+        let matSel = lastTr.querySelector('.material-selector-select');
+        matSel.value = "{{ it.material_id or '' }}";
+      } else {
+        lastTr.querySelector('input[name="description[]"]').value = "{{ it.description or '' }}";
+      }
+      lastTr.querySelector('input[name="hsn_sac[]"]').value = "{{ it.hsn_code or it.hsn_sac or '' }}";
+      lastTr.querySelector('input[name="qty[]"]').value = "{{ it.quantity or 0 }}";
+      lastTr.querySelector('input[name="uom[]"]').value = "{{ it.uom or 'KGS' }}";
+      lastTr.querySelector('input[name="weight[]"]').value = "{{ it.weight or 0 }}";
+      lastTr.querySelector('input[name="rate[]"]').value = "{{ it.rate or 0 }}";
+      lastTr.querySelector('input[name="amount[]"]').value = "{{ it.amount or 0 }}";
+      lastTr.querySelector('input[name="gst_percentage[]"]').value = "{{ it.gst_percentage or 18 }}";
+      lastTr.querySelector('input[name="item_reference[]"]').value = "{{ it.item_reference or '' }}";
+    {% endfor %}
+  {% else %}
+    addRow();
+  {% endif %}
+  
+  if (document.getElementById('party_id_selector').value) {
+    onPartyChange(document.getElementById('party_id_selector'));
+  } else {
+    triggerRecalculate();
+  }
+});
+
+let rowCounter = 0;
+
 function addRow() {
-    const tmpl  = document.getElementById('row-template');
-    const clone = tmpl.content.cloneNode(true);
-    rowCount++;
-    const tr = clone.querySelector('tr');
-    tr.querySelector('.row-num').textContent = rowCount;
-    document.getElementById('items-body').appendChild(clone);
-    document.getElementById('items-body').lastElementChild
-             .querySelector('.material-select').focus();
+  const tmpl = document.getElementById('row-template');
+  const clone = tmpl.content.cloneNode(true);
+  rowCounter++;
+  const tr = clone.querySelector('tr');
+  tr.querySelector('.row-index-lbl').textContent = rowCounter;
+  document.getElementById('items-body').appendChild(clone);
 }
 
-function deleteRow(btn) {
-    btn.closest('tr').remove();
-    renumberRows();
-    recalcAll();
+function removeRow(btn) {
+  btn.closest('tr').remove();
+  renumberRows();
+  triggerRecalculate();
 }
 
 function renumberRows() {
-    document.querySelectorAll('#items-body tr').forEach((tr, i) => {
-        tr.querySelector('.row-num').textContent = i + 1;
-    });
+  rowCounter = 0;
+  document.querySelectorAll('#items-body tr').forEach(tr => {
+    rowCounter++;
+    tr.querySelector('.row-index-lbl').textContent = rowCounter;
+  });
 }
 
-/* ── Material selected ───────────────────────────────────────── */
+function onItemTypeChange(select) {
+  const tr = select.closest('tr');
+  const type = select.value;
+  if (type === 'Goods') {
+    tr.querySelector('.goods-select-wrap').style.display = '';
+    tr.querySelector('.service-text-wrap').style.display = 'none';
+  } else {
+    tr.querySelector('.goods-select-wrap').style.display = 'none';
+    tr.querySelector('.service-text-wrap').style.display = '';
+    tr.querySelector('.uom-input-box').value = 'NOS';
+  }
+}
+
 function onMaterialChange(select) {
-    const tr  = select.closest('tr');
-    const opt = select.options[select.selectedIndex];
-    const gst = opt ? (parseFloat(opt.dataset.gst) || 0) : 0;
-    const uom = opt ? (opt.dataset.uom || '') : '';
-    const hsn = opt ? (opt.dataset.hsn || '') : '';
-    const trackingType = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
-
-    tr.querySelector('.gst-pct').value  = gst;
-    tr.querySelector('.uom-code').value = uom;
-    tr.querySelector('.hsn-code').value = hsn;
-
-    const qtyInput    = tr.querySelector('.qty-input');
-    const qtyCell     = qtyInput.closest('td');
-    const weightInput = tr.querySelector('input[name="weight[]"]');
-    const weightCell  = weightInput.closest('td');
-
-    if (trackingType === 'WEIGHT_ONLY') {
-        qtyInput.value    = '0';
-        qtyInput.readOnly = true;
-        qtyCell.style.display    = 'none';
-        weightCell.style.display = '';
-        weightInput.readOnly = false;
-        weightInput.style.background = '';
-    } else if (trackingType === 'QUANTITY_ONLY') {
-        weightInput.readOnly = true;
-        weightInput.style.background = 'var(--bg-alt,#f5f8f5)';
-        weightInput.value    = '0';
-        qtyInput.readOnly    = false;
-        qtyCell.style.display    = '';
-        weightCell.style.display = 'none';
-    } else {
-        qtyInput.readOnly    = false;
-        qtyCell.style.display    = '';
-        weightCell.style.display = '';
-        weightInput.readOnly = false;
-        weightInput.style.background = '';
-    }
-
-    tr.querySelector('.qty-input').focus();
-    recalcAll();
+  const tr = select.closest('tr');
+  const opt = select.options[select.selectedIndex];
+  if (!opt || !opt.value) return;
+  
+  tr.querySelector('.hsn-input-box').value = opt.dataset.hsn || '';
+  tr.querySelector('.uom-input-box').value = opt.dataset.uom || 'KGS';
+  tr.querySelector('.gst-input-box').value = opt.dataset.gst || '18';
+  calcRow(tr.querySelector('.qty-input-box'));
 }
 
-/* ── Per-row amount ──────────────────────────────────────────── */
-function calcRow(input) {
-    const tr     = input.closest('tr');
-    const qty    = parseFloat(tr.querySelector('.qty-input').value)  || 0;
-    const weight = parseFloat(tr.querySelector('input[name="weight[]"]').value) || 0;
-    const rate   = parseFloat(tr.querySelector('.rate-input').value) || 0;
-    const opt    = tr.querySelector('.material-select').selectedOptions[0];
-    const tracking = opt ? (opt.dataset.trackingType || 'BOTH') : 'BOTH';
-    tr.querySelector('.amount-input').value = ((tracking === 'WEIGHT_ONLY' ? weight : qty) * rate).toFixed(2);
-    recalcAll();
-}
-
-/* ── Customer change ─────────────────────────────────────────── */
-function onPartyChange() {
-    const sel     = document.getElementById('party-select');
-    const partyId = sel.value;
-    const banner  = document.getElementById('customer-info-banner');
-    if (!partyId) { banner.style.display = 'none'; recalcAll(); return; }
-
-    fetch(`/api/party/${partyId}`)
-        .then(r => r.json())
-        .then(data => {
-            if (data.error) { banner.style.display = 'none'; return; }
-            document.getElementById('info-gstin').textContent      = data.gstin          || '—';
-            document.getElementById('info-state').textContent      = data.state          || '—';
-            document.getElementById('info-state-code').textContent = data.state_code     || '—';
-            document.getElementById('info-address').textContent    = data.billing_address|| '—';
-            banner.style.display = 'block';
-        })
-        .catch(() => { banner.style.display = 'none'; });
-
-    recalcAll();
-}
-
-/* ── Master recalculation ────────────────────────────────────── */
-function recalcAll() {
-    let subtotal = 0, totalCgst = 0, totalSgst = 0, totalIgst = 0;
-
-    const sel            = document.getElementById('party-select');
-    const selectedOpt    = sel.options[sel.selectedIndex];
-    const partyStateCode = selectedOpt ? (selectedOpt.dataset.stateCode || '') : '';
-    const isIntra        = partyStateCode !== '' && partyStateCode === COMPANY_STATE_CODE;
-    const partySelected  = partyStateCode !== '';
-
-    document.querySelectorAll('#items-body tr').forEach(tr => {
-        const amount = parseFloat(tr.querySelector('.amount-input').value) || 0;
-        const gstPct = parseFloat(tr.querySelector('.gst-pct').value)      || 0;
-        subtotal += amount;
-
-        const rowGst  = amount * gstPct / 100;
-        let rowCgst = 0, rowSgst = 0, rowIgst = 0;
-
-        if (partySelected) {
-            if (isIntra) {
-                rowCgst = Math.round((rowGst / 2) * 100) / 100;
-                rowSgst = Math.round((rowGst / 2) * 100) / 100;
-                totalCgst += rowCgst; totalSgst += rowSgst;
-            } else {
-                rowIgst = Math.round(rowGst * 100) / 100;
-                totalIgst += rowIgst;
-            }
-        }
-
-        tr.querySelector('.row-cgst').value  = rowCgst.toFixed(2);
-        tr.querySelector('.row-sgst').value  = rowSgst.toFixed(2);
-        tr.querySelector('.row-igst').value  = rowIgst.toFixed(2);
-        tr.querySelector('.row-total').value = (amount + rowCgst + rowSgst + rowIgst).toFixed(2);
+function onPartyChange(select) {
+  const partyId = select.value;
+  if (!partyId) return;
+  
+  fetch(`/api/party/${partyId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) return;
+      document.getElementById('billing_party_name').value = data.company_name;
+      document.getElementById('billing_gstin').value = data.gstin || '';
+      document.getElementById('billing_address').value = data.billing_address || '';
+      document.getElementById('billing_state').value = data.state || '';
+      document.getElementById('billing_state_code').value = data.state_code || '';
+      
+      if (document.getElementById('same_as_bill').checked) {
+        syncBillingToShipping();
+      }
+      triggerRecalculate();
     });
-
-    const grandRaw     = subtotal + totalCgst + totalSgst + totalIgst;
-    const grandRounded = Math.round(grandRaw);
-    const roundOff     = Math.round((grandRounded - grandRaw) * 100) / 100;
-
-    setText('subtotal-display',    subtotal.toFixed(2));
-    setText('cgst-display',        totalCgst.toFixed(2));
-    setText('sgst-display',        totalSgst.toFixed(2));
-    setText('igst-display',        totalIgst.toFixed(2));
-    setText('grand-total-display', grandRounded.toFixed(2));
-
-    const roundOffEl = document.getElementById('round-off-display');
-    if (partySelected) {
-        roundOffEl.textContent = (roundOff >= 0 ? '+ ' : '- ') + '₹ ' + Math.abs(roundOff).toFixed(2);
-        roundOffEl.style.color = roundOff < 0 ? '#dc3545' : '#198754';
-    } else {
-        roundOffEl.textContent = '—'; roundOffEl.style.color = '#6c7a75';
-    }
-
-    show('cgst-row', isIntra);
-    show('sgst-row', isIntra);
-    show('igst-row', !isIntra && partySelected);
-
-    const badge = document.getElementById('gst-type-badge');
-    if (!partySelected) {
-        badge.textContent = 'Select customer for GST';
-        badge.style.background = '#f4f7f5'; badge.style.color = '#6c7a75';
-    } else if (isIntra) {
-        badge.textContent = '✓ Intra-state (CGST + SGST)';
-        badge.style.background = '#d1fae5'; badge.style.color = '#065f46';
-    } else {
-        badge.textContent = '✓ Inter-state (IGST)';
-        badge.style.background = '#dbeafe'; badge.style.color = '#1e40af';
-    }
-
-    setValue('hidden-subtotal',    subtotal.toFixed(2));
-    setValue('hidden-cgst',        totalCgst.toFixed(2));
-    setValue('hidden-sgst',        totalSgst.toFixed(2));
-    setValue('hidden-igst',        totalIgst.toFixed(2));
-    setValue('hidden-round-off',   roundOff.toFixed(4));
-    setValue('hidden-grand-total', grandRounded.toFixed(2));
 }
 
-function round2(n)       { return Math.round(n * 100) / 100; }
-function setText(id, v)  { document.getElementById(id).textContent = v; }
-function setValue(id, v) { document.getElementById(id).value = v; }
-function show(id, vis)   { document.getElementById(id).style.display = vis ? '' : 'none'; }
+function toggleSameAsBill(chk) {
+  if (chk.checked) {
+    syncBillingToShipping();
+  }
+  triggerRecalculate();
+}
 
-/* ── Submit guard ────────────────────────────────────────────── */
-document.getElementById('invoice-form').addEventListener('submit', function(e) {
-    const rows = document.querySelectorAll('#items-body tr');
-    if (rows.length === 0) {
-        e.preventDefault(); alert('Please add at least one item before saving.'); return;
+function syncBillingToShipping() {
+  document.getElementById('shipping_party_name').value = document.getElementById('billing_party_name').value;
+  document.getElementById('shipping_gstin').value = document.getElementById('billing_gstin').value;
+  document.getElementById('shipping_address').value = document.getElementById('billing_address').value;
+  document.getElementById('shipping_state').value = document.getElementById('billing_state').value;
+  document.getElementById('shipping_state_code').value = document.getElementById('billing_state_code').value;
+  document.getElementById('shipping_contact').value = document.getElementById('billing_contact').value;
+}
+
+function onDispatchChange(select) {
+  const locId = select.value;
+  if (!locId) return;
+  
+  fetch(`/api/company/dispatch/${locId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) return;
+      document.getElementById('dispatch_location').value = data.location_name;
+      document.getElementById('dispatch_address').value = (data.address_line_1 + ', ' + (data.address_line_2 || '') + ', ' + data.city).replace(', ,', ',');
+      document.getElementById('dispatch_gstin').value = data.gstin || '';
+      document.getElementById('dispatch_state').value = data.state;
+      document.getElementById('dispatch_state_code').value = data.state_code;
+    });
+}
+
+function onBankChange(select) {
+  const bankId = select.value;
+  if (!bankId) return;
+  
+  fetch(`/api/company/bank/${bankId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) return;
+      document.getElementById('company_bank_name').value = data.bank_name;
+      document.getElementById('company_bank_account_number').value = data.account_number;
+      document.getElementById('company_bank_ifsc').value = data.ifsc_code;
+      document.getElementById('company_bank_branch').value = data.branch_name || '';
+    });
+}
+
+function calcRow(input) {
+  const tr = input.closest('tr');
+  const qty = parseFloat(tr.querySelector('.qty-input-box').value) || 0;
+  const rate = parseFloat(tr.querySelector('.rate-input-box').value) || 0;
+  tr.querySelector('.amount-input-box').value = (qty * rate).toFixed(2);
+  triggerRecalculate();
+}
+
+let recalculateTimeout = null;
+
+function triggerRecalculate() {
+  if (recalculateTimeout) clearTimeout(recalculateTimeout);
+  recalculateTimeout = setTimeout(recalcAll, 150);
+}
+
+function recalcAll() {
+  const items = [];
+  document.querySelectorAll('#items-body tr').forEach(tr => {
+    const qty = parseFloat(tr.querySelector('.qty-input-box').value) || 0;
+    const rate = parseFloat(tr.querySelector('.rate-input-box').value) || 0;
+    const gstPct = parseFloat(tr.querySelector('.gst-input-box').value) || 0;
+    const itemType = tr.querySelector('select[name="item_type[]"]').value;
+    const materialSelect = tr.querySelector('.material-selector-select');
+    const materialId = materialSelect ? (parseInt(materialSelect.value) || null) : null;
+    
+    // Calculate taxable row amount locally
+    tr.querySelector('.amount-input-box').value = (qty * rate).toFixed(2);
+    
+    items.push({
+      qty: qty,
+      rate: rate,
+      gst_percentage: gstPct,
+      item_type: itemType,
+      material_id: materialId
+    });
+  });
+  
+  const billingStateCode = document.getElementById('billing_state_code').value.trim();
+  const shippingStateCode = document.getElementById('shipping_state_code').value.trim();
+  const tcsApplicable = document.getElementById('tcs_applicable').checked;
+  const tcsRate = parseFloat(document.getElementById('tcs_rate').value) || 0.0;
+  
+  // Toggle tcs rate select visibility
+  document.getElementById('tcs-rate-container').style.display = tcsApplicable ? 'block' : 'none';
+  
+  fetch('/api/sales/calculate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      company_state_code: COMPANY_STATE_CODE,
+      billing_state_code: billingStateCode,
+      shipping_state_code: shippingStateCode,
+      tcs_applicable: tcsApplicable,
+      tcs_rate: tcsRate,
+      items: items
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.error) {
+      console.error(res.error);
+      return;
     }
-    let ok = true;
-    rows.forEach(tr => { if (!tr.querySelector('.material-select').value) ok = false; });
-    if (!ok) { e.preventDefault(); alert('Please select a material for every row.'); }
-});
-
-/* ── Pre-populate existing items ─────────────────────────────── */
-window.addEventListener('DOMContentLoaded', function () {
-    {% if existing_items %}
-    {% for item in existing_items %}
-    addRow();
-    const rows = document.querySelectorAll('#items-body tr');
-    const last = rows[rows.length - 1];
-    const selEl = last.querySelector('.material-select');
-    selEl.value = '{{ item.material_id }}';
-    onMaterialChange(selEl);
-    last.querySelector('.qty-input').value = '{{ item.quantity or 0 }}';
-    last.querySelector('.amount-input').value = '{{ item.amount or 0 }}';
-    last.querySelector('input[name="weight[]"]').value = '{{ item.weight or 0 }}';
-    last.querySelector('input[name="rate[]"]').value = '{{ item.rate or 0 }}';
-    {% endfor %}
-    {% else %}
-    addRow();
-    {% endif %}
-
-    if (document.getElementById('party-select').value) {
-        onPartyChange();
+    
+    // Update displays
+    document.getElementById('subtotal-display').textContent = res.taxable_total.toFixed(2);
+    document.getElementById('cgst-display').textContent = res.cgst_total.toFixed(2);
+    document.getElementById('sgst-display').textContent = res.sgst_total.toFixed(2);
+    document.getElementById('igst-display').textContent = res.igst_total.toFixed(2);
+    document.getElementById('tcs-display').textContent = res.tcs_amount.toFixed(2);
+    
+    const roundOff = res.round_off;
+    document.getElementById('round-off-display').textContent = (roundOff >= 0 ? '+ ' : '- ') + '₹ ' + Math.abs(roundOff).toFixed(2);
+    document.getElementById('grand-total-display').textContent = res.grand_total.toFixed(2);
+    
+    // Update tax treatment banner
+    const banner = document.getElementById('tax-treatment-banner');
+    if (res.is_intra) {
+      banner.className = 'alert alert-success py-1 px-2 mb-2';
+      banner.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Tax split: <strong>Intra-State (CGST + SGST)</strong>';
+      
+      document.getElementById('cgst-row').style.display = res.cgst_total > 0 ? '' : 'none';
+      document.getElementById('sgst-row').style.display = res.sgst_total > 0 ? '' : 'none';
+      document.getElementById('igst-row').style.display = 'none';
+    } else {
+      banner.className = 'alert alert-warning py-1 px-2 mb-2';
+      banner.innerHTML = '<i class="bi bi-globe"></i> Tax split: <strong>Inter-State (IGST)</strong>';
+      
+      document.getElementById('cgst-row').style.display = 'none';
+      document.getElementById('sgst-row').style.display = 'none';
+      document.getElementById('igst-row').style.display = res.igst_total > 0 ? '' : 'none';
     }
-});
+    
+    document.getElementById('tcs-row').style.display = tcsApplicable && res.tcs_amount > 0 ? '' : 'none';
+    
+    // Populate hidden input elements for post
+    document.getElementById('hidden-subtotal').value = res.taxable_total.toFixed(2);
+    document.getElementById('hidden-cgst').value = res.cgst_total.toFixed(2);
+    document.getElementById('hidden-sgst').value = res.sgst_total.toFixed(2);
+    document.getElementById('hidden-igst').value = res.igst_total.toFixed(2);
+    document.getElementById('hidden-round-off').value = roundOff.toFixed(2);
+    document.getElementById('hidden-grand-total').value = res.grand_total.toFixed(2);
+  })
+  .catch(err => console.error(err));
+}
+
+function toggleReviewMode() {
+  const editor = document.getElementById('main-editor-container');
+  const review = document.getElementById('review-container');
+  
+  if (editor.style.display !== 'none') {
+    // Generate review values
+    let billingHtml = `
+      <strong>Name:</strong> ${document.getElementById('billing_party_name').value}<br>
+      <strong>GSTIN:</strong> ${document.getElementById('billing_gstin').value}<br>
+      <strong>Address:</strong> ${document.getElementById('billing_address').value}<br>
+      <strong>State:</strong> ${document.getElementById('billing_state').value} (${document.getElementById('billing_state_code').value})<br>
+      <strong>Contact:</strong> ${document.getElementById('billing_contact').value}
+    `;
+    let shippingHtml = `
+      <strong>Name:</strong> ${document.getElementById('shipping_party_name').value}<br>
+      <strong>GSTIN:</strong> ${document.getElementById('shipping_gstin').value}<br>
+      <strong>Address:</strong> ${document.getElementById('shipping_address').value}<br>
+      <strong>State:</strong> ${document.getElementById('shipping_state').value} (${document.getElementById('shipping_state_code').value})<br>
+      <strong>Contact:</strong> ${document.getElementById('shipping_contact').value}
+    `;
+    let dispatchHtml = `
+      <strong>Dispatch From:</strong> ${document.getElementById('dispatch_location').value}<br>
+      <strong>Address:</strong> ${document.getElementById('dispatch_address').value}<br>
+      <strong>Bank Name:</strong> ${document.getElementById('company_bank_name').value}<br>
+      <strong>Account Number:</strong> ${document.getElementById('company_bank_account_number').value}<br>
+      <strong>IFSC:</strong> ${document.getElementById('company_bank_ifsc').value}
+    `;
+    
+    let itemsHtml = `
+      <table class="sv4-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Item / Description</th>
+            <th>HSN/SAC</th>
+            <th style="text-align:right;">Qty</th>
+            <th>UOM</th>
+            <th style="text-align:right;">Weight</th>
+            <th style="text-align:right;">Rate</th>
+            <th style="text-align:right;">Taxable</th>
+            <th style="text-align:center;">GST%</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const type = tr.querySelector('select[name="item_type[]"]').value;
+      let desc = '';
+      if (type === 'Goods') {
+        const sel = tr.querySelector('.material-selector-select');
+        desc = sel.options[sel.selectedIndex].text;
+      } else {
+        desc = tr.querySelector('input[name="description[]"]').value;
+      }
+      itemsHtml += `
+        <tr>
+          <td>${type}</td>
+          <td>${desc}</td>
+          <td>${tr.querySelector('input[name="hsn_sac[]"]').value}</td>
+          <td style="text-align:right;">${tr.querySelector('input[name="qty[]"]').value}</td>
+          <td>${tr.querySelector('input[name="uom[]"]').value}</td>
+          <td style="text-align:right;">${tr.querySelector('input[name="weight[]"]').value} kg</td>
+          <td style="text-align:right;">₹ ${parseFloat(tr.querySelector('input[name="rate[]"]').value || 0).toFixed(2)}</td>
+          <td style="text-align:right;">₹ ${parseFloat(tr.querySelector('input[name="amount[]"]').value || 0).toFixed(2)}</td>
+          <td style="text-align:center;">${tr.querySelector('input[name="gst_percentage[]"]').value}%</td>
+        </tr>
+      `;
+    });
+    itemsHtml += `
+        </tbody>
+      </table>
+    `;
+    
+    document.getElementById('rev-billing-details').innerHTML = billingHtml;
+    document.getElementById('rev-shipping-details').innerHTML = shippingHtml;
+    document.getElementById('rev-dispatch-details').innerHTML = dispatchHtml;
+    document.getElementById('rev-items-details').innerHTML = itemsHtml;
+    
+    editor.style.display = 'none';
+    review.style.display = '';
+  } else {
+    editor.style.display = '';
+    review.style.display = 'none';
+  }
+}
 </script>
 {% endblock %}

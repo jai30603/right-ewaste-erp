@@ -1,4 +1,4 @@
-{% extends "shared/base.html" %}
+{% extends "shared/blank.html" if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("drawer") == "1" else "shared/base.html" %}
 {% block title %}Batch {{ batch_number }} – Genealogy – Right Ewaste ERP{% endblock %}
 
 {% from "shared/_page_header.html" import page_header %}
@@ -12,6 +12,7 @@
 {% set disposals = genealogy.disposal_items %}
 {% set sales = genealogy.sales_dispatches %}
 
+{% if not (request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("drawer") == "1") %}
 {{ page_header(
     title="Batch Genealogy: " ~ batch_number,
     subtitle="End-to-end traceability tree for batch " ~ batch_number ~ " from inward receipt to processing and sales.",
@@ -20,6 +21,7 @@
         {'label': 'API JSON View', 'url': '/platform/api/traceability/batch/' ~ batch_number, 'icon': 'bi-braces', 'class': 'btn-outline-secondary'}
     ]
 ) }}
+{% endif %}
 
 <!-- Batch Header Card -->
 <div class="card mb-4">

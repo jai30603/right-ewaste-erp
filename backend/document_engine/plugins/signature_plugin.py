@@ -14,7 +14,8 @@ class SignaturePlugin(BasePlugin):
         
         # Build signature block HTML
         html = []
-        html.append('<div style="text-align: right; margin-top: 30px; font-size: 11px; float: right; width: 220px;">')
+        html.append('<div style="text-align: right; margin-top: 20px; font-size: 11px; float: right; width: 220px;">')
+        html.append('<div style="margin-bottom: -15px; text-align: right;"><img src="/static/images/authorised_signatory.png" style="height: 50px; max-width: 140px; margin-right: 20px;" /></div>')
         if show_line:
             html.append('<div style="border-top: 1.5px solid #475569; width: 100%; margin-bottom: 5px;"></div>')
         html.append(f'<strong style="color: #1e293b; display: block;">{title}</strong>')
